@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -120,6 +121,57 @@ public class CommandesServiceImpl implements ICommandesService {
         actionEnum = EnumAction.fromValue(action);
 
         switch (actionEnum) {
+        case WITHOUT:
+            String seekWithoutRoleStr = args[0];
+
+            List<Role> foundWithoutRoles = guildController.getGuild().getRolesByName(seekWithoutRoleStr, true);
+            if (foundWithoutRoles != null && !foundWithoutRoles.isEmpty()) {
+                Role seekRole = foundWithoutRoles.get(0);
+                List<Member> membersWithRole = guildController.getGuild().getMembersWithRoles(seekRole);
+                List<Member> allMembers = guildController.getGuild().getMembers();
+
+                List<Member> membersWithoutRole = allMembers.stream().filter(guildMember -> !membersWithRole.contains(guildMember)).collect(Collectors.toList());
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("Les membres suivants n'ont pas le rôle **").append(seekRole.getName()).append("** : \r\n");
+
+                for (Member memberWithoutRole : membersWithoutRole) {
+                    sb.append(memberWithoutRole.getEffectiveName()).append("\r\n");
+                }
+
+                messagesService.sendBotMessage(channel, sb.toString());
+
+            } else {
+                messagesService.sendBotMessage(channel, "Le rôle " + seekWithoutRoleStr + " est inconnu !");
+            }
+
+            break;
+        case WITH:
+            String seekWithRoleStr = args[0];
+
+            List<Role> foundWithRoles = guildController.getGuild().getRolesByName(seekWithRoleStr, true);
+            if (foundWithRoles != null && !foundWithRoles.isEmpty()) {
+                Role seekRole = foundWithRoles.get(0);
+                List<Member> membersWithRole = guildController.getGuild().getMembersWithRoles(seekRole);
+                StringBuilder sb = new StringBuilder();
+                if (membersWithRole != null && !membersWithRole.isEmpty()) {
+                    sb.append("Les membres suivants ont le rôle **").append(seekRole.getName()).append("** : \r\n");
+
+                    for (Member memberWithRole : membersWithRole) {
+                        sb.append(memberWithRole.getEffectiveName()).append("\r\n");
+                    }
+
+                } else {
+                    sb.append("Aucun membre n'a le rôle **").append(seekRole.getName()).append("** !");
+                }
+
+                messagesService.sendBotMessage(channel, sb.toString());
+
+            } else {
+                messagesService.sendBotMessage(channel, "Le rôle " + seekWithRoleStr + " est inconnu !");
+            }
+
+            break;
         case CADAVRE:
             if (member.getRoles().contains(adminRole)) {
 
