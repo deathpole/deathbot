@@ -53,6 +53,7 @@ public class CommandesServiceImpl implements ICommandesService {
     List<String> listCadavreAction;
     List<String> listCadavreComplement;
     List<String> listCadavreAdjectif;
+    private boolean botActivated = false;
     private IMessagesService messagesService = new MessagesServiceImpl();
 
     private static List<String> initDynoActions() {
@@ -98,11 +99,13 @@ public class CommandesServiceImpl implements ICommandesService {
 
                         EnumAction actionEnum = null;
                         try {
-                            if (!dynoActions.contains(action.toUpperCase())) {
-                                if (mapCustomReactions != null && mapCustomReactions.keySet().contains(action)) {
-                                    executeCustomReaction(guildController, channel, args[0], action);
-                                } else {
-                                    executeEmbeddedAction(guildController, adminRole, author, member, channel, commandeComplete, args, action);
+                            if(botActivated || EnumAction.ACTIVATE.name().equals(action.toUpperCase())) {
+                                if (!dynoActions.contains(action.toUpperCase())) {
+                                    if (mapCustomReactions != null && mapCustomReactions.keySet().contains(action)) {
+                                        executeCustomReaction(guildController, channel, args[0], action);
+                                    } else {
+                                        executeEmbeddedAction(guildController, adminRole, author, member, channel, commandeComplete, args, action);
+                                    }
                                 }
                             }
                         } catch (IllegalArgumentException ex) {
@@ -121,56 +124,38 @@ public class CommandesServiceImpl implements ICommandesService {
         actionEnum = EnumAction.fromValue(action);
 
         switch (actionEnum) {
+        case DEACTIVATE:
+            if (member.getRoles().contains(adminRole)) {
+                if(botActivated) {
+                    botActivated = false;
+                    String prefixTrimed = prefixCmd.replace("[", "").replace("]", "");
+                    messagesService.sendBotMessage(channel, "Le bot est à présent désactivé !\r\nPour le réactiver tapez \"" + prefixTrimed + "activate\" (commande administrateur)");
+                }else{
+                    messagesService.sendBotMessage(channel, "Le bot est déjà désactivé !");
+                }
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case ACTIVATE:
+            if (member.getRoles().contains(adminRole)) {
+                if(!botActivated) {
+                    botActivated = true;
+                    messagesService.sendBotMessage(channel, "Le bot est à présent activé !");
+                }else{
+                    messagesService.sendBotMessage(channel, "Le bot est déjà activé !");
+                }
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
         case WITHOUT:
             String seekWithoutRoleStr = args[0];
-
-            List<Role> foundWithoutRoles = guildController.getGuild().getRolesByName(seekWithoutRoleStr, true);
-            if (foundWithoutRoles != null && !foundWithoutRoles.isEmpty()) {
-                Role seekRole = foundWithoutRoles.get(0);
-                List<Member> membersWithRole = guildController.getGuild().getMembersWithRoles(seekRole);
-                List<Member> allMembers = guildController.getGuild().getMembers();
-
-                List<Member> membersWithoutRole = allMembers.stream().filter(guildMember -> !membersWithRole.contains(guildMember)).collect(Collectors.toList());
-
-                StringBuilder sb = new StringBuilder();
-                sb.append("Les membres suivants n'ont pas le rôle **").append(seekRole.getName()).append("** : \r\n");
-
-                for (Member memberWithoutRole : membersWithoutRole) {
-                    sb.append(memberWithoutRole.getEffectiveName()).append("\r\n");
-                }
-
-                messagesService.sendBotMessage(channel, sb.toString());
-
-            } else {
-                messagesService.sendBotMessage(channel, "Le rôle " + seekWithoutRoleStr + " est inconnu !");
-            }
-
+            searchUsersWithoutRole(guildController, channel, seekWithoutRoleStr);
             break;
         case WITH:
             String seekWithRoleStr = args[0];
-
-            List<Role> foundWithRoles = guildController.getGuild().getRolesByName(seekWithRoleStr, true);
-            if (foundWithRoles != null && !foundWithRoles.isEmpty()) {
-                Role seekRole = foundWithRoles.get(0);
-                List<Member> membersWithRole = guildController.getGuild().getMembersWithRoles(seekRole);
-                StringBuilder sb = new StringBuilder();
-                if (membersWithRole != null && !membersWithRole.isEmpty()) {
-                    sb.append("Les membres suivants ont le rôle **").append(seekRole.getName()).append("** : \r\n");
-
-                    for (Member memberWithRole : membersWithRole) {
-                        sb.append(memberWithRole.getEffectiveName()).append("\r\n");
-                    }
-
-                } else {
-                    sb.append("Aucun membre n'a le rôle **").append(seekRole.getName()).append("** !");
-                }
-
-                messagesService.sendBotMessage(channel, sb.toString());
-
-            } else {
-                messagesService.sendBotMessage(channel, "Le rôle " + seekWithRoleStr + " est inconnu !");
-            }
-
+            searchUsersWithRole(guildController, channel, seekWithRoleStr);
             break;
         case CADAVRE:
             if (member.getRoles().contains(adminRole)) {
@@ -241,6 +226,55 @@ public class CommandesServiceImpl implements ICommandesService {
             System.out.println("Commande non prise en charge");
             break;
         }
+    }
+
+    private void searchUsersWithRole(GuildController guildController, MessageChannel channel, String roleToSearch) {
+        List<Role> foundWithRoles = guildController.getGuild().getRolesByName(roleToSearch, true);
+        if (foundWithRoles != null && !foundWithRoles.isEmpty()) {
+            Role seekRole = foundWithRoles.get(0);
+            List<Member> membersWithRole = guildController.getGuild().getMembersWithRoles(seekRole);
+            StringBuilder sb = new StringBuilder();
+            if (membersWithRole != null && !membersWithRole.isEmpty()) {
+                sb.append("Les membres suivants ont le rôle **").append(seekRole.getName()).append("** : \r\n");
+
+                for (Member memberWithRole : membersWithRole) {
+                    sb.append(memberWithRole.getEffectiveName()).append("\r\n");
+                }
+
+            } else {
+                sb.append("Aucun membre n'a le rôle **").append(seekRole.getName()).append("** !");
+            }
+
+            messagesService.sendBotMessage(channel, sb.toString());
+
+        } else {
+            messagesService.sendBotMessage(channel, "Le rôle " + roleToSearch + " est inconnu !");
+        }
+    }
+
+    private void searchUsersWithoutRole(GuildController guildController, MessageChannel channel, String roleToSearch) {
+        List<Role> foundWithoutRoles = guildController.getGuild().getRolesByName(roleToSearch, true);
+        if (foundWithoutRoles != null && !foundWithoutRoles.isEmpty()) {
+            Role seekRole = foundWithoutRoles.get(0);
+            List<Member> membersWithRole = guildController.getGuild().getMembersWithRoles(seekRole);
+            List<Member> allMembers = guildController.getGuild().getMembers();
+
+            List<Member> membersWithoutRole = allMembers.stream().filter(guildMember -> !membersWithRole.contains(guildMember)).collect(Collectors.toList());
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("Les membres suivants n'ont pas le rôle **").append(seekRole.getName()).append("** : \r\n");
+
+            for (Member memberWithoutRole : membersWithoutRole) {
+                sb.append(memberWithoutRole.getEffectiveName()).append("\r\n");
+            }
+
+            messagesService.sendBotMessage(channel, sb.toString());
+
+        } else {
+            messagesService.sendBotMessage(channel, "Le rôle " + roleToSearch + " est inconnu !");
+        }
+
+        return;
     }
 
     private void executeCadavreActions(GuildController guildController, MessageChannel channel, String[] params, EnumCadavreExquisParams param) {
