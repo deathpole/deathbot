@@ -490,10 +490,6 @@ public class CommandesServiceImpl implements ICommandesService {
     private List<Role> sortSetOfRolesToList(Set<Role> selfAssignableRanks) {
         List<Role> selfAssignableRanksList = new ArrayList<>(selfAssignableRanks);
 
-
-        NaturalSortComparator comparator = new NaturalSortComparator(false);
-
-
         selfAssignableRanksList.sort(Comparator.comparing(Role::getName)
                 .thenComparingInt(e -> e.getName().contains("Chevalier ") ?
                         Integer.parseInt(e.getName().replace("Chevalier ", "")) :
