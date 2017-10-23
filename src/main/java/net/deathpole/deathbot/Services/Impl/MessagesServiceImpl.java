@@ -11,21 +11,14 @@ import net.dv8tion.jda.core.entities.MessageChannel;
 /**
  * Created by nicolas on 28/09/17.
  */
-public class MessagesServiceImpl implements IMessagesService {
-
-    private static final String SEPARATOR_ACTION_ARGS = " ";
-    private static final String ROLES_SEPARATOR = ",";
-    private static final String RETOUR_LIGNE = "\r\n";
+class MessagesServiceImpl implements IMessagesService {
 
     @Override
     public void sendBotMessageWithMention(MessageChannel channel, String message, IMentionable mentionable) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(Color.RED);
 
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(message);
-        embedBuilder.setDescription(sb.toString());
+        embedBuilder.setDescription(message);
 
         MessageBuilder messageBuilder = new MessageBuilder();
         messageBuilder.append(mentionable);
@@ -37,10 +30,7 @@ public class MessagesServiceImpl implements IMessagesService {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(Color.RED);
 
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(message);
-        embedBuilder.setDescription(sb.toString());
+        embedBuilder.setDescription(message);
 
         MessageBuilder messageBuilder = new MessageBuilder();
         messageBuilder.setEmbed(embedBuilder.build());

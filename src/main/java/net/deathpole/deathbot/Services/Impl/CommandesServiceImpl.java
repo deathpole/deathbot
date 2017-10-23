@@ -5,7 +5,6 @@ import static net.dv8tion.jda.core.MessageBuilder.Formatting.BOLD;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,7 +23,6 @@ import net.deathpole.deathbot.Enums.EnumCadavreExquisParams;
 import net.deathpole.deathbot.Enums.EnumDynoAction;
 import net.deathpole.deathbot.Services.ICommandesService;
 import net.deathpole.deathbot.Services.IMessagesService;
-import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
@@ -85,7 +83,7 @@ public class CommandesServiceImpl implements ICommandesService {
             MessageChannel channel = e.getChannel();
             String msg = message.getContent();
 
-            String commandeComplete = null;
+            String commandeComplete;
             try {
 
                 if (msg.matches("^" + prefixCmd + ".*")) {
@@ -104,8 +102,8 @@ public class CommandesServiceImpl implements ICommandesService {
                             }
                         }
 
-                        EnumAction actionEnum = null;
                         try {
+                            assert action != null;
                             if(isBotActivated(guildController.getGuild()) || EnumAction.ACTIVATE.name().equals(action.toUpperCase())) {
                                 if (!dynoActions.contains(action.toUpperCase())) {
                                     if (mapCustomReactions != null && mapCustomReactions.keySet().contains(action)) {
@@ -121,6 +119,7 @@ public class CommandesServiceImpl implements ICommandesService {
                     }
                 }
             } catch (ArrayIndexOutOfBoundsException ex) {
+                messagesService.sendBotMessage(channel, "Un problème est survenu. Merci de contacter l'administrateur.");
             }
         }
     }
@@ -132,9 +131,8 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private boolean isBotActivated(Guild guild) {
         botActivationByGuild.putIfAbsent(guild, false);
-        Boolean activated = botActivationByGuild.get(guild);
 
-        return activated.booleanValue();
+        return botActivationByGuild.get(guild);
     }
 
     private void executeEmbeddedAction(GuildController guildController, Role adminRole, User author, Member member, MessageChannel channel, String commandeComplete, String[] args,
@@ -222,7 +220,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 String[] fullParams = args[0].split(SEPARATOR_ACTION_ARGS, 2);
                 String keyWord = fullParams[0];
                 String reaction = fullParams[1];
-                addCustomReaction(author, channel, keyWord, reaction);
+                addCustomReaction(channel, keyWord, reaction);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
@@ -318,8 +316,6 @@ public class CommandesServiceImpl implements ICommandesService {
         } else {
             messagesService.sendBotMessage(channel, "Le rôle " + roleToSearch + " est inconnu !");
         }
-
-        return;
     }
 
     private void executeCadavreActions(GuildController guildController, MessageChannel channel, String[] params, EnumCadavreExquisParams param) {
@@ -346,43 +342,38 @@ public class CommandesServiceImpl implements ICommandesService {
         if (!listCadavreSujet.isEmpty() && !listCadavreAction.isEmpty() && !listCadavreComplement.isEmpty() && !listCadavreAdjectif.isEmpty()) {
             Member cadavre = listCadavreSujet.get(new Random().nextInt(listCadavreSujet.size()));
 
-            StringBuilder sb = new StringBuilder();
-            sb.append(SEPARATOR_ACTION_ARGS).append(listCadavreAction.get(new Random().nextInt(listCadavreAction.size()))).append(SEPARATOR_ACTION_ARGS).append(
-                    listCadavreComplement.get(new Random().nextInt(listCadavreComplement.size()))).append(SEPARATOR_ACTION_ARGS).append(
-                            listCadavreAdjectif.get(new Random().nextInt(listCadavreAdjectif.size())));
+            String sb = SEPARATOR_ACTION_ARGS + listCadavreAction.get(new Random().nextInt(listCadavreAction.size())) + SEPARATOR_ACTION_ARGS +
+                    listCadavreComplement.get(new Random().nextInt(listCadavreComplement.size())) + SEPARATOR_ACTION_ARGS +
+                    listCadavreAdjectif.get(new Random().nextInt(listCadavreAdjectif.size()));
 
-            messagesService.sendBotMessageWithMention(channel, sb.toString(), cadavre);
+            messagesService.sendBotMessageWithMention(channel, sb, cadavre);
         }
     }
 
     private void addAdjectifCadavre(String param) {
-        String adjectifCadavre = param;
         if (listCadavreAdjectif == null) {
             listCadavreAdjectif = new ArrayList<>();
         }
-        listCadavreAdjectif.add(adjectifCadavre);
+        listCadavreAdjectif.add(param);
     }
 
     private void addComplementCadavre(String param) {
-        String complementCadavre = param;
         if (listCadavreComplement == null) {
             listCadavreComplement = new ArrayList<>();
         }
-        listCadavreComplement.add(complementCadavre);
+        listCadavreComplement.add(param);
     }
 
     private void addActionCadavre(String param) {
-        String actionCadavre = param;
         if (listCadavreAction == null) {
             listCadavreAction = new ArrayList<>();
         }
-        listCadavreAction.add(actionCadavre);
+        listCadavreAction.add(param);
     }
 
     private void addSujetCadavre(GuildController guildController, String param) {
-        String user = param;
-        if (user != null) {
-            Member cadavreSujet = guildController.getGuild().getMembersByName(user, false).get(0);
+        if (param != null) {
+            Member cadavreSujet = guildController.getGuild().getMembersByName(param, false).get(0);
             if (listCadavreSujet == null) {
                 listCadavreSujet = new ArrayList<>();
             }
@@ -417,7 +408,7 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void addCustomReaction(User author, MessageChannel channel, String keyWord, String reaction) {
+    private void addCustomReaction(MessageChannel channel, String keyWord, String reaction) {
 
         if (mapCustomReactions == null) {
             mapCustomReactions = new HashMap<>();
@@ -429,10 +420,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
         mapCustomReactions.put(keyWord, customReaction);
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Nouvelle réponse ajoutée pour la commande : " + keyWord);
-
-        messagesService.sendBotMessage(channel, sb.toString());
+        messagesService.sendBotMessage(channel, "Nouvelle réponse ajoutée pour la commande : " + keyWord);
     }
 
     private void sudoMakeMeASandwich(boolean contains, MessageChannel channel, String arg) {
@@ -500,13 +488,16 @@ public class CommandesServiceImpl implements ICommandesService {
 
         Set<Role> listRolesToRemove = createListOfRoleFromStringTable(rolesToRemoveTable, guildController, channel);
 
-        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController.getGuild());
+        Guild guild = guildController.getGuild();
+        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guild);
 
         if (selfAssignableRanks != null && !selfAssignableRanks.isEmpty()) {
             selfAssignableRanks.removeAll(listRolesToRemove);
         } else {
             selfAssignableRanks = new HashSet<>();
         }
+
+        addAssignableRanksForGuild(guild, selfAssignableRanks);
 
         if (!listRolesToRemove.isEmpty()) {
             StringBuilder sb = new StringBuilder();
@@ -572,7 +563,8 @@ public class CommandesServiceImpl implements ICommandesService {
 
         messageBuilder.append("Utilisation", UNDERLINE, ITALICS, BOLD).append(RETOUR_LIGNE);
         messageBuilder.append(RETOUR_LIGNE);
-        messageBuilder.append("Toutes les commandes doivent commencer par le symbole '" + prefixTrimed + "', le nom de la commande et les valeurs possible (si besoin).").append(
+        messageBuilder.append("Toutes les commandes doivent commencer par le symbole '").append(prefixTrimed).append(
+                "', le nom de la commande et les valeurs possible (si besoin).").append(
                 RETOUR_LIGNE);
         messageBuilder.append(prefixTrimed + "<COMMANDE>", BLOCK).append(RETOUR_LIGNE);
         messageBuilder.append(prefixTrimed + "<COMMANDE> <VALEUR_1>", BLOCK).append(RETOUR_LIGNE);
@@ -613,16 +605,13 @@ public class CommandesServiceImpl implements ICommandesService {
         Set<Role> listRole = new HashSet<>();
 
         for (String roleToAddString : rolesToAddTable) {
-            Role roleToAdd = null;
+            Role roleToAdd;
             try {
                 roleToAdd = guildController.getGuild().getRolesByName(roleToAddString, false).get(0);
                 listRole.add(roleToAdd);
             } catch (IndexOutOfBoundsException ex) {
-                StringBuilder sb = new StringBuilder();
 
-                sb.append("Le role " + roleToAddString + " n'existe pas !");
-
-                messagesService.sendBotMessage(channel, sb.toString());
+                messagesService.sendBotMessage(channel, ("Le role " + roleToAddString + " n'existe pas !"));
             }
 
         }
@@ -700,9 +689,9 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void logRolesOfMember(Member member) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Le membre " + member.getEffectiveName() + " a désormais les rôles suivants : \r\n");
+        sb.append("Le membre ").append(member.getEffectiveName()).append(" a désormais les rôles suivants : \r\n");
         for (Role role : member.getRoles()) {
-            sb.append(role.getName() + "\r\n");
+            sb.append(role.getName()).append(RETOUR_LIGNE);
         }
         System.out.print(sb.toString());
     }
@@ -711,7 +700,7 @@ public class CommandesServiceImpl implements ICommandesService {
         StringBuilder sb = new StringBuilder();
         sb.append("Vous avez actuellement les rôles suivants : \r\n");
         for (Role role : member.getRoles()) {
-            sb.append(role.getName() + "\r\n");
+            sb.append(role.getName()).append(RETOUR_LIGNE);
         }
         messagesService.sendBotMessage(channel, sb.toString());
     }
