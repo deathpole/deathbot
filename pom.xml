@@ -65,6 +65,11 @@
             <artifactId>JDA</artifactId>
             <version>3.3.1_285</version>
         </dependency>
+        <dependency>
+            <groupId>net.sourceforge.csvjdbc</groupId>
+            <artifactId>csvjdbc</artifactId>
+            <version>1.0.28</version>
+        </dependency>
     </dependencies>
 
     <modules>

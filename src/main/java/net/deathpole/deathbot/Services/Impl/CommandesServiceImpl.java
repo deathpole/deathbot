@@ -7,6 +7,7 @@ import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +61,7 @@ public class CommandesServiceImpl implements ICommandesService {
     private IMessagesService messagesService = new MessagesServiceImpl();
 
     private static List<String> initDynoActions() {
+
         List<String> tempDynoActions = new ArrayList<>();
 
         for (EnumDynoAction action : EnumDynoAction.values()) {
@@ -206,7 +208,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-        case HELPFCB:
+        case HELPDB:
             channel.sendMessage(buildHelpMessage(guild)).queue();
             break;
         case CHANGE:
@@ -470,9 +472,10 @@ public class CommandesServiceImpl implements ICommandesService {
             StringBuilder sb = new StringBuilder();
 
             sb.append("Les ranks assignables sont : \r\n");
-            for (Role role : selfAssignableRanks) {
+
+            for (Role role : sortSetOfRolesToList(selfAssignableRanks)) {
                 sb.append(role.getName());
-                sb.append("\r\n");
+                sb.append(RETOUR_LIGNE);
             }
             messagesService.sendBotMessage(channel, sb.toString());
             String message1 = sb.toString();
@@ -482,6 +485,21 @@ public class CommandesServiceImpl implements ICommandesService {
             System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
             messagesService.sendBotMessage(channel, message1);
         }
+    }
+
+    private List<Role> sortSetOfRolesToList(Set<Role> selfAssignableRanks) {
+        List<Role> selfAssignableRanksList = new ArrayList<>(selfAssignableRanks);
+
+
+        NaturalSortComparator comparator = new NaturalSortComparator(false);
+
+
+        selfAssignableRanksList.sort(Comparator.comparing(Role::getName)
+                .thenComparingInt(e -> e.getName().contains("Chevalier ") ?
+                        Integer.parseInt(e.getName().replace("Chevalier ", "")) :
+                        e.getPosition()));
+
+        return selfAssignableRanksList;
     }
 
     private void removeAssignableRanks(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg) {
@@ -540,7 +558,8 @@ public class CommandesServiceImpl implements ICommandesService {
     private StringBuilder buildNewlyAssignableRolesListMessage(User author, String commandeComplete, Set<Role> listRolesToAdd) {
         StringBuilder sb = new StringBuilder();
         sb.append("Les rôles suivants sont désormais assignables : \r\n");
-        for (Role role : listRolesToAdd) {
+
+        for (Role role : sortSetOfRolesToList(listRolesToAdd)) {
             sb.append(role.getName()).append("\r\n");
         }
 
@@ -577,7 +596,7 @@ public class CommandesServiceImpl implements ICommandesService {
         messageBuilder.append("Liste de commandes utiles", UNDERLINE, ITALICS).append(RETOUR_LIGNE);
         messageBuilder.append(prefixTrimed + "rank <NOM_DU_ROLE>", BLOCK).append(" : S'attribuer ou révoquer un rôle.").append(RETOUR_LIGNE);
         messageBuilder.append(prefixTrimed + "list", BLOCK).append(" : Lister les rôles assignables.").append(RETOUR_LIGNE);
-        messageBuilder.append(prefixTrimed + "helpfcb", BLOCK).append(" : Afficher cette aide.").append(RETOUR_LIGNE);
+        messageBuilder.append(prefixTrimed + "helpdb", BLOCK).append(" : Afficher cette aide.").append(RETOUR_LIGNE);
         messageBuilder.append(prefixTrimed + "help", BLOCK).append(" : Recevoir l'aide Dyno.").append(RETOUR_LIGNE);
         messageBuilder.append(RETOUR_LIGNE);
 
@@ -650,7 +669,7 @@ public class CommandesServiceImpl implements ICommandesService {
         if ("".equals(rankToAdd)) {
             listRanksOfUser(channel, member);
         } else {
-            List<Role> potentialRolesToAdd = guildController.getJDA().getRolesByName(rankToAdd, false);
+            List<Role> potentialRolesToAdd = guildController.getGuild().getRolesByName(rankToAdd, true);
             if (!potentialRolesToAdd.isEmpty()) {
                 Role roleToAdd = potentialRolesToAdd.get(0);
 
@@ -667,11 +686,11 @@ public class CommandesServiceImpl implements ICommandesService {
 
                         guildController.addSingleRoleToMember(member, roleToAdd).complete();
                         member = guildController.getGuild().getMember(member.getUser());
-                        messageBuilder.append("Vous êtes passé **").append(rankToAdd).append("** !");
+                        messageBuilder.append("Vous êtes passé **").append(roleToAdd.getName()).append("** !");
                     } else {
                         guildController.removeSingleRoleFromMember(member, roleToAdd).complete();
                         member = guildController.getGuild().getMember(member.getUser());
-                        messageBuilder.append("Vous n'êtes plus **").append(rankToAdd).append("** !");
+                        messageBuilder.append("Vous n'êtes plus **").append(roleToAdd.getName()).append("** !");
                     }
                     messagesService.sendBotMessageWithMention(channel, messageBuilder.toString(), author);
 
