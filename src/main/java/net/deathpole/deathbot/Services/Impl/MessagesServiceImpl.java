@@ -20,7 +20,7 @@ public class MessagesServiceImpl implements IMessagesService {
     @Override
     public void sendBotMessageWithMention(MessageChannel channel, String message, IMentionable mentionable) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setColor(Color.MAGENTA);
+        embedBuilder.setColor(Color.RED);
 
         StringBuilder sb = new StringBuilder();
 
@@ -35,7 +35,7 @@ public class MessagesServiceImpl implements IMessagesService {
 
     @Override public void sendBotMessage(MessageChannel channel, String message) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setColor(Color.MAGENTA);
+        embedBuilder.setColor(Color.RED);
 
         StringBuilder sb = new StringBuilder();
 
