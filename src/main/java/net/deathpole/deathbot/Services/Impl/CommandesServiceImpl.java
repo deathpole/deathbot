@@ -208,6 +208,7 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case HELPFCB:
             channel.sendMessage(buildHelpMessage(guild)).queue();
+            break;
         case CHANGE:
             if (isAdmin) {
                 changePrefixe(author, channel, commandeComplete, args[0], guild);

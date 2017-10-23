@@ -6,6 +6,7 @@ package net.deathpole.deathbot.Enums;
 public enum EnumDynoAction {
 
     HELP,
+    AIDE,
     OW,
     AFK,
     AVATAR,
