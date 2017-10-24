@@ -66,9 +66,9 @@
             <version>3.3.1_285</version>
         </dependency>
         <dependency>
-            <groupId>net.sourceforge.csvjdbc</groupId>
-            <artifactId>csvjdbc</artifactId>
-            <version>1.0.28</version>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>1.4.191</version>
         </dependency>
     </dependencies>
 

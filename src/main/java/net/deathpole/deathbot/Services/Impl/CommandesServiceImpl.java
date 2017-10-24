@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 import net.deathpole.deathbot.CustomReaction;
+import net.deathpole.deathbot.Dao.Impl.AssignableRanksDao;
+import net.deathpole.deathbot.Dao.IAssignableRanksDao;
 import net.deathpole.deathbot.Enums.EnumAction;
 import net.deathpole.deathbot.Enums.EnumCadavreExquisParams;
 import net.deathpole.deathbot.Enums.EnumDynoAction;
@@ -47,6 +49,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private List<String> dynoActions = initDynoActions();
 
     private HashMap<Guild, Set<Role>> selfAssignableRanksByGuild = new HashMap<>();
+
+    private HashMap<String, Set<String>> selfAssignableRanksByIdsByGuild = initAssignableRanksbyGuild();
+
     private HashMap<Guild, String> prefixCmdByGuild = new HashMap<>();
     private HashMap<Guild, Boolean> singleRoleByGuild = new HashMap<>();
     private HashMap<Guild, Boolean> botActivationByGuild = new HashMap<>();
@@ -59,6 +64,14 @@ public class CommandesServiceImpl implements ICommandesService {
 
 
     private IMessagesService messagesService = new MessagesServiceImpl();
+    private IAssignableRanksDao assignableRanksDao;
+
+
+
+    private HashMap<String, Set<String>> initAssignableRanksbyGuild() {
+        assignableRanksDao = new AssignableRanksDao();
+        return assignableRanksDao.initAssignableRanksbyGuild();
+    }
 
     private static List<String> initDynoActions() {
 
@@ -132,7 +145,8 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private boolean isBotActivated(Guild guild) {
-        botActivationByGuild.putIfAbsent(guild, false);
+        boolean state = assignableRanksDao.getActivationState(guild);
+        botActivationByGuild.putIfAbsent(guild, state);
 
         return botActivationByGuild.get(guild);
     }
@@ -237,7 +251,7 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
 
         case LIST:
-            listAssignableRanks(guild, author, channel, commandeComplete);
+            listAssignableRanks(guildController, author, channel, commandeComplete);
             break;
 
         case ADD_RANK:
@@ -272,6 +286,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void activateOrDeactivateBotForGuild(Guild guild, boolean activate) {
         botActivationByGuild.put(guild, activate);
+        assignableRanksDao.saveActivationState(guild, activate);
     }
 
     private void searchUsersWithRole(GuildController guildController, MessageChannel channel, String roleToSearch) {
@@ -465,8 +480,8 @@ public class CommandesServiceImpl implements ICommandesService {
         prefixCmdByGuild.put(guild, prefixCmd);
     }
 
-    private void listAssignableRanks(Guild guild, User author, MessageChannel channel, String commandeComplete) {
-        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guild);
+    private void listAssignableRanks(GuildController guildController, User author, MessageChannel channel, String commandeComplete) {
+        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController);
         if (selfAssignableRanks != null && !selfAssignableRanks.isEmpty()) {
 
             StringBuilder sb = new StringBuilder();
@@ -504,7 +519,7 @@ public class CommandesServiceImpl implements ICommandesService {
         Set<Role> listRolesToRemove = createListOfRoleFromStringTable(rolesToRemoveTable, guildController, channel);
 
         Guild guild = guildController.getGuild();
-        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guild);
+        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController);
 
         if (selfAssignableRanks != null && !selfAssignableRanks.isEmpty()) {
             selfAssignableRanks.removeAll(listRolesToRemove);
@@ -512,7 +527,7 @@ public class CommandesServiceImpl implements ICommandesService {
             selfAssignableRanks = new HashSet<>();
         }
 
-        addAssignableRanksForGuild(guild, selfAssignableRanks);
+        setAssignableRanksForGuild(guild, selfAssignableRanks);
 
         if (!listRolesToRemove.isEmpty()) {
             StringBuilder sb = new StringBuilder();
@@ -526,8 +541,35 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private Set<Role> getSelfAssignableRanksForGuild(Guild guild) {
+    private Set<Role> getSelfAssignableRanksForGuild(GuildController guildController) {
+
+        Guild guild = guildController.getGuild();
+
+        if(selfAssignableRanksByGuild.isEmpty() && !selfAssignableRanksByIdsByGuild.isEmpty()){
+            selfAssignableRanksByGuild = transformAssignableRanksIdsToObjects(guildController);
+        }
+
         return selfAssignableRanksByGuild != null ? selfAssignableRanksByGuild.get(guild) : null;
+    }
+
+    private HashMap<Guild, Set<Role>> transformAssignableRanksIdsToObjects(GuildController guildController) {
+
+        HashMap<Guild, Set<Role>> resultMap = new HashMap<>();
+
+        for(String guildName : selfAssignableRanksByIdsByGuild.keySet()){
+            Guild guild = guildController.getJDA().getGuildsByName(guildName, true).get(0);
+
+            Set<String> roleNames = selfAssignableRanksByIdsByGuild.get(guildName);
+            Set<Role> roles = new HashSet<>();
+            for(String roleName : roleNames){
+                Role role = guildController.getGuild().getRolesByName(roleName, true).get(0);
+                roles.add(role);
+            }
+
+            resultMap.put(guild, roles);
+        }
+
+        return resultMap;
     }
 
     private void addAssignableRanks(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg) {
@@ -535,7 +577,7 @@ public class CommandesServiceImpl implements ICommandesService {
         Guild guild = guildController.getGuild();
 
         Set<Role> listRolesToAdd = createListOfRoleFromStringTable(rolesToAddTable, guildController, channel);
-        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guild);
+        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController);
 
         if (selfAssignableRanks != null && !selfAssignableRanks.isEmpty()) {
             selfAssignableRanks.addAll(listRolesToAdd);
@@ -543,7 +585,7 @@ public class CommandesServiceImpl implements ICommandesService {
             selfAssignableRanks = new HashSet<>();
             selfAssignableRanks.addAll(listRolesToAdd);
         }
-        addAssignableRanksForGuild(guild, selfAssignableRanks);
+        setAssignableRanksForGuild(guild, selfAssignableRanks);
 
         if (!listRolesToAdd.isEmpty()) {
             StringBuilder sb = buildNewlyAssignableRolesListMessage(author, commandeComplete, listRolesToAdd);
@@ -563,11 +605,13 @@ public class CommandesServiceImpl implements ICommandesService {
         return sb;
     }
 
-    private void addAssignableRanksForGuild(Guild guild, Set<Role> selfAssignableRanks) {
+    private void setAssignableRanksForGuild(Guild guild, Set<Role> selfAssignableRanks) {
         if(selfAssignableRanksByGuild == null){
             selfAssignableRanksByGuild = new HashMap<>();
         }
         selfAssignableRanksByGuild.put(guild, selfAssignableRanks);
+        assignableRanksDao.saveAssignableRanksForGuild(guild, selfAssignableRanks);
+
     }
 
     private Message buildHelpMessage(Guild guild) {
@@ -660,7 +704,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void manageRankCmd(User author, MessageChannel channel, GuildController guildController, String rankToAdd, Member member) {
         List<Role> userRoles = member.getRoles();
-        List<Role> userAssignableRoles = findAssignableRole(userRoles, guildController.getGuild());
+        List<Role> userAssignableRoles = findAssignableRole(userRoles, guildController);
 
         if ("".equals(rankToAdd)) {
             listRanksOfUser(channel, member);
@@ -669,7 +713,7 @@ public class CommandesServiceImpl implements ICommandesService {
             if (!potentialRolesToAdd.isEmpty()) {
                 Role roleToAdd = potentialRolesToAdd.get(0);
 
-                Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController.getGuild());
+                Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController);
 
                 if (selfAssignableRanks != null && selfAssignableRanks.contains(roleToAdd)) {
                     StringBuilder messageBuilder = new StringBuilder();
@@ -721,13 +765,14 @@ public class CommandesServiceImpl implements ICommandesService {
         messagesService.sendBotMessage(channel, sb.toString());
     }
 
-    private List<Role> findAssignableRole(List<Role> userRoles, Guild guild) {
+    private List<Role> findAssignableRole(List<Role> userRoles, GuildController guildController) {
 
         List<Role> assignableRoles = new ArrayList<>();
-        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guild);
+        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController);
 
         assignableRoles.addAll(userRoles.stream().filter(userRole -> selfAssignableRanks != null && selfAssignableRanks.contains(userRole)).collect(Collectors.toList()));
 
         return assignableRoles;
     }
+
 }

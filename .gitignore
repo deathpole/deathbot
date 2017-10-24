@@ -3,3 +3,5 @@
 out/
 target/
 /dependency-reduced-pom.xml
+/bdd_deathbot.trace.db
+/bdd_deathbot.mv.db
