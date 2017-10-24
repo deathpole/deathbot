@@ -97,44 +97,45 @@ public class CommandesServiceImpl implements ICommandesService {
             Message message = e.getMessage();
             MessageChannel channel = e.getChannel();
             String msg = message.getContent();
+            if(!prefixCmd.equals(msg.trim())) {
+                String commandeComplete;
+                try {
 
-            String commandeComplete;
-            try {
+                    if (msg.matches("^" + prefixCmd + ".*")) {
+                        commandeComplete = msg.split(prefixCmd)[1];
 
-                if (msg.matches("^" + prefixCmd + ".*")) {
-                    commandeComplete = msg.split(prefixCmd)[1];
+                        if (commandeComplete != null && !commandeComplete.isEmpty()) {
 
-                    if (commandeComplete != null && !commandeComplete.isEmpty()) {
+                            String[] cmdSplit = commandeComplete.split(SEPARATOR_ACTION_ARGS, 2);
 
-                        String[] cmdSplit = commandeComplete.split(SEPARATOR_ACTION_ARGS, 2);
-
-                        String[] args = new String[0];
-                        String action = null;
-                        if (cmdSplit.length > 0) {
-                            action = cmdSplit[0];
-                            if (cmdSplit.length > 1) {
-                                args = cmdSplit[1].split(SEPARATOR_ACTION_ARGS, 1);
-                            }
-                        }
-
-                        try {
-                            assert action != null;
-                            if(isBotActivated(guildController.getGuild()) || EnumAction.ACTIVATE.name().equals(action.toUpperCase())) {
-                                if (!dynoActions.contains(action.toUpperCase())) {
-                                    if (mapCustomReactions != null && mapCustomReactions.keySet().contains(action)) {
-                                        executeCustomReaction(guildController, channel, args[0], action);
-                                    } else {
-                                        executeEmbeddedAction(guildController, adminRole, author, member, channel, commandeComplete, args, action);
-                                    }
+                            String[] args = new String[0];
+                            String action = null;
+                            if (cmdSplit.length > 0) {
+                                action = cmdSplit[0];
+                                if (cmdSplit.length > 1) {
+                                    args = cmdSplit[1].split(SEPARATOR_ACTION_ARGS, 1);
                                 }
                             }
-                        } catch (IllegalArgumentException ex) {
-                            messagesService.sendBotMessage(channel, "Commande inconnue.");
+
+                            try {
+                                assert action != null;
+                                if (isBotActivated(guildController.getGuild()) || EnumAction.ACTIVATE.name().equals(action.toUpperCase())) {
+                                    if (!dynoActions.contains(action.toUpperCase())) {
+                                        if (mapCustomReactions != null && mapCustomReactions.keySet().contains(action)) {
+                                            executeCustomReaction(guildController, channel, args[0], action);
+                                        } else {
+                                            executeEmbeddedAction(guildController, adminRole, author, member, channel, commandeComplete, args, action);
+                                        }
+                                    }
+                                }
+                            } catch (IllegalArgumentException ex) {
+                                messagesService.sendBotMessage(channel, "Commande inconnue.");
+                            }
                         }
                     }
+                } catch (ArrayIndexOutOfBoundsException ex) {
+                    messagesService.sendBotMessage(channel, "Un problème est survenu. Merci de contacter l'administrateur.");
                 }
-            } catch (ArrayIndexOutOfBoundsException ex) {
-                messagesService.sendBotMessage(channel, "Un problème est survenu. Merci de contacter l'administrateur.");
             }
         }
     }
@@ -582,8 +583,7 @@ public class CommandesServiceImpl implements ICommandesService {
         if (selfAssignableRanks != null && !selfAssignableRanks.isEmpty()) {
             selfAssignableRanks.addAll(listRolesToAdd);
         } else {
-            selfAssignableRanks = new HashSet<>();
-            selfAssignableRanks.addAll(listRolesToAdd);
+            selfAssignableRanks = new HashSet<>(listRolesToAdd);
         }
         setAssignableRanksForGuild(guild, selfAssignableRanks);
 
@@ -767,12 +767,10 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private List<Role> findAssignableRole(List<Role> userRoles, GuildController guildController) {
 
-        List<Role> assignableRoles = new ArrayList<>();
         Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController);
 
-        assignableRoles.addAll(userRoles.stream().filter(userRole -> selfAssignableRanks != null && selfAssignableRanks.contains(userRole)).collect(Collectors.toList()));
-
-        return assignableRoles;
+        return new ArrayList<>(
+                userRoles.stream().filter(userRole -> selfAssignableRanks != null && selfAssignableRanks.contains(userRole)).collect(Collectors.toList()));
     }
 
 }

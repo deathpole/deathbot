@@ -3,6 +3,7 @@ package net.deathpole.deathbot.Dao.Impl;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -13,6 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.h2.tools.RunScript;
+import org.h2.util.IOUtils;
 
 import net.deathpole.deathbot.Dao.IAssignableRanksDao;
 import net.dv8tion.jda.core.entities.Guild;
@@ -24,19 +26,11 @@ import net.dv8tion.jda.core.entities.Role;
 public class AssignableRanksDao implements IAssignableRanksDao {
 
     public AssignableRanksDao() {
-        // schema init
-        Connection conn = getConnectionToDB();
-        try {
-            String filePath = new File("").getAbsolutePath();
-            RunScript.execute(conn, new FileReader(filePath.concat("/src/main/script/initDB.sql")));
-        } catch (SQLException | FileNotFoundException e) {
+        try (Connection conn = getConnectionToDB()){
+            InputStream scriptLocation = Thread.currentThread().getContextClassLoader().getResourceAsStream("script/initDB.sql");
+            RunScript.execute(conn, IOUtils.getBufferedReader(scriptLocation));
+        } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
         }
 
     }
