@@ -53,6 +53,7 @@ public enum EnumDynoAction {
     PETUNIT,
     SHEETS,
     PETSHEET,
+    QUOTA,
     KL,
     FION,
     ROLES;

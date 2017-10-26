@@ -78,14 +78,15 @@ public class CommandesServiceImpl implements ICommandesService {
 
             String prefixCmd = getPrefixCmdForGuild(guildController.getGuild());
 
-            if (!author.isBot()) {
-                Member member = e.getMember();
-                Message message = e.getMessage();
-                MessageChannel channel = e.getChannel();
-                String msg = message.getContent();
-                if (!prefixCmd.equals(msg.trim())) {
-                    String commandeComplete;
-                    try {
+        if (!author.isBot()) {
+            Member member = e.getMember();
+            Message message = e.getMessage();
+            MessageChannel channel = e.getChannel();
+            String msg = message.getContent();
+            String prefixTrimed =prefixCmd.replace("[", "").replace("]", "");
+            if(!prefixTrimed.equals(msg.trim())) {
+                String commandeComplete;
+                try {
 
                         if (msg.matches("^" + prefixCmd + "\\p{all}*")) {
                             commandeComplete = msg.split(prefixCmd)[1];
@@ -165,137 +166,159 @@ public class CommandesServiceImpl implements ICommandesService {
         Guild guild = guildController.getGuild();
 
         switch (actionEnum) {
-            case SET_WELCOME_MESSAGE:
+        case SET_WELCOME_MESSAGE:
                 if (isAdmin) {
                     String text = originalMessage.split(SEPARATOR_ACTION_ARGS, 2)[1];
                     welcomeMessageByGuild.put(guild, text);
                 } else {
                     messagesService.sendMessageNotEnoughRights(channel);
                 }
-                break;
-            case DEACTIVATE:
-                if (isAdmin) {
-                    if (isBotActivated(guild)) {
-                        activateOrDeactivateBotForGuild(guild, false);
+                break;case DEACTIVATE:
+            if (isAdmin) {
+                deactivateBot(channel,guild);
 
-                        String prefixCmd = getPrefixCmdForGuild(guild);
 
-                        String prefixTrimed = prefixCmd.replace("[", "").replace("]", "");
-                        messagesService.sendBotMessage(channel, "Le bot est à présent désactivé !\r\nPour le réactiver tapez \"" + prefixTrimed + "activate\" (commande administrateur)");
-                    } else {
-                        messagesService.sendBotMessage(channel, "Le bot est déjà désactivé !");
-                    }
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;
-            case LARO:
-                if (isAdmin) {
-                    StringBuilder sb = new StringBuilder();
-                    List<Role> allRoles = guild.getRoles();
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case LARO:
+            if (isAdmin) {
+                listRolesForGuild(channel, guild);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case ACTIVATE:
+            if (isAdmin) {
+                activateBot(channel,guild);
 
-                    if (allRoles != null && !allRoles.isEmpty()) {
-                        sb.append("Les roles du serveur sont : ").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
-                        allRoles.stream().filter(role -> !role.getName().startsWith("@everyone")).forEach(role -> sb.append(role.getName()).append(" (").append(
-                                guild.getMembersWithRoles(role).size()).append(" membres)").append(RETOUR_LIGNE));
-                    } else {
-                        sb.append("Aucun rôle sur ce serveur ! Ce n'est pas normal ! ¯\\_(ツ)_/¯");
-                    }
-                    messagesService.sendBotMessage(channel, sb.toString());
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;
-            case ACTIVATE:
-                if (isAdmin) {
-                    if (!isBotActivated(guild)) {
-                        activateOrDeactivateBotForGuild(guild, true);
-                        messagesService.sendBotMessage(channel, "Le bot est à présent activé !");
-                    } else {
-                        messagesService.sendBotMessage(channel, "Le bot est déjà activé !");
-                    }
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;
-            case WITHOUT:
-                String seekWithoutRoleStr = args[0];
-                searchUsersWithoutRole(guildController, channel, seekWithoutRoleStr);
-                break;
-            case WITH:
-                String seekWithRoleStr = args[0];
-                searchUsersWithRole(guildController, channel, seekWithRoleStr);
-                break;
-            case CADAVRE:
-                if (isAdmin) {
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case WITHOUT:
 
-                    String[] params = args[0].split(SEPARATOR_ACTION_ARGS, 2);
-                    EnumCadavreExquisParams param = EnumCadavreExquisParams.valueOf(params[0].toUpperCase());
-                    executeCadavreActions(guildController, channel, params, param);
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;
-            case HELPDB:
-                channel.sendMessage(buildHelpMessage(guild)).queue();
-                break;
-            case CHANGE:
-                if (isAdmin) {
-                    changePrefixe(author, channel, commandeComplete, args[0], guild);
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;
-            case ACR:
-                if (isAdmin) {
-                    String[] fullParams = args[0].split(SEPARATOR_ACTION_ARGS, 2);
-                    String keyWord = fullParams[0];
-                    String reaction = fullParams[1];
-                    addCustomReaction(channel, keyWord, reaction);
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;
-            case SINGLE:
-                if (isAdmin) {
-                    toggleSingleRank(channel, guild);
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;
+            searchUsersWithoutRole(guildController, channel, args[0]);
+            break;
+        case WITH:
 
-            case LIST:
-                listAssignableRanks(guildController, author, channel, commandeComplete);
-                break;
+            searchUsersWithRole(guildController, channel, args[0]);
+            break;
+        case CADAVRE:
+            if (isAdmin) {
 
-            case ADD_RANK:
-                if (isAdmin) {
-                    addAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;
-            case REMOVE_RANK:
-                if (isAdmin) {
-                    removeAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;
-            case RANK:
-                String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
-                manageRankCmd(author, channel, guildController, roleStr, member);
-                break;
-            case MAKE:
-                makeMeASandwich(channel, args[0]);
-                break;
-            case SUDO:
-                sudoMakeMeASandwich(isAdmin, channel, args[0]);
-                break;
-            default:
-                System.out.println("Commande non prise en charge");
-                break;
+                manageCadavreExquis(guildController, channel, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case HELPDB:
+            channel.sendMessage(buildHelpMessage(guild)).queue();
+            break;
+        case CHANGE:
+            if (isAdmin) {
+                changePrefixe(author, channel, commandeComplete, args[0], guild);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case ACR:
+            if (isAdmin) {
+                manageAddCustomReaction(channel, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case SINGLE:
+            if (isAdmin) {
+                toggleSingleRank(channel, guild);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+
+        case LIST:
+            listAssignableRanks(guildController, author, channel, commandeComplete);
+            break;
+
+        case ADD_RANK:
+            if (isAdmin) {
+                addAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case REMOVE_RANK:
+            if (isAdmin) {
+                removeAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case RANK:
+            String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
+            manageRankCmd(author, channel, guildController, roleStr, member);
+            break;
+        case MAKE:
+            makeMeASandwich(channel, args[0]);
+            break;
+        case SUDO:
+            sudoMakeMeASandwich(isAdmin, channel, args[0]);
+            break;
+        default:
+            System.out.println("Commande non prise en charge");
+            break;
         }
+    }
+
+    private void manageAddCustomReaction(MessageChannel channel, String arg) {
+        String[] fullParams = arg.split(SEPARATOR_ACTION_ARGS, 2);
+        String keyWord = fullParams[0];
+        String reaction = fullParams[1];
+        addCustomReaction(channel, keyWord, reaction);
+    }
+
+    private void manageCadavreExquis(GuildController guildController, MessageChannel channel, String arg) {
+        String[] params = arg.split(SEPARATOR_ACTION_ARGS, 2);
+        EnumCadavreExquisParams param = EnumCadavreExquisParams.valueOf(params[0].toUpperCase());
+        executeCadavreActions(guildController, channel, params, param);
+    }
+
+    private void activateBot(MessageChannel channel, Guild guild) {
+        if(!isBotActivated(guild)) {
+            activateOrDeactivateBotForGuild(guild, true);
+            messagesService.sendBotMessage(channel, "Le bot est à présent activé !");
+        }else{
+            messagesService.sendBotMessage(channel, "Le bot est déjà activé !");
+        }
+    }
+
+    private void deactivateBot(MessageChannel channel, Guild guild) {
+        if(isBotActivated(guild)) {
+            activateOrDeactivateBotForGuild(guild, false);
+
+            String prefixCmd = getPrefixCmdForGuild(guild);
+
+            String prefixTrimed = prefixCmd.replace("[", "").replace("]", "");
+            messagesService.sendBotMessage(channel, "Le bot est à présent désactivé !\r\nPour le réactiver tapez \"" + prefixTrimed + "activate\" (commande administrateur)");
+        }else{
+            messagesService.sendBotMessage(channel, "Le bot est déjà désactivé !");
+        }
+    }
+
+    private void listRolesForGuild(MessageChannel channel, Guild guild) {
+        StringBuilder sb = new StringBuilder();
+        List<Role> allRoles = guild.getRoles();
+
+        if (allRoles != null && !allRoles.isEmpty()) {
+            sb.append("Les roles du serveur sont : ").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
+            allRoles.stream().filter(role -> !role.getName().startsWith("@everyone")).forEach(role -> sb.append(role.getName()).append(" (").append(
+                    guild.getMembersWithRoles(role).size()).append(" membres)").append(RETOUR_LIGNE));
+        }else{
+            sb.append("Aucun rôle sur ce serveur ! Ce n'est pas normal ! ¯\\_(ツ)_/¯");
+        }
+        messagesService.sendBotMessage(channel, sb.toString());
     }
 
     private void activateOrDeactivateBotForGuild(Guild guild, boolean activate) {
@@ -722,42 +745,57 @@ public class CommandesServiceImpl implements ICommandesService {
         if ("".equals(rankToAdd)) {
             listRanksOfUser(channel, member);
         } else {
-            List<Role> potentialRolesToAdd = guildController.getGuild().getRolesByName(rankToAdd, true);
-            if (!potentialRolesToAdd.isEmpty()) {
-                Role roleToAdd = potentialRolesToAdd.get(0);
-
-                Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController);
-
-                if (selfAssignableRanks != null && selfAssignableRanks.contains(roleToAdd)) {
-                    StringBuilder messageBuilder = new StringBuilder();
-                    if (!userRoles.contains(roleToAdd)) {
-
-                        if (getSingleRoleForGuild(guildController.getGuild()) && !userAssignableRoles.isEmpty()) {
-                            guildController.removeRolesFromMember(member, userAssignableRoles).complete();
-                            member = guildController.getGuild().getMember(member.getUser());
-                        }
-
-                        guildController.addSingleRoleToMember(member, roleToAdd).complete();
-                        member = guildController.getGuild().getMember(member.getUser());
-                        messageBuilder.append("Vous êtes passé **").append(roleToAdd.getName()).append("** !");
-                    } else {
-                        guildController.removeSingleRoleFromMember(member, roleToAdd).complete();
-                        member = guildController.getGuild().getMember(member.getUser());
-                        messageBuilder.append("Vous n'êtes plus **").append(roleToAdd.getName()).append("** !");
-                    }
-                    messagesService.sendBotMessageWithMention(channel, messageBuilder.toString(), author);
-
-                    // listRanksOfUser(channel, member);
-                    logRolesOfMember(member);
-
-                } else {
-                    messagesService.sendBotMessage(channel,
-                            "Le rôle **" + rankToAdd + "** n'est pas assignable à soi-même.\r\nMerci de contacter un admin ou un modérateur pour vous l'ajouter.");
-                }
-            } else {
-                messagesService.sendBotMessage(channel, "Le rôle **" + rankToAdd + "** n'existe pas.");
-            }
+            addOrRemoveRankToUser(author, channel, guildController, rankToAdd, member, userRoles, userAssignableRoles);
         }
+    }
+
+    private void addOrRemoveRankToUser(User author, MessageChannel channel, GuildController guildController, String rankToAdd, Member member, List<Role> userRoles,
+            List<Role> userAssignableRoles) {
+        List<Role> potentialRolesToAdd = guildController.getGuild().getRolesByName(rankToAdd, true);
+        if (!potentialRolesToAdd.isEmpty()) {
+            Role roleToAdd = potentialRolesToAdd.get(0);
+
+            Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController);
+
+            if (selfAssignableRanks != null && selfAssignableRanks.contains(roleToAdd)) {
+                StringBuilder messageBuilder = new StringBuilder();
+                if (!userRoles.contains(roleToAdd)) {
+                    member = addRankToUser(guildController, member, userAssignableRoles, roleToAdd, messageBuilder);
+                } else {
+                    member = removeRankToUser(guildController, member, roleToAdd, messageBuilder);
+                }
+                messagesService.sendBotMessageWithMention(channel, messageBuilder.toString(), author);
+
+                // listRanksOfUser(channel, member);
+                logRolesOfMember(member);
+
+            } else {
+                messagesService.sendBotMessage(channel,
+                        "Le rôle **" + rankToAdd + "** n'est pas assignable à soi-même.\r\nMerci de contacter un admin ou un modérateur pour vous l'ajouter.");
+            }
+        } else {
+            messagesService.sendBotMessage(channel, "Le rôle **" + rankToAdd + "** n'existe pas.");
+        }
+    }
+
+    private Member removeRankToUser(GuildController guildController, Member member, Role roleToAdd, StringBuilder messageBuilder) {
+        guildController.removeSingleRoleFromMember(member, roleToAdd).complete();
+        member = guildController.getGuild().getMember(member.getUser());
+        messageBuilder.append("Vous n'êtes plus **").append(roleToAdd.getName()).append("** !");
+        return member;
+    }
+
+    private Member addRankToUser(GuildController guildController, Member member, List<Role> userAssignableRoles, Role roleToAdd, StringBuilder messageBuilder) {
+
+        if (getSingleRoleForGuild(guildController.getGuild()) && !userAssignableRoles.isEmpty()) {
+            guildController.removeRolesFromMember(member, userAssignableRoles).complete();
+            member = guildController.getGuild().getMember(member.getUser());
+        }
+
+        guildController.addSingleRoleToMember(member, roleToAdd).complete();
+        member = guildController.getGuild().getMember(member.getUser());
+        messageBuilder.append("Vous êtes passé **").append(roleToAdd.getName()).append("** !");
+        return member;
     }
 
     private void logRolesOfMember(Member member) {
