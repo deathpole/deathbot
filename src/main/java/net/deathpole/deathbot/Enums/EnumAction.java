@@ -19,7 +19,7 @@ public enum EnumAction {
     WITH,
     DEACTIVATE,
     ACTIVATE,
-    LARO;
+    LARO, SET_WELCOME_MESSAGE;
 
     public static EnumAction fromValue(String v){
         return EnumAction.valueOf(v.toUpperCase());

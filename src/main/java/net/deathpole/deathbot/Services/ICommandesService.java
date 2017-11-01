@@ -1,5 +1,6 @@
 package net.deathpole.deathbot.Services;
 
+import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 
 /**
@@ -8,4 +9,6 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 public interface ICommandesService {
 
     void executeAction(MessageReceivedEvent e);
+
+    void userJoinedGuild(GuildMemberJoinEvent e);
 }
