@@ -1,8 +1,5 @@
 package net.deathpole.deathbot.Dao.Impl;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -116,6 +113,36 @@ public class AssignableRanksDao implements IAssignableRanksDao {
     }
 
     @Override
+    public void saveWelcomeMessage(Guild guild, String message) {
+        Connection conn = getConnectionToDB();
+
+        message = message == null || message.isEmpty() ? null : message;
+
+        try {
+            Statement stmnt = conn.createStatement();
+            String sqlUpdate = "UPDATE PUBLIC.WELCOME_MESSAGE SET WELCOME_MESSAGE = '" + message + "' WHERE GUILD_NAME = '" + guild.getName() + "'";
+
+            int count = stmnt.executeUpdate(sqlUpdate);
+
+            if (count == 0) {
+                Statement statement = conn.createStatement();
+                String sqlInsert = "INSERT INTO PUBLIC.WELCOME_MESSAGE(GUILD_NAME, WELCOME_MESSAGE) VALUES('" + guild.getName() + "', '" + message + "')";
+
+                statement.executeUpdate(sqlInsert);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
     public void saveActivationState(Guild guild, boolean activated) {
         Connection conn = getConnectionToDB();
 
@@ -168,5 +195,32 @@ public class AssignableRanksDao implements IAssignableRanksDao {
         }
 
         return activated;
+    }
+
+    @Override
+    public String getWelcomeMessage(Guild guild) {
+        Connection conn = getConnectionToDB();
+
+        String welcomeMessage = null;
+        try {
+            Statement statement = conn.createStatement();
+            String sql = "SELECT * FROM PUBLIC.WELCOME_MESSAGE WHERE GUILD_NAME = '" + guild.getName() + "'";
+            ResultSet rs = statement.executeQuery(sql);
+
+            while (rs.next()) {
+                welcomeMessage = rs.getString("WELCOME_MESSAGE");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return welcomeMessage;
     }
 }

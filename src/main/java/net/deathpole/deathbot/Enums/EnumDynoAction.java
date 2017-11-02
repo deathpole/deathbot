@@ -58,6 +58,7 @@ public enum EnumDynoAction {
     FION,
     PURGE,
     NINJA,
+    DYNO,
     ROLES;
 
     public static EnumDynoAction fromValue(String v) {

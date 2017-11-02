@@ -18,8 +18,11 @@ public interface IAssignableRanksDao {
 
     void saveAssignableRanksForGuild(Guild guild, Set<Role> selfAssignableRanks, boolean single);
 
+    void saveWelcomeMessage(Guild guild, String message);
+
     void saveActivationState(Guild guild, boolean activated);
 
     boolean getActivationState(Guild guild);
 
+    String getWelcomeMessage(Guild guild);
 }

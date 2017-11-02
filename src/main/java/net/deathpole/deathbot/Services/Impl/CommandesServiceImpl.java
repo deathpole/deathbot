@@ -165,7 +165,11 @@ public class CommandesServiceImpl implements ICommandesService {
     public void userJoinedGuild(GuildMemberJoinEvent e) {
         Member connectedMember = e.getMember();
         User user = connectedMember.getUser();
-        String welcomeMessage = welcomeMessageByGuild.get(e.getGuild());
+        Guild guild = e.getGuild();
+        String welcomeMessage = welcomeMessageByGuild.get(guild);
+        if (welcomeMessage == null) {
+            welcomeMessage = assignableRanksDao.getWelcomeMessage(guild);
+        }
         if (welcomeMessage != null && !welcomeMessage.isEmpty()) {
             String[] toSendList = welcomeMessage.split("(?<=\\G.{2000})");
             for (String toSend : toSendList) {
@@ -197,8 +201,8 @@ public class CommandesServiceImpl implements ICommandesService {
         switch (actionEnum) {
         case SET_WELCOME_MESSAGE:
                 if (isAdmin) {
-                    String text = originalMessage.split(SEPARATOR_ACTION_ARGS, 2)[1];
-                    welcomeMessageByGuild.put(guild, text);
+                setWelcomeMessageForGuild(originalMessage, guild);
+                messagesService.sendBotMessage(channel, "Le message privé de bienvenue a bien été mis à jour.");
                 } else {
                     messagesService.sendMessageNotEnoughRights(channel);
                 }
@@ -313,6 +317,12 @@ public class CommandesServiceImpl implements ICommandesService {
             System.out.println("Commande non prise en charge");
             break;
         }
+    }
+
+    private void setWelcomeMessageForGuild(String originalMessage, Guild guild) {
+        String text = originalMessage.split(SEPARATOR_ACTION_ARGS, 2)[1];
+        welcomeMessageByGuild.put(guild, text);
+        assignableRanksDao.saveWelcomeMessage(guild, text);
     }
 
     private void manageAddCustomReaction(MessageChannel channel, String arg) {
