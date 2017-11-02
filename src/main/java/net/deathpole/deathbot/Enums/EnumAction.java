@@ -19,7 +19,10 @@ public enum EnumAction {
     WITH,
     DEACTIVATE,
     ACTIVATE,
-    LARO, SET_WELCOME_MESSAGE;
+    LARO,
+    ADD_NOTSINGLE_RANK,
+    REMOVE_NOTSINGLE_RANK,
+    SET_WELCOME_MESSAGE;
 
     public static EnumAction fromValue(String v){
         return EnumAction.valueOf(v.toUpperCase());

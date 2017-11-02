@@ -48,7 +48,7 @@ public class AssignableRanksDao implements IAssignableRanksDao {
     }
 
     @Override
-    public HashMap<String, Set<String>> initAssignableRanksbyGuild() {
+    public HashMap<String, Set<String>> initAssignableRanksbyGuild(boolean single) {
 
         Connection conn = getConnectionToDB();
 
@@ -56,7 +56,7 @@ public class AssignableRanksDao implements IAssignableRanksDao {
 
         try {
             Statement statement = conn.createStatement();
-            String sql = "SELECT * FROM PUBLIC.ASSIGNABLE_RANKS ORDER BY GUILD_NAME";
+            String sql = "SELECT * FROM PUBLIC.ASSIGNABLE_RANKS WHERE SINGLE = " + single + " ORDER BY GUILD_NAME ";
             ResultSet rs = statement.executeQuery(sql);
 
             while (rs.next()) {
@@ -86,12 +86,12 @@ public class AssignableRanksDao implements IAssignableRanksDao {
     }
 
     @Override
-    public void saveAssignableRanksForGuild(Guild guild, Set<Role> selfAssignableRanks) {
+    public void saveAssignableRanksForGuild(Guild guild, Set<Role> selfAssignableRanks, boolean single) {
         Connection conn = getConnectionToDB();
 
         try {
             Statement statement = conn.createStatement();
-            String sqlDelete = "DELETE FROM PUBLIC.ASSIGNABLE_RANKS WHERE GUILD_NAME = '" + guild.getName() + "'";
+            String sqlDelete = "DELETE FROM PUBLIC.ASSIGNABLE_RANKS WHERE GUILD_NAME = '" + guild.getName() + "' AND ASSIGNABLE_RANKS.SINGLE = " + single;
             int deletedCount = statement.executeUpdate(sqlDelete);
             System.out.println("Nombre de ranks asisgnables supprimés : " + deletedCount);
 
@@ -99,7 +99,7 @@ public class AssignableRanksDao implements IAssignableRanksDao {
 
             Statement stmnt = conn.createStatement();
             for (Role role : selfAssignableRanks) {
-                String sqlInsert = "INSERT INTO PUBLIC.ASSIGNABLE_RANKS(GUILD_NAME, ROLE_NAME) VALUES ('" + guild.getName() + "', '" + role.getName() + "')";
+                String sqlInsert = "INSERT INTO PUBLIC.ASSIGNABLE_RANKS(GUILD_NAME, ROLE_NAME, SINGLE) VALUES ('" + guild.getName() + "', '" + role.getName() + "', " + single + ")";
                 stmnt.addBatch(sqlInsert);
             }
 

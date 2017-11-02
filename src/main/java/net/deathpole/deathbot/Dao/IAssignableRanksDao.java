@@ -14,11 +14,12 @@ public interface IAssignableRanksDao {
 
     Connection getConnectionToDB();
 
-    HashMap<String, Set<String>> initAssignableRanksbyGuild();
+    HashMap<String, Set<String>> initAssignableRanksbyGuild(boolean single);
 
-    void saveAssignableRanksForGuild(Guild guild, Set<Role> selfAssignableRanks);
+    void saveAssignableRanksForGuild(Guild guild, Set<Role> selfAssignableRanks, boolean single);
 
     void saveActivationState(Guild guild, boolean activated);
 
     boolean getActivationState(Guild guild);
+
 }
