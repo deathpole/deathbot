@@ -107,17 +107,16 @@ public class CommandesServiceImpl implements ICommandesService {
 
             String prefixCmd = getPrefixCmdForGuild(guildController.getGuild());
 
-        if (!author.isBot()) {
-            Member member = e.getMember();
-            Message message = e.getMessage();
-            MessageChannel channel = e.getChannel();
-            String msg = message.getContent();
-            String prefixTrimed =prefixCmd.replace("[", "").replace("]", "");
-            if(!prefixTrimed.equals(msg.trim())) {
+            if (!author.isBot()) {
+                Member member = e.getMember();
+                Message message = e.getMessage();
+                MessageChannel channel = e.getChannel();
+                String msg = message.getContent();
+                String prefixTrimed = prefixCmd.replace("[", "").replace("]", "");
+                if (!prefixTrimed.equals(msg.trim())) {
                 String commandeComplete;
                 try {
-
-                        if (msg.matches("^" + prefixCmd + "\\p{all}*")) {
+                        if (msg.matches("^" + prefixCmd + "[^?]\\p{all}+")) {
                             commandeComplete = msg.split(prefixCmd)[1];
 
                             if (commandeComplete != null && !commandeComplete.isEmpty()) {
@@ -209,8 +208,6 @@ public class CommandesServiceImpl implements ICommandesService {
                 break;case DEACTIVATE:
             if (isAdmin) {
                 deactivateBot(channel,guild);
-
-
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
@@ -231,11 +228,9 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case WITHOUT:
-
             searchUsersWithoutRole(guildController, channel, args[0]);
             break;
         case WITH:
-
             searchUsersWithRole(guildController, channel, args[0]);
             break;
         case CADAVRE:

@@ -3,6 +3,7 @@ package net.deathpole.deathbot.Dao.Impl;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -119,15 +120,15 @@ public class AssignableRanksDao implements IAssignableRanksDao {
         message = message == null || message.isEmpty() ? null : message;
 
         try {
-            Statement stmnt = conn.createStatement();
-            String sqlUpdate = "UPDATE PUBLIC.WELCOME_MESSAGE SET WELCOME_MESSAGE = '" + message + "' WHERE GUILD_NAME = '" + guild.getName() + "'";
-
-            int count = stmnt.executeUpdate(sqlUpdate);
+            String sqlUpdate = "UPDATE PUBLIC.WELCOME_MESSAGE SET WELCOME_MESSAGE = ? WHERE GUILD_NAME = '" + guild.getName() + "'";
+            PreparedStatement statement = conn.prepareStatement(sqlUpdate);
+            statement.setString(1, message);
+            int count = statement.executeUpdate();
 
             if (count == 0) {
-                Statement statement = conn.createStatement();
-                String sqlInsert = "INSERT INTO PUBLIC.WELCOME_MESSAGE(GUILD_NAME, WELCOME_MESSAGE) VALUES('" + guild.getName() + "', '" + message + "')";
-
+                String sqlInsert = "INSERT INTO PUBLIC.WELCOME_MESSAGE(GUILD_NAME, WELCOME_MESSAGE) VALUES('" + guild.getName() + "', ?)";
+                statement = conn.prepareStatement(sqlInsert);
+                statement.setString(1, message);
                 statement.executeUpdate(sqlInsert);
             }
 
