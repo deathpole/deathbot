@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -660,7 +661,7 @@ public class CommandesServiceImpl implements ICommandesService {
             selfAssignableRanksByGuild = transformRanksIdsToObjects(guildController, selfAssignableRanksByIdsByGuild);
         }
 
-        return selfAssignableRanksByGuild != null ? selfAssignableRanksByGuild.get(guild) : null;
+        return (selfAssignableRanksByGuild != null && !selfAssignableRanksByGuild.isEmpty()) ? selfAssignableRanksByGuild.get(guild) : new HashSet<>();
     }
 
     private Set<Role> getNotSingleSelfAssignableRanksForGuild(GuildController guildController) {
@@ -671,7 +672,7 @@ public class CommandesServiceImpl implements ICommandesService {
             notSingleSelfAssignableRanksByGuild = transformRanksIdsToObjects(guildController, notSingleSelfAssignableRanksByIdsByGuild);
         }
 
-        return notSingleSelfAssignableRanksByGuild != null ? notSingleSelfAssignableRanksByGuild.get(guild) : null;
+        return (notSingleSelfAssignableRanksByGuild != null && !notSingleSelfAssignableRanksByGuild.isEmpty()) ? notSingleSelfAssignableRanksByGuild.get(guild) : new HashSet<>();
     }
 
     private HashMap<Guild, Set<Role>> transformRanksIdsToObjects(GuildController guildController, HashMap<String, Set<String>> ranksByIdsByGuild) {
@@ -891,7 +892,21 @@ public class CommandesServiceImpl implements ICommandesService {
                         "Le rôle **" + rankToAdd + "** n'est pas assignable à soi-même.\r\nMerci de contacter un admin ou un modérateur pour vous l'ajouter.");
             }
         } else {
-            messagesService.sendBotMessage(channel, "Le rôle **" + rankToAdd + "** n'existe pas.");
+            Pattern pattern = Pattern.compile("^Chevalier.*[^0]+$", Pattern.CASE_INSENSITIVE);
+            if (pattern.matcher(rankToAdd).find()) {
+                String kl = rankToAdd.split(SEPARATOR_ACTION_ARGS)[1];
+                String chevalier = rankToAdd.split(SEPARATOR_ACTION_ARGS)[0];
+                if (kl != null && Integer.valueOf(kl) > 10) {
+                    rankToAdd = chevalier + " " + kl.substring(0, kl.length() - 1) + "0";
+                } else {
+                    rankToAdd = chevalier + " 1";
+                }
+                messagesService.sendBotMessage(channel, "Les rôles 'Chevalier' vont de 10 en 10 !\r\nComme je suis sympa, j'ai corrigé votre commande par `?rank " + rankToAdd
+                        + "`.\r\nLa prochaine fois, pensez à arrondir à la dizaine inférieure ;) ");
+                addOrRemoveRankToUser(author, channel, guildController, rankToAdd, member, userRoles, userAssignableRoles);
+            } else {
+                messagesService.sendBotMessage(channel, "Le rôle **" + rankToAdd + "** n'existe pas.");
+            }
         }
     }
 
