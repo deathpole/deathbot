@@ -14,16 +14,17 @@ import java.util.Set;
 import org.h2.tools.RunScript;
 import org.h2.util.IOUtils;
 
-import net.deathpole.deathbot.Dao.IAssignableRanksDao;
+import net.deathpole.deathbot.CustomReaction;
+import net.deathpole.deathbot.Dao.IGlobalDao;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
 
 /**
  * Created by nicolas on 24/10/17.
  */
-public class AssignableRanksDao implements IAssignableRanksDao {
+public class GlobalDao implements IGlobalDao {
 
-    public AssignableRanksDao() {
+    public GlobalDao() {
         try (Connection conn = getConnectionToDB()){
             InputStream scriptLocation = Thread.currentThread().getContextClassLoader().getResourceAsStream("script/initDB.sql");
             RunScript.execute(conn, IOUtils.getBufferedReader(scriptLocation));
@@ -223,5 +224,85 @@ public class AssignableRanksDao implements IAssignableRanksDao {
         }
 
         return welcomeMessage;
+    }
+
+    @Override
+    public HashMap<String, HashMap<String, CustomReaction>> initMapCustomReactions() {
+        Connection conn = getConnectionToDB();
+
+        HashMap<String, HashMap<String, CustomReaction>> resultMap = new HashMap<>();
+
+        try {
+            Statement statement = conn.createStatement();
+            String sql = "SELECT * FROM PUBLIC.CUSTOM_REACTION ORDER BY GUILD_NAME ";
+            ResultSet rs = statement.executeQuery(sql);
+
+            while (rs.next()) {
+                String guildName = rs.getString("GUILD_NAME");
+                String command = rs.getString("COMMAND");
+                String reaction = rs.getString("REACTION");
+                int noOfParam = rs.getInt("NUMBER_OF_PARAMS");
+
+                HashMap<String, CustomReaction> customReactionForGuild = resultMap.get(guildName);
+                if (customReactionForGuild == null) {
+                    customReactionForGuild = new HashMap<>();
+                }
+
+                CustomReaction cr = new CustomReaction();
+                cr.setReaction(reaction);
+                cr.setNumberOfParams(noOfParam);
+
+                customReactionForGuild.put(command, cr);
+                resultMap.put(guildName, customReactionForGuild);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return resultMap;
+    }
+
+    @Override
+    public void saveCustomReaction(String keyWord, CustomReaction customReaction, Guild guild) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlUpdate = "UPDATE PUBLIC.CUSTOM_REACTION " + "SET REACTION = ? ," + "NUMBER_OF_PARAMS = ?" + "WHERE GUILD_NAME = ? " + "AND COMMAND = ?";
+            PreparedStatement statement = conn.prepareStatement(sqlUpdate);
+            statement.setString(1, customReaction.getReaction());
+            statement.setInt(2, customReaction.getNumberOfParams());
+            statement.setString(3, guild.getName());
+            statement.setString(4, keyWord);
+
+            int count = statement.executeUpdate();
+
+            if (count == 0) {
+                String sqlInsert = "INSERT INTO PUBLIC.CUSTOM_REACTION(REACTION, NUMBER_OF_PARAMS, GUILD_NAME, COMMAND) VALUES(?, ?, ?, ?)";
+                statement = conn.prepareStatement(sqlInsert);
+
+                statement.setString(1, customReaction.getReaction());
+                statement.setInt(2, customReaction.getNumberOfParams());
+                statement.setString(3, guild.getName());
+                statement.setString(4, keyWord);
+
+                statement.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

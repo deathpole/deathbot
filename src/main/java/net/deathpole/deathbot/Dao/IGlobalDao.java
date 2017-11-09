@@ -4,13 +4,14 @@ import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Set;
 
+import net.deathpole.deathbot.CustomReaction;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
 
 /**
  * Created by nicolas on 24/10/17.
  */
-public interface IAssignableRanksDao {
+public interface IGlobalDao {
 
     Connection getConnectionToDB();
 
@@ -25,4 +26,8 @@ public interface IAssignableRanksDao {
     boolean getActivationState(Guild guild);
 
     String getWelcomeMessage(Guild guild);
+
+    HashMap<String, HashMap<String, CustomReaction>> initMapCustomReactions();
+
+    void saveCustomReaction(String keyWord, CustomReaction customReaction, Guild guild);
 }

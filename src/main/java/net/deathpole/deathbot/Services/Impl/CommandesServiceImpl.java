@@ -11,7 +11,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -20,8 +19,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 import net.deathpole.deathbot.CustomReaction;
-import net.deathpole.deathbot.Dao.IAssignableRanksDao;
-import net.deathpole.deathbot.Dao.Impl.AssignableRanksDao;
+import net.deathpole.deathbot.Dao.IGlobalDao;
+import net.deathpole.deathbot.Dao.Impl.GlobalDao;
 import net.deathpole.deathbot.Enums.EnumAction;
 import net.deathpole.deathbot.Enums.EnumCadavreExquisParams;
 import net.deathpole.deathbot.Enums.EnumDynoAction;
@@ -54,14 +53,17 @@ public class CommandesServiceImpl implements ICommandesService {
     private HashMap<Guild, Set<Role>> selfAssignableRanksByGuild = new HashMap<>();
     private HashMap<Guild, Set<Role>> notSingleSelfAssignableRanksByGuild = new HashMap<>();
 
-    private HashMap<String, Set<String>> selfAssignableRanksByIdsByGuild = initAssignableRanksbyGuild();
-    private HashMap<String, Set<String>> notSingleSelfAssignableRanksByIdsByGuild = initNotSingleAssignableRanksbyGuild();
-
+    // Maps used after
     private HashMap<Guild, String> prefixCmdByGuild = new HashMap<>();
+    private HashMap<String, Set<String>> notSingleSelfAssignableRanksByIdsByGuild = initNotSingleAssignableRanksbyGuild();
+    private HashMap<Guild, HashMap<String, CustomReaction>> mapCustomReactions = new HashMap<>();
+    private IGlobalDao globalDao;
     private HashMap<Guild, Boolean> singleRoleByGuild = new HashMap<>();
     private HashMap<Guild, Boolean> botActivationByGuild = new HashMap<>();
     private HashMap<Guild, String> welcomeMessageByGuild = new HashMap<>();
-    private Map<String, CustomReaction> mapCustomReactions;
+    // Maps used on DB load
+    private HashMap<String, Set<String>> selfAssignableRanksByIdsByGuild = initAssignableRanksbyGuild();
+    private HashMap<String, HashMap<String, CustomReaction>> mapCustomReactionsByGuild = initMapCustomReactions();
 
     private List<Member> listCadavreSujet;
     private List<String> listCadavreAction;
@@ -70,21 +72,26 @@ public class CommandesServiceImpl implements ICommandesService {
 
 
     private IMessagesService messagesService = new MessagesServiceImpl();
-    private IAssignableRanksDao assignableRanksDao;
-
 
     private HashMap<String, Set<String>> initAssignableRanksbyGuild() {
-        if(assignableRanksDao == null) {
-            assignableRanksDao = new AssignableRanksDao();
+        if (globalDao == null) {
+            globalDao = new GlobalDao();
         }
-        return assignableRanksDao.initAssignableRanksbyGuild(true);
+        return globalDao.initAssignableRanksbyGuild(true);
     }
 
     private HashMap<String,Set<String>> initNotSingleAssignableRanksbyGuild() {
-        if(assignableRanksDao == null) {
-            assignableRanksDao = new AssignableRanksDao();
+        if (globalDao == null) {
+            globalDao = new GlobalDao();
         }
-        return assignableRanksDao.initAssignableRanksbyGuild(false);
+        return globalDao.initAssignableRanksbyGuild(false);
+    }
+
+    private HashMap<String, HashMap<String, CustomReaction>> initMapCustomReactions() {
+        if (globalDao == null) {
+            globalDao = new GlobalDao();
+        }
+        return globalDao.initMapCustomReactions();
     }
 
     private static List<String> initDynoActions() {
@@ -137,8 +144,13 @@ public class CommandesServiceImpl implements ICommandesService {
                                     assert action != null;
                                     if (isBotActivated(guildController.getGuild()) || EnumAction.ACTIVATE.name().equals(action.toUpperCase())) {
                                         if (!dynoActions.contains(action.toUpperCase())) {
-                                            if (mapCustomReactions != null && mapCustomReactions.keySet().contains(action)) {
-                                                executeCustomReaction(guildController, channel, args[0], action);
+                                            HashMap<String, CustomReaction> customReactionsForGuild = getCustomReactionsForGuild(guildController);
+                                            if (customReactionsForGuild != null && customReactionsForGuild.keySet().contains(action)) {
+                                                String param = null;
+                                                if (args.length >= 1) {
+                                                    param = args[0];
+                                                }
+                                                executeCustomReaction(guildController, channel, param, action);
                                             } else {
                                                 executeEmbeddedAction(guildController, adminRole, author, member, channel, commandeComplete, args, action, msg);
                                             }
@@ -168,7 +180,7 @@ public class CommandesServiceImpl implements ICommandesService {
         Guild guild = e.getGuild();
         String welcomeMessage = welcomeMessageByGuild.get(guild);
         if (welcomeMessage == null) {
-            welcomeMessage = assignableRanksDao.getWelcomeMessage(guild);
+            welcomeMessage = globalDao.getWelcomeMessage(guild);
         }
         if (welcomeMessage != null && !welcomeMessage.isEmpty()) {
             String[] toSendList = welcomeMessage.split("(?<=\\G.{2000})");
@@ -185,7 +197,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private boolean isBotActivated(Guild guild) {
-        boolean state = assignableRanksDao.getActivationState(guild);
+        boolean state = globalDao.getActivationState(guild);
         botActivationByGuild.putIfAbsent(guild, state);
 
         return botActivationByGuild.get(guild);
@@ -254,7 +266,7 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case ACR:
             if (isAdmin) {
-                manageAddCustomReaction(channel, args[0]);
+                manageAddCustomReaction(guild, channel, args[0]);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
@@ -318,14 +330,14 @@ public class CommandesServiceImpl implements ICommandesService {
     private void setWelcomeMessageForGuild(String originalMessage, Guild guild) {
         String text = originalMessage.split(SEPARATOR_ACTION_ARGS, 2)[1];
         welcomeMessageByGuild.put(guild, text);
-        assignableRanksDao.saveWelcomeMessage(guild, text);
+        globalDao.saveWelcomeMessage(guild, text);
     }
 
-    private void manageAddCustomReaction(MessageChannel channel, String arg) {
+    private void manageAddCustomReaction(Guild guild, MessageChannel channel, String arg) {
         String[] fullParams = arg.split(SEPARATOR_ACTION_ARGS, 2);
         String keyWord = fullParams[0];
         String reaction = fullParams[1];
-        addCustomReaction(channel, keyWord, reaction);
+        addCustomReaction(guild, channel, keyWord, reaction);
     }
 
     private void manageCadavreExquis(GuildController guildController, MessageChannel channel, String arg) {
@@ -372,7 +384,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void activateOrDeactivateBotForGuild(Guild guild, boolean activate) {
         botActivationByGuild.put(guild, activate);
-        assignableRanksDao.saveActivationState(guild, activate);
+        globalDao.saveActivationState(guild, activate);
     }
 
     private void searchUsersWithRole(GuildController guildController, MessageChannel channel, String roleToSearch) {
@@ -487,8 +499,9 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void executeCustomReaction(GuildController guildController, MessageChannel channel, String arg, String action) {
-        CustomReaction customReaction = mapCustomReactions.get(action);
-        String[] params = arg.trim().split(SEPARATOR_ACTION_ARGS + "+");
+        Guild guild = guildController.getGuild();
+        CustomReaction customReaction = mapCustomReactions.get(guild).get(action);
+        String[] params = (arg == null || arg.isEmpty()) ? new String[0] : arg.trim().split(SEPARATOR_ACTION_ARGS + "+");
 
         if (params.length != customReaction.getNumberOfParams()) {
             messagesService.sendBotMessage(channel, "Le nombre d'argument n'est pas le bon ! Try again !");
@@ -512,7 +525,7 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void addCustomReaction(MessageChannel channel, String keyWord, String reaction) {
+    private void addCustomReaction(Guild guild, MessageChannel channel, String keyWord, String reaction) {
 
         if (mapCustomReactions == null) {
             mapCustomReactions = new HashMap<>();
@@ -522,7 +535,14 @@ public class CommandesServiceImpl implements ICommandesService {
         customReaction.setReaction(reaction);
         customReaction.setNumberOfParams(reaction.length() - reaction.replace("$", "").length());
 
-        mapCustomReactions.put(keyWord, customReaction);
+        HashMap<String, CustomReaction> mapCustomReactionsForGuild = mapCustomReactions.get(guild);
+        if (mapCustomReactionsForGuild == null) {
+            mapCustomReactionsForGuild = new HashMap<>();
+        }
+        mapCustomReactionsForGuild.put(keyWord, customReaction);
+        mapCustomReactions.put(guild, mapCustomReactionsForGuild);
+
+        globalDao.saveCustomReaction(keyWord, customReaction, guild);
 
         messagesService.sendBotMessage(channel, "Nouvelle réponse ajoutée pour la commande : " + keyWord);
     }
@@ -675,6 +695,29 @@ public class CommandesServiceImpl implements ICommandesService {
         return (notSingleSelfAssignableRanksByGuild != null && !notSingleSelfAssignableRanksByGuild.isEmpty()) ? notSingleSelfAssignableRanksByGuild.get(guild) : new HashSet<>();
     }
 
+    private HashMap<String, CustomReaction> getCustomReactionsForGuild(GuildController guildController) {
+        Guild guild = guildController.getGuild();
+
+        if (mapCustomReactions.isEmpty() && !mapCustomReactionsByGuild.isEmpty()) {
+            mapCustomReactions = transformCustomReactionsGuildNamesToGuild(guildController, mapCustomReactionsByGuild);
+        }
+        return (mapCustomReactions != null && !mapCustomReactions.isEmpty()) ? mapCustomReactions.get(guild) : new HashMap<>();
+    }
+
+    private HashMap<Guild, HashMap<String, CustomReaction>> transformCustomReactionsGuildNamesToGuild(GuildController guildController,
+            HashMap<String, HashMap<String, CustomReaction>> mapCustomReactionsByGuild) {
+        HashMap<Guild, HashMap<String, CustomReaction>> resultMap = new HashMap<>();
+
+        for (String guildName : mapCustomReactionsByGuild.keySet()) {
+            Guild guild = guildController.getJDA().getGuildsByName(guildName, true).get(0);
+
+            HashMap<String, CustomReaction> customReactionMap = mapCustomReactionsByGuild.get(guildName);
+
+            resultMap.put(guild, customReactionMap);
+        }
+        return resultMap;
+    }
+
     private HashMap<Guild, Set<Role>> transformRanksIdsToObjects(GuildController guildController, HashMap<String, Set<String>> ranksByIdsByGuild) {
 
         HashMap<Guild, Set<Role>> resultMap = new HashMap<>();
@@ -740,7 +783,7 @@ public class CommandesServiceImpl implements ICommandesService {
             notSingleSelfAssignableRanksByGuild = new HashMap<>();
         }
         notSingleSelfAssignableRanksByGuild.put(guild, selfAssignableRanks);
-        assignableRanksDao.saveAssignableRanksForGuild(guild, selfAssignableRanks, false);
+        globalDao.saveAssignableRanksForGuild(guild, selfAssignableRanks, false);
     }
 
     private StringBuilder buildNewlyAssignableRolesListMessage(User author, String commandeComplete, Set<Role> listRolesToAdd) {
@@ -760,7 +803,7 @@ public class CommandesServiceImpl implements ICommandesService {
             selfAssignableRanksByGuild = new HashMap<>();
         }
         selfAssignableRanksByGuild.put(guild, selfAssignableRanks);
-        assignableRanksDao.saveAssignableRanksForGuild(guild, selfAssignableRanks, true);
+        globalDao.saveAssignableRanksForGuild(guild, selfAssignableRanks, true);
 
     }
 
