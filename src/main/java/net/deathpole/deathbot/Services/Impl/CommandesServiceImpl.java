@@ -110,7 +110,7 @@ public class CommandesServiceImpl implements ICommandesService {
         GuildController guildController = new GuildController(e.getGuild());
         ChannelType channelType = e.getChannelType();
         if (!ChannelType.PRIVATE.equals(channelType)) {
-            Role adminRole = guildController.getGuild().getRolesByName("Admin", false).get(0);
+            Role adminRole = guildController.getGuild().getRolesByName("Admin", true).get(0);
             User author = e.getAuthor();
 
             String prefixCmd = getPrefixCmdForGuild(guildController.getGuild());
@@ -150,7 +150,7 @@ public class CommandesServiceImpl implements ICommandesService {
                                                 if (args.length >= 1) {
                                                     param = args[0];
                                                 }
-                                                executeCustomReaction(guildController, channel, param, action);
+                                                executeCustomReaction(member, e.getMessage(), guildController, channel, param, action);
                                             } else {
                                                 executeEmbeddedAction(guildController, adminRole, author, member, channel, commandeComplete, args, action, msg);
                                             }
@@ -498,7 +498,7 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void executeCustomReaction(GuildController guildController, MessageChannel channel, String arg, String action) {
+    private void executeCustomReaction(Member member, Message message, GuildController guildController, MessageChannel channel, String arg, String action) {
         Guild guild = guildController.getGuild();
         CustomReaction customReaction = mapCustomReactions.get(guild).get(action);
         String[] params = (arg == null || arg.isEmpty()) ? new String[0] : arg.trim().split(SEPARATOR_ACTION_ARGS + "+");
@@ -506,23 +506,45 @@ public class CommandesServiceImpl implements ICommandesService {
         if (params.length != customReaction.getNumberOfParams()) {
             messagesService.sendBotMessage(channel, "Le nombre d'argument n'est pas le bon ! Try again !");
         } else {
-            String reactionReplaced = customReaction.getReaction();
-            for (String param : params) {
-
-                if (param.startsWith(PREFIX_TAG)) {
-                    String effectiveName = param.replace(PREFIX_TAG, "");
-                    List<Member> membersFound = guildController.getGuild().getMembersByEffectiveName(effectiveName, false);
-                    if (membersFound != null && !membersFound.isEmpty()) {
-                        Member memberFound = membersFound.get(0);
-                        param = memberFound.getAsMention();
+            if ("princesse".equals(action)) {
+                List<Role> rolesPrincesse = guild.getRolesByName("princesse", true);
+                if (rolesPrincesse.isEmpty()) {
+                    messagesService.sendBotMessage(channel, "Le rôle de princesse n'existe pas ici, dommage =(");
+                    return;
+                } else {
+                    Role rolePrincesse = rolesPrincesse.get(0);
+                    if (guild.getMembersWithRoles(rolesPrincesse).contains(member)) {
+                        sendFormattedCustomReactionAndDeleteCommand(message, guildController, channel, customReaction, params);
+                        return;
+                    } else {
+                        messagesService.sendBotMessage(channel, "Non, toi t'es pas une princesse. Au boulot ! Va farmer tes médailles !");
+                        return;
                     }
                 }
+            }
+            sendFormattedCustomReactionAndDeleteCommand(message, guildController, channel, customReaction, params);
+        }
+    }
 
-                reactionReplaced = reactionReplaced.replaceFirst("\\$[0-9]+", param);
+    private void sendFormattedCustomReactionAndDeleteCommand(Message message, GuildController guildController, MessageChannel channel, CustomReaction customReaction,
+            String[] params) {
+        String reactionReplaced = customReaction.getReaction();
+        for (String param : params) {
+
+            if (param.startsWith(PREFIX_TAG)) {
+                String effectiveName = param.replace(PREFIX_TAG, "");
+                List<Member> membersFound = guildController.getGuild().getMembersByEffectiveName(effectiveName, false);
+                if (membersFound != null && !membersFound.isEmpty()) {
+                    Member memberFound = membersFound.get(0);
+                    param = memberFound.getAsMention();
+                }
             }
 
-            messagesService.sendBotMessage(channel, reactionReplaced);
+            reactionReplaced = reactionReplaced.replaceFirst("\\$[0-9]+", param);
         }
+
+        channel.deleteMessageById(message.getId()).complete();
+        messagesService.sendBotMessage(channel, reactionReplaced);
     }
 
     private void addCustomReaction(Guild guild, MessageChannel channel, String keyWord, String reaction) {
@@ -723,16 +745,19 @@ public class CommandesServiceImpl implements ICommandesService {
         HashMap<Guild, Set<Role>> resultMap = new HashMap<>();
 
         for (String guildName : ranksByIdsByGuild.keySet()) {
-            Guild guild = guildController.getJDA().getGuildsByName(guildName, true).get(0);
+            List<Guild> guilds = guildController.getJDA().getGuildsByName(guildName, true);
+            if (!guilds.isEmpty()) {
+                Guild guild = guildController.getJDA().getGuildsByName(guildName, true).get(0);
 
-            Set<String> roleNames = ranksByIdsByGuild.get(guildName);
-            Set<Role> roles = new HashSet<>();
-            for (String roleName : roleNames) {
-                Role role = guildController.getGuild().getRolesByName(roleName, true).get(0);
-                roles.add(role);
+                Set<String> roleNames = ranksByIdsByGuild.get(guildName);
+                Set<Role> roles = new HashSet<>();
+                for (String roleName : roleNames) {
+                    Role role = guildController.getGuild().getRolesByName(roleName, true).get(0);
+                    roles.add(role);
+                }
+
+                resultMap.put(guild, roles);
             }
-
-            resultMap.put(guild, roles);
         }
 
         return resultMap;
@@ -860,7 +885,7 @@ public class CommandesServiceImpl implements ICommandesService {
         for (String roleToAddString : rolesToAddTable) {
             Role roleToAdd;
             try {
-                roleToAdd = guildController.getGuild().getRolesByName(roleToAddString, false).get(0);
+                roleToAdd = guildController.getGuild().getRolesByName(roleToAddString, true).get(0);
                 listRole.add(roleToAdd);
             } catch (IndexOutOfBoundsException ex) {
 
