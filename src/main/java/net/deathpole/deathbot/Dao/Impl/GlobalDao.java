@@ -88,7 +88,7 @@ public class GlobalDao implements IGlobalDao {
 
         try {
             Statement statement = conn.createStatement();
-            String sql = "SELECT * FROM PUBLIC.ASSIGNABLE_RANKS WHERE SINGLE = " + single + " ORDER BY GUILD_NAME ";
+            String sql = "SELECT * FROM ASSIGNABLE_RANKS WHERE SINGLE = " + single + " ORDER BY GUILD_NAME ";
             ResultSet rs = statement.executeQuery(sql);
 
             while (rs.next()) {
@@ -123,7 +123,7 @@ public class GlobalDao implements IGlobalDao {
 
         try {
             Statement statement = conn.createStatement();
-            String sqlDelete = "DELETE FROM PUBLIC.ASSIGNABLE_RANKS WHERE GUILD_NAME = '" + guild.getName() + "' AND ASSIGNABLE_RANKS.SINGLE = " + single;
+            String sqlDelete = "DELETE FROM ASSIGNABLE_RANKS WHERE GUILD_NAME = '" + guild.getName() + "' AND ASSIGNABLE_RANKS.SINGLE = " + single;
             int deletedCount = statement.executeUpdate(sqlDelete);
             System.out.println("Nombre de ranks asisgnables supprimés : " + deletedCount);
 
@@ -131,7 +131,7 @@ public class GlobalDao implements IGlobalDao {
 
             Statement stmnt = conn.createStatement();
             for (Role role : selfAssignableRanks) {
-                String sqlInsert = "INSERT INTO PUBLIC.ASSIGNABLE_RANKS(GUILD_NAME, ROLE_NAME, SINGLE) VALUES ('" + guild.getName() + "', '" + role.getName() + "', " + single + ")";
+                String sqlInsert = "INSERT INTO ASSIGNABLE_RANKS(GUILD_NAME, ROLE_NAME, SINGLE) VALUES ('" + guild.getName() + "', '" + role.getName() + "', " + single + ")";
                 stmnt.addBatch(sqlInsert);
             }
 
@@ -154,13 +154,13 @@ public class GlobalDao implements IGlobalDao {
         message = message == null || message.isEmpty() ? null : message;
 
         try {
-            String sqlUpdate = "UPDATE PUBLIC.WELCOME_MESSAGE SET WELCOME_MESSAGE = ? WHERE GUILD_NAME = '" + guild.getName() + "'";
+            String sqlUpdate = "UPDATE WELCOME_MESSAGE SET WELCOME_MESSAGE = ? WHERE GUILD_NAME = '" + guild.getName() + "'";
             PreparedStatement statement = conn.prepareStatement(sqlUpdate);
             statement.setString(1, message);
             int count = statement.executeUpdate();
 
             if (count == 0) {
-                String sqlInsert = "INSERT INTO PUBLIC.WELCOME_MESSAGE(GUILD_NAME, WELCOME_MESSAGE) VALUES('" + guild.getName() + "', ?)";
+                String sqlInsert = "INSERT INTO WELCOME_MESSAGE(GUILD_NAME, WELCOME_MESSAGE) VALUES('" + guild.getName() + "', ?)";
                 statement = conn.prepareStatement(sqlInsert);
                 statement.setString(1, message);
                 statement.executeUpdate(sqlInsert);
@@ -183,13 +183,13 @@ public class GlobalDao implements IGlobalDao {
 
         try {
             Statement stmnt = conn.createStatement();
-            String sqlUpdate = "UPDATE PUBLIC.ACTIVATION_STATE SET ACTIVATED = " + activated + " WHERE GUILD_NAME = '" + guild.getName() + "'";
+            String sqlUpdate = "UPDATE ACTIVATION_STATE SET ACTIVATED = " + activated + " WHERE GUILD_NAME = '" + guild.getName() + "'";
 
             int count = stmnt.executeUpdate(sqlUpdate);
 
             if (count == 0) {
                 Statement statement = conn.createStatement();
-                String sqlInsert = "INSERT INTO PUBLIC.ACTIVATION_STATE(GUILD_NAME, ACTIVATED) VALUES('" + guild.getName() + "', " + activated + ")";
+                String sqlInsert = "INSERT INTO ACTIVATION_STATE(GUILD_NAME, ACTIVATED) VALUES('" + guild.getName() + "', " + activated + ")";
 
                 statement.executeUpdate(sqlInsert);
             }
@@ -212,7 +212,7 @@ public class GlobalDao implements IGlobalDao {
         boolean activated = false;
         try {
             Statement statement = conn.createStatement();
-            String sql = "SELECT * FROM PUBLIC.ACTIVATION_STATE WHERE GUILD_NAME = '" + guild.getName() + "'";
+            String sql = "SELECT * FROM ACTIVATION_STATE WHERE GUILD_NAME = '" + guild.getName() + "'";
             ResultSet rs = statement.executeQuery(sql);
 
             while (rs.next()) {
@@ -239,7 +239,7 @@ public class GlobalDao implements IGlobalDao {
         String welcomeMessage = null;
         try {
             Statement statement = conn.createStatement();
-            String sql = "SELECT * FROM PUBLIC.WELCOME_MESSAGE WHERE GUILD_NAME = '" + guild.getName() + "'";
+            String sql = "SELECT * FROM WELCOME_MESSAGE WHERE GUILD_NAME = '" + guild.getName() + "'";
             ResultSet rs = statement.executeQuery(sql);
 
             while (rs.next()) {
@@ -267,7 +267,7 @@ public class GlobalDao implements IGlobalDao {
 
         try {
             Statement statement = conn.createStatement();
-            String sql = "SELECT * FROM PUBLIC.CUSTOM_REACTION ORDER BY GUILD_NAME ";
+            String sql = "SELECT * FROM CUSTOM_REACTION ORDER BY GUILD_NAME ";
             ResultSet rs = statement.executeQuery(sql);
 
             while (rs.next()) {
@@ -307,7 +307,7 @@ public class GlobalDao implements IGlobalDao {
         Connection conn = getConnectionToDB();
 
         try {
-            String sqlUpdate = "UPDATE PUBLIC.CUSTOM_REACTION " + "SET REACTION = ? ," + "NUMBER_OF_PARAMS = ?" + "WHERE GUILD_NAME = ? " + "AND COMMAND = ?";
+            String sqlUpdate = "UPDATE CUSTOM_REACTION " + "SET REACTION = ? ," + "NUMBER_OF_PARAMS = ?" + "WHERE GUILD_NAME = ? " + "AND COMMAND = ?";
             PreparedStatement statement = conn.prepareStatement(sqlUpdate);
             statement.setString(1, customReaction.getReaction());
             statement.setInt(2, customReaction.getNumberOfParams());
@@ -317,7 +317,7 @@ public class GlobalDao implements IGlobalDao {
             int count = statement.executeUpdate();
 
             if (count == 0) {
-                String sqlInsert = "INSERT INTO PUBLIC.CUSTOM_REACTION(REACTION, NUMBER_OF_PARAMS, GUILD_NAME, COMMAND) VALUES(?, ?, ?, ?)";
+                String sqlInsert = "INSERT INTO CUSTOM_REACTION(REACTION, NUMBER_OF_PARAMS, GUILD_NAME, COMMAND) VALUES(?, ?, ?, ?)";
                 statement = conn.prepareStatement(sqlInsert);
 
                 statement.setString(1, customReaction.getReaction());
