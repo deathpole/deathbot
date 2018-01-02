@@ -1,6 +1,10 @@
 package net.deathpole.deathbot.Dao.Impl;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -9,10 +13,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Scanner;
 import java.util.Set;
-
-import org.h2.tools.RunScript;
-import org.h2.util.IOUtils;
+import java.util.stream.Collectors;
 
 import net.deathpole.deathbot.CustomReaction;
 import net.deathpole.deathbot.Dao.IGlobalDao;
@@ -26,25 +29,52 @@ public class GlobalDao implements IGlobalDao {
 
     public GlobalDao() {
         try (Connection conn = getConnectionToDB()){
-            InputStream scriptLocation = Thread.currentThread().getContextClassLoader().getResourceAsStream("script/initDB.sql");
-            RunScript.execute(conn, IOUtils.getBufferedReader(scriptLocation));
+            Statement st = conn.createStatement();
+
+            InputStream script = Thread.currentThread().getContextClassLoader().getResourceAsStream("script/initDB.sql");
+
+            Scanner s = new Scanner(script).useDelimiter("\\A");
+            String scriptContent = s.hasNext() ? s.next() : "";
+
+            String[] inst = scriptContent.split(";");
+
+            for (int i = 0; i < inst.length; i++) {
+                if (!inst[i].trim().equals("")) {
+                    st.executeUpdate(inst[i]);
+                    System.out.println("Init de bdd : \r\n");
+                    System.out.println(">>>> " + inst[i]);
+                }
+            }
+            conn.commit();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
 
+    private static String read(InputStream input) throws IOException {
+        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
+            return buffer.lines().collect(Collectors.joining("\n"));
+        }
+    }
+
+    private static Connection getConnection() throws URISyntaxException, SQLException {
+        String dbUrl = System.getenv("JDBC_DATABASE_URL");
+        return DriverManager.getConnection(dbUrl);
     }
 
     @Override
     public Connection getConnectionToDB() {
         Connection conn =  null;
         try {
-            Class.forName("org.h2.Driver");
-            conn = DriverManager.getConnection("jdbc:h2:~/bdd_deathbot");
-        } catch (SQLException | ClassNotFoundException e) {
+            conn = getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
             e.printStackTrace();
         }
         return conn;
     }
+
 
     @Override
     public HashMap<String, Set<String>> initAssignableRanksbyGuild(boolean single) {
