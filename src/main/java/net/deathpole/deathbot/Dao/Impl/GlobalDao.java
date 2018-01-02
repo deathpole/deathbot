@@ -66,10 +66,13 @@ public class GlobalDao implements IGlobalDao {
     public Connection getConnectionToDB() {
         Connection conn =  null;
         try {
+            Class.forName("org.postgresql.Driver");
             conn = getConnection();
         } catch (SQLException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         return conn;
