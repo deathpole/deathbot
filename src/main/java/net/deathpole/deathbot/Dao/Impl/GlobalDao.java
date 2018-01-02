@@ -59,7 +59,7 @@ public class GlobalDao implements IGlobalDao {
 
     private static Connection getConnection() throws URISyntaxException, SQLException {
         String dbUrl = System.getenv("JDBC_DATABASE_URL");
-        return DriverManager.getConnection(dbUrl);
+        return DriverManager.getConnection(dbUrl.replace("postgresql", "postgres"));
     }
 
     @Override
