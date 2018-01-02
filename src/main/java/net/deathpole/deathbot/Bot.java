@@ -1,5 +1,7 @@
 package net.deathpole.deathbot;
 
+import javax.security.auth.login.LoginException;
+
 import net.deathpole.deathbot.Services.ICommandesService;
 import net.deathpole.deathbot.Services.Impl.CommandesServiceImpl;
 import net.dv8tion.jda.core.AccountType;
@@ -11,15 +13,14 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.exceptions.RateLimitedException;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 
-import javax.security.auth.login.LoginException;
-
 public class Bot extends ListenerAdapter {
 
     private ICommandesService commandesService = new CommandesServiceImpl();
 
     public static void main(String[] args) {
         try {
-            JDA jda = new JDABuilder(AccountType.BOT).setToken(args[0]).setGame(Game.of("Made for EF FR")).addEventListener(new Bot()).buildBlocking();
+            String token = System.getenv().get("TOKEN");
+            JDA jda = new JDABuilder(AccountType.BOT).setToken(token).setGame(Game.of("Made for EF FR")).addEventListener(new Bot()).buildBlocking();
 
             jda.setAutoReconnect(true);
         } catch (LoginException | IllegalArgumentException | InterruptedException | RateLimitedException e) {
