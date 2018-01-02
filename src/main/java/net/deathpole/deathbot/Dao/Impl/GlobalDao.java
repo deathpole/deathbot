@@ -38,14 +38,13 @@ public class GlobalDao implements IGlobalDao {
 
             String[] inst = scriptContent.split(";");
 
+            System.out.println("Init de bdd : \r\n");
             for (int i = 0; i < inst.length; i++) {
                 if (!inst[i].trim().equals("")) {
                     st.executeUpdate(inst[i]);
-                    System.out.println("Init de bdd : \r\n");
                     System.out.println(">>>> " + inst[i]);
                 }
             }
-            conn.commit();
         } catch (SQLException e) {
             e.printStackTrace();
         }
