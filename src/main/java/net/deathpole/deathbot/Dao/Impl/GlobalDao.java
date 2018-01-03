@@ -124,9 +124,7 @@ public class GlobalDao implements IGlobalDao {
             Statement statement = conn.createStatement();
             String sqlDelete = "DELETE FROM ASSIGNABLE_RANKS WHERE GUILD_NAME = '" + guild.getName() + "' AND ASSIGNABLE_RANKS.SINGLE = " + single;
             int deletedCount = statement.executeUpdate(sqlDelete);
-            System.out.println("Nombre de ranks asisgnables supprimés : " + deletedCount);
-
-            conn.commit();
+            System.out.println("Nombre de ranks assignables supprimés : " + deletedCount);
 
             Statement stmnt = conn.createStatement();
             for (Role role : selfAssignableRanks) {
