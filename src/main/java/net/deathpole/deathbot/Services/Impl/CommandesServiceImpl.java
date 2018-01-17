@@ -34,6 +34,7 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.managers.GuildController;
@@ -57,6 +58,7 @@ public class CommandesServiceImpl implements ICommandesService {
     private HashMap<Guild, String> prefixCmdByGuild = new HashMap<>();
     private HashMap<String, Set<String>> notSingleSelfAssignableRanksByIdsByGuild = initNotSingleAssignableRanksbyGuild();
     private HashMap<Guild, HashMap<String, CustomReaction>> mapCustomReactions = new HashMap<>();
+    private HashMap<Guild, HashMap<String, String>> mapVoiceRole = new HashMap<>();
     private IGlobalDao globalDao;
     private HashMap<Guild, Boolean> singleRoleByGuild = new HashMap<>();
     private HashMap<Guild, Boolean> botActivationByGuild = new HashMap<>();
@@ -64,6 +66,7 @@ public class CommandesServiceImpl implements ICommandesService {
     // Maps used on DB load
     private HashMap<String, Set<String>> selfAssignableRanksByIdsByGuild = initAssignableRanksbyGuild();
     private HashMap<String, HashMap<String, CustomReaction>> mapCustomReactionsByGuild = initMapCustomReactions();
+    private HashMap<String, HashMap<String, String>> mapVoiceRoleByGuild = initMapVoiceRoles();
 
     private List<Member> listCadavreSujet;
     private List<String> listCadavreAction;
@@ -92,6 +95,13 @@ public class CommandesServiceImpl implements ICommandesService {
             globalDao = new GlobalDao();
         }
         return globalDao.initMapCustomReactions();
+    }
+
+    private HashMap<String, HashMap<String, String>> initMapVoiceRoles() {
+        if (globalDao == null) {
+            globalDao = new GlobalDao();
+        }
+        return globalDao.initMapVoiceRoles();
     }
 
     private static List<String> initDynoActions() {
@@ -190,6 +200,40 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
+    @Override
+    public void userJoinedVoiceChannel(VoiceChannel channel, Member connectedMember, Guild guild) {
+        // User user = connectedMember.getUser();
+        GuildController guildController = new GuildController(guild);
+
+        HashMap<String, String> voiceRoles = getVoiceRolesForGuild(guildController);
+
+        if (voiceRoles.keySet().contains(channel.getName())) {
+            String rankToAdd = voiceRoles.get(channel.getName());
+            List<Role> potentialRolesToAdd = guildController.getGuild().getRolesByName(rankToAdd, true);
+
+            if (!potentialRolesToAdd.isEmpty()) {
+                guildController.addSingleRoleToMember(connectedMember, potentialRolesToAdd.get(0)).complete();
+            }
+        }
+    }
+
+    @Override
+    public void userLeftVoiceChannel(VoiceChannel channel, Member connectedMember, Guild guild) {
+        // User user = connectedMember.getUser();
+        GuildController guildController = new GuildController(guild);
+        // Récupérer la liste des rôles/channel
+
+        HashMap<String, String> voiceRoles = getVoiceRolesForGuild(guildController);
+
+        if (voiceRoles.keySet().contains(channel.getName())) {
+            String rankToAdd = voiceRoles.get(channel.getName());
+            List<Role> potentialRolesToDelete = guildController.getGuild().getRolesByName(rankToAdd, true);
+
+            if (!potentialRolesToDelete.isEmpty()) {
+                guildController.removeSingleRoleFromMember(connectedMember, potentialRolesToDelete.get(0)).complete();
+            }
+        }
+    }
 
     private String getPrefixCmdForGuild(Guild guild) {
         prefixCmdByGuild.putIfAbsent(guild, "[?]");
@@ -297,6 +341,13 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
+        case ADD_VOICE_ROLE:
+            if (isAdmin) {
+                addVoiceRole(guild, member, author, channel, guildController, commandeComplete, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
         case REMOVE_RANK:
             if (isAdmin) {
                 removeAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
@@ -325,6 +376,32 @@ public class CommandesServiceImpl implements ICommandesService {
             System.out.println("Commande non prise en charge");
             break;
         }
+    }
+
+    private void addVoiceRole(Guild guild, Member member, User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg) {
+        VoiceChannel actualVoiceChannel = member.getVoiceState().getChannel();
+
+        if (actualVoiceChannel == null) {
+            messagesService.sendBotMessage(channel, "Vous devez être connecté sur un salon vocal pour exécuter cette commande !");
+        } else {
+
+            String channelName = actualVoiceChannel.getName();
+            HashMap<String, String> voiceRoles = mapVoiceRole.get(guild);
+            if (voiceRoles == null) {
+                voiceRoles = new HashMap<>();
+            }
+
+            String roleName = arg;
+            if (!guildController.getGuild().getRolesByName(roleName, true).isEmpty()) {
+                voiceRoles.put(channelName, roleName);
+                mapVoiceRole.put(guild, voiceRoles);
+                globalDao.saveVoiceRole(channelName, roleName, guild);
+                messagesService.sendBotMessage(channel, "Le rôle " + roleName + " sera à présent affecté lors de la connection au salon vocal : " + channelName);
+            } else {
+                messagesService.sendBotMessage(channel, "Le rôle " + roleName + " n'existe pas !");
+            }
+        }
+
     }
 
     private void setWelcomeMessageForGuild(String originalMessage, Guild guild) {
@@ -724,6 +801,29 @@ public class CommandesServiceImpl implements ICommandesService {
             mapCustomReactions = transformCustomReactionsGuildNamesToGuild(guildController, mapCustomReactionsByGuild);
         }
         return (mapCustomReactions != null && !mapCustomReactions.isEmpty()) ? mapCustomReactions.get(guild) : new HashMap<>();
+    }
+
+    private HashMap<String, String> getVoiceRolesForGuild(GuildController guildController) {
+        Guild guild = guildController.getGuild();
+
+        if (mapVoiceRole.isEmpty() && !mapVoiceRoleByGuild.isEmpty()) {
+            mapVoiceRole = transformVoiceRolesGuildNamesToGuild(guildController, mapVoiceRoleByGuild);
+        }
+        return (mapVoiceRole != null && !mapVoiceRole.isEmpty()) ? mapVoiceRole.get(guild) : new HashMap<>();
+    }
+
+    private HashMap<Guild, HashMap<String, String>> transformVoiceRolesGuildNamesToGuild(GuildController guildController,
+            HashMap<String, HashMap<String, String>> mapVoiceRoleByGuild) {
+        HashMap<Guild, HashMap<String, String>> resultMap = new HashMap<>();
+
+        for (String guildName : mapVoiceRoleByGuild.keySet()) {
+            Guild guild = guildController.getJDA().getGuildsByName(guildName, true).get(0);
+
+            HashMap<String, String> voiceRolesMap = mapVoiceRoleByGuild.get(guildName);
+
+            resultMap.put(guild, voiceRolesMap);
+        }
+        return resultMap;
     }
 
     private HashMap<Guild, HashMap<String, CustomReaction>> transformCustomReactionsGuildNamesToGuild(GuildController guildController,

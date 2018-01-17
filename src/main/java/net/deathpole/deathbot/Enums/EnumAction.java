@@ -22,6 +22,7 @@ public enum EnumAction {
     LARO,
     ADD_NOTSINGLE_RANK,
     REMOVE_NOTSINGLE_RANK,
+    ADD_VOICE_ROLE,
     SET_WELCOME_MESSAGE;
 
     public static EnumAction fromValue(String v){

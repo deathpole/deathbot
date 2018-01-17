@@ -9,6 +9,9 @@ import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.entities.Game;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.core.events.guild.voice.GuildVoiceJoinEvent;
+import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent;
+import net.dv8tion.jda.core.events.guild.voice.GuildVoiceMoveEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.exceptions.RateLimitedException;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
@@ -36,5 +39,21 @@ public class Bot extends ListenerAdapter {
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent e) {
         commandesService.userJoinedGuild(e);
+    }
+
+    @Override
+    public void onGuildVoiceJoin(GuildVoiceJoinEvent e) {
+        commandesService.userJoinedVoiceChannel(e.getChannelJoined(), e.getMember(), e.getGuild());
+    }
+
+    @Override
+    public void onGuildVoiceLeave(GuildVoiceLeaveEvent e) {
+        commandesService.userLeftVoiceChannel(e.getChannelLeft(), e.getMember(), e.getGuild());
+    }
+
+    @Override
+    public void onGuildVoiceMove(GuildVoiceMoveEvent e) {
+        commandesService.userLeftVoiceChannel(e.getChannelLeft(), e.getMember(), e.getGuild());
+        commandesService.userJoinedVoiceChannel(e.getChannelJoined(), e.getMember(), e.getGuild());
     }
 }

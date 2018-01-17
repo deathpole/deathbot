@@ -30,4 +30,8 @@ public interface IGlobalDao {
     HashMap<String, HashMap<String, CustomReaction>> initMapCustomReactions();
 
     void saveCustomReaction(String keyWord, CustomReaction customReaction, Guild guild);
+
+    HashMap<String, HashMap<String, String>> initMapVoiceRoles();
+
+    void saveVoiceRole(String channelName, String roleName, Guild guild);
 }

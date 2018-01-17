@@ -58,6 +58,7 @@ public class GlobalDao implements IGlobalDao {
 
     private static Connection getConnection() throws URISyntaxException, SQLException {
         String dbUrl = System.getenv("JDBC_DATABASE_URL");
+        // String dbUrl = "jdbc:postgresql://localhost:5432/deathbot?user=postgres&password=postgres";
         return DriverManager.getConnection(dbUrl);
     }
 
@@ -321,6 +322,79 @@ public class GlobalDao implements IGlobalDao {
                 statement.setInt(2, customReaction.getNumberOfParams());
                 statement.setString(3, guild.getName());
                 statement.setString(4, keyWord);
+
+                statement.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public HashMap<String, HashMap<String, String>> initMapVoiceRoles() {
+        Connection conn = getConnectionToDB();
+
+        HashMap<String, HashMap<String, String>> resultMap = new HashMap<>();
+
+        try {
+            Statement statement = conn.createStatement();
+            String sql = "SELECT * FROM VOICE_ROLES ORDER BY GUILD_NAME ";
+            ResultSet rs = statement.executeQuery(sql);
+
+            while (rs.next()) {
+                String guildName = rs.getString("GUILD_NAME");
+                String channelName = rs.getString("CHANNEL_NAME");
+                String role = rs.getString("ROLE");
+
+                HashMap<String, String> voiceRolesForGuild = resultMap.get(guildName);
+                if (voiceRolesForGuild == null) {
+                    voiceRolesForGuild = new HashMap<>();
+                }
+
+                voiceRolesForGuild.put(channelName, role);
+                resultMap.put(guildName, voiceRolesForGuild);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return resultMap;
+    }
+
+    @Override
+    public void saveVoiceRole(String channelName, String roleName, Guild guild) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlUpdate = "UPDATE voice_roles " + "SET channel_name = ? ," + "role = ?" + "WHERE GUILD_NAME = ? ";
+            PreparedStatement statement = conn.prepareStatement(sqlUpdate);
+            statement.setString(1, channelName);
+            statement.setString(2, roleName);
+            statement.setString(3, guild.getName());
+
+            int count = statement.executeUpdate();
+
+            if (count == 0) {
+                String sqlInsert = "INSERT INTO voice_roles(channel_name, role, GUILD_NAME) VALUES(?, ?, ?)";
+                statement = conn.prepareStatement(sqlInsert);
+
+                statement.setString(1, channelName);
+                statement.setString(2, roleName);
+                statement.setString(3, guild.getName());
 
                 statement.executeUpdate();
             }
