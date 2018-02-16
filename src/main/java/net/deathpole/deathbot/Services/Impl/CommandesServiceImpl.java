@@ -613,7 +613,7 @@ public class CommandesServiceImpl implements ICommandesService {
         }
 
         for (EnumAction action : EnumAction.values()) {
-            if (keyWord.equals(action.name())) {
+            if (keyWord.equalsIgnoreCase(action.name())) {
                 messagesService.sendBotMessage(channel, "La commande " + keyWord + " existe déjà dans les commandes natives de Deathbot. Merci d'utiliser un autre mot-clé.");
                 return;
             }
