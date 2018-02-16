@@ -1,23 +1,5 @@
 package net.deathpole.deathbot.Services.Impl;
 
-import static net.dv8tion.jda.core.MessageBuilder.Formatting.BLOCK;
-import static net.dv8tion.jda.core.MessageBuilder.Formatting.BOLD;
-import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
-import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-
 import net.deathpole.deathbot.CustomReaction;
 import net.deathpole.deathbot.Dao.IGlobalDao;
 import net.deathpole.deathbot.Dao.Impl.GlobalDao;
@@ -27,17 +9,17 @@ import net.deathpole.deathbot.Enums.EnumDynoAction;
 import net.deathpole.deathbot.Services.ICommandesService;
 import net.deathpole.deathbot.Services.IMessagesService;
 import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.ChannelType;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.entities.User;
-import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.managers.GuildController;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static net.dv8tion.jda.core.MessageBuilder.Formatting.*;
 
 /**
  * Created by nicolas on 28/09/17.
@@ -628,6 +610,13 @@ public class CommandesServiceImpl implements ICommandesService {
 
         if (mapCustomReactions == null) {
             mapCustomReactions = new HashMap<>();
+        }
+
+        for (EnumAction action : EnumAction.values()) {
+            if (keyWord.equals(action.name())) {
+                messagesService.sendBotMessage(channel, "La commande " + keyWord + " existe déjà dans les commandes natives de Deathbot. Merci d'utiliser un autre mot-clé.");
+                return;
+            }
         }
 
         CustomReaction customReaction = new CustomReaction();
