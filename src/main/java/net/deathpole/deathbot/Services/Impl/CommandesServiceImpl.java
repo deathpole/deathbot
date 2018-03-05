@@ -387,7 +387,17 @@ public class CommandesServiceImpl implements ICommandesService {
 
         String[] splittedArgs = args.split(" ");
 
+        if (splittedArgs.length < 1) {
+            messagesService.sendBotMessage(channel, "Il faut mettre des paramètres, hein...");
+            return;
+        }
+
         Integer stage = Integer.valueOf(splittedArgs[0]);
+
+        if (stage % 10 != 0) {
+            stage = Math.toIntExact(Math.round(Double.valueOf(stage / 10)) * 10);
+        }
+
         Integer medalBonus = Integer.valueOf(splittedArgs[1]);
 
         BigDecimal medalGain = globalDao.getMedalGainForStage(stage);
