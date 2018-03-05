@@ -376,21 +376,21 @@ public class CommandesServiceImpl implements ICommandesService {
             sudoMakeMeASandwich(isAdmin, channel, args[0]);
             break;
         case REVIVE:
-            calculateSRandMedals(channel, guildController, args[0]);
+            calculateSRandMedals(channel, args);
         default:
             System.out.println("Commande non prise en charge");
             break;
         }
     }
 
-    private void calculateSRandMedals(MessageChannel channel, GuildController guildController, String args) {
+    private void calculateSRandMedals(MessageChannel channel, String[] args) {
 
-        String[] splittedArgs = args.split(" ");
-
-        if (splittedArgs.length < 1) {
+        if (args.length < 1) {
             messagesService.sendBotMessage(channel, "Il faut mettre des paramètres, hein...");
             return;
         }
+
+        String[] splittedArgs = args[0].split(" ");
 
         Integer stage = Integer.valueOf(splittedArgs[0]);
 
