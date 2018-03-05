@@ -23,6 +23,7 @@ public enum EnumAction {
     ADD_NOTSINGLE_RANK,
     REMOVE_NOTSINGLE_RANK,
     ADD_VOICE_ROLE,
+    REVIVE,
     SET_WELCOME_MESSAGE;
 
     public static EnumAction fromValue(String v){

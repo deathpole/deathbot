@@ -1,5 +1,6 @@
 package net.deathpole.deathbot.Dao;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Set;
@@ -34,4 +35,6 @@ public interface IGlobalDao {
     HashMap<String, HashMap<String, String>> initMapVoiceRoles();
 
     void saveVoiceRole(String channelName, String roleName, Guild guild);
+
+    BigDecimal getMedalGainForStage(Integer stage);
 }

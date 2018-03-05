@@ -1,5 +1,25 @@
 package net.deathpole.deathbot.Services.Impl;
 
+import static net.dv8tion.jda.core.MessageBuilder.Formatting.BLOCK;
+import static net.dv8tion.jda.core.MessageBuilder.Formatting.BOLD;
+import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
+import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
+
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+
 import net.deathpole.deathbot.CustomReaction;
 import net.deathpole.deathbot.Dao.IGlobalDao;
 import net.deathpole.deathbot.Dao.Impl.GlobalDao;
@@ -9,17 +29,17 @@ import net.deathpole.deathbot.Enums.EnumDynoAction;
 import net.deathpole.deathbot.Services.ICommandesService;
 import net.deathpole.deathbot.Services.IMessagesService;
 import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.*;
+import net.dv8tion.jda.core.entities.ChannelType;
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.core.entities.Role;
+import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.managers.GuildController;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static net.dv8tion.jda.core.MessageBuilder.Formatting.*;
 
 /**
  * Created by nicolas on 28/09/17.
@@ -30,6 +50,7 @@ public class CommandesServiceImpl implements ICommandesService {
     private static final String SEPARATOR_ACTION_ARGS = " ";
     private static final String ROLES_SEPARATOR = ",";
     private static final String RETOUR_LIGNE = "\r\n";
+    private static final BigDecimal MINUTES_PER_HOUR = BigDecimal.valueOf(60);
 
     private List<String> dynoActions = initDynoActions();
 
@@ -354,10 +375,81 @@ public class CommandesServiceImpl implements ICommandesService {
         case SUDO:
             sudoMakeMeASandwich(isAdmin, channel, args[0]);
             break;
+        case REVIVE:
+            calculateSRandMedals(channel, guildController, args[0]);
         default:
             System.out.println("Commande non prise en charge");
             break;
         }
+    }
+
+    private void calculateSRandMedals(MessageChannel channel, GuildController guildController, String args) {
+
+        String[] splittedArgs = args.split(" ");
+
+        Integer stage = Integer.valueOf(splittedArgs[0]);
+        Integer medalBonus = Integer.valueOf(splittedArgs[1]);
+
+        BigDecimal medalGain = globalDao.getMedalGainForStage(stage);
+        BigDecimal stageGain = medalGain.multiply(BigDecimal.valueOf(medalBonus));
+        String formattedGain = formatBigNumbersToEFFormat(stageGain);
+
+        if (splittedArgs.length > 2) {
+            Integer runDuration = Integer.valueOf(splittedArgs[2]);
+            BigDecimal SR = stageGain.divide(BigDecimal.valueOf(runDuration), BigDecimal.ROUND_HALF_DOWN);
+            String formattedSR = formatBigNumbersToEFFormat(SR) + "/min";
+            messagesService.sendBotMessage(channel, "SR : " + formattedSR);
+        } else {
+            messagesService.sendBotMessage(channel, "Gain immédiat : " + formattedGain);
+        }
+    }
+
+    private String formatBigNumbersToEFFormat(BigDecimal value) {
+
+        String result = null;
+
+        BigDecimal medalsBase = BigDecimal.valueOf(1000000);
+        BigDecimal factor = BigDecimal.valueOf(1000);
+
+        if (value.compareTo(medalsBase) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##a");
+            result = decimalFormat.format(value.divide(factor, BigDecimal.ROUND_HALF_DOWN));
+        } else if (value.compareTo(medalsBase.multiply(factor)) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##b");
+            result = decimalFormat.format(value.divide(factor).divide(factor, BigDecimal.ROUND_HALF_DOWN).multiply(BigDecimal.TEN));
+
+        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor)) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##c");
+            result = decimalFormat.format(value.divide(factor.multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN).multiply(BigDecimal.TEN));
+        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor)) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##d");
+            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN).multiply(BigDecimal.TEN));
+        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##e");
+            result = decimalFormat.format(
+                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN).multiply(BigDecimal.TEN));
+        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##f");
+            result = decimalFormat.format(
+                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN).multiply(BigDecimal.TEN));
+        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##g");
+            result = decimalFormat.format(
+                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN).multiply(
+                            BigDecimal.TEN));
+        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##h");
+            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
+                    BigDecimal.ROUND_HALF_DOWN).multiply(BigDecimal.TEN));
+        } else if (value.compareTo(
+                medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##i");
+            result = decimalFormat.format(
+                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
+                            BigDecimal.ROUND_HALF_DOWN).multiply(BigDecimal.TEN));
+        }
+
+        return result;
     }
 
     private void addVoiceRole(Guild guild, Member member, User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg) {

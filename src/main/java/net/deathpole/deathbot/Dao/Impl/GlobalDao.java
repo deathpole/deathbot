@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -408,5 +409,32 @@ public class GlobalDao implements IGlobalDao {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public BigDecimal getMedalGainForStage(Integer stage) {
+        Connection conn = getConnectionToDB();
+
+        BigDecimal medalGain = null;
+        try {
+            Statement statement = conn.createStatement();
+            String sql = "SELECT * FROM MEDAL_GAIN WHERE STAGE = " + stage;
+            ResultSet rs = statement.executeQuery(sql);
+
+            while (rs.next()) {
+                medalGain = rs.getBigDecimal("medals");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return medalGain;
     }
 }
