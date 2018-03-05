@@ -395,7 +395,7 @@ public class CommandesServiceImpl implements ICommandesService {
         Integer stage = Integer.valueOf(splittedArgs[0]);
 
         if (stage % 10 != 0) {
-            stage = Math.toIntExact(Math.round(Double.valueOf(stage / 10)) * 10);
+            stage = BigDecimal.valueOf(stage).setScale(-1, BigDecimal.ROUND_HALF_DOWN).intValue();
         }
 
         Integer medalBonus = Integer.valueOf(splittedArgs[1]);
@@ -408,9 +408,9 @@ public class CommandesServiceImpl implements ICommandesService {
             Integer runDuration = Integer.valueOf(splittedArgs[2]);
             BigDecimal SR = stageGain.divide(BigDecimal.valueOf(runDuration), BigDecimal.ROUND_HALF_DOWN);
             String formattedSR = formatBigNumbersToEFFormat(SR) + "/min";
-            messagesService.sendBotMessage(channel, "SR : " + formattedSR);
+            messagesService.sendBotMessage(channel, "SR au stage " + stage + " : " + formattedSR);
         } else {
-            messagesService.sendBotMessage(channel, "Gain immédiat : " + formattedGain);
+            messagesService.sendBotMessage(channel, "Gain immédiat au stage " + stage + " : " + formattedGain);
         }
     }
 
