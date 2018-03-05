@@ -401,7 +401,7 @@ public class CommandesServiceImpl implements ICommandesService {
         Integer medalBonus = Integer.valueOf(splittedArgs[1]);
 
         BigDecimal medalGain = globalDao.getMedalGainForStage(stage);
-        BigDecimal stageGain = medalGain.multiply(BigDecimal.valueOf(medalBonus)).multiply(BigDecimal.TEN);
+        BigDecimal stageGain = medalGain.multiply(BigDecimal.valueOf(medalBonus).divide(new BigDecimal(100), BigDecimal.ROUND_HALF_DOWN));
         String formattedGain = formatBigNumbersToEFFormat(stageGain);
 
         if (splittedArgs.length > 2) {
@@ -422,38 +422,38 @@ public class CommandesServiceImpl implements ICommandesService {
         BigDecimal factor = BigDecimal.valueOf(1000);
 
         if (value.compareTo(medalsBase) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##");
+            DecimalFormat decimalFormat = new DecimalFormat("#.##a");
             result = decimalFormat.format(value.divide(factor, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##a");
+            DecimalFormat decimalFormat = new DecimalFormat("#.##b");
             result = decimalFormat.format(value.divide(factor).divide(factor, BigDecimal.ROUND_HALF_DOWN));
 
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##b");
+            DecimalFormat decimalFormat = new DecimalFormat("#.##c");
             result = decimalFormat.format(value.divide(factor.multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##c");
+            DecimalFormat decimalFormat = new DecimalFormat("#.##d");
             result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##d");
+            DecimalFormat decimalFormat = new DecimalFormat("#.##e");
             result = decimalFormat.format(
                     value.divide(factor.multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##e");
+            DecimalFormat decimalFormat = new DecimalFormat("#.##f");
             result = decimalFormat.format(
                     value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##f");
+            DecimalFormat decimalFormat = new DecimalFormat("#.##g");
             result = decimalFormat.format(
                     value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN).multiply(
                             BigDecimal.TEN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##g");
+            DecimalFormat decimalFormat = new DecimalFormat("#.##h");
             result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
                     BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(
                 medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##h");
+            DecimalFormat decimalFormat = new DecimalFormat("#.##i");
             result = decimalFormat.format(
                     value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
                             BigDecimal.ROUND_HALF_DOWN));
