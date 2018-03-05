@@ -6,7 +6,6 @@ import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -27,6 +26,7 @@ import net.deathpole.deathbot.Enums.EnumAction;
 import net.deathpole.deathbot.Enums.EnumCadavreExquisParams;
 import net.deathpole.deathbot.Enums.EnumDynoAction;
 import net.deathpole.deathbot.Services.ICommandesService;
+import net.deathpole.deathbot.Services.IHelperService;
 import net.deathpole.deathbot.Services.IMessagesService;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.ChannelType;
@@ -78,6 +78,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
 
     private IMessagesService messagesService = new MessagesServiceImpl();
+    private IHelperService helperService = new HelperServiceImpl();
 
     private HashMap<String, Set<String>> initAssignableRanksbyGuild() {
         if (globalDao == null) {
@@ -402,64 +403,16 @@ public class CommandesServiceImpl implements ICommandesService {
 
         BigDecimal medalGain = globalDao.getMedalGainForStage(stage);
         BigDecimal stageGain = medalGain.multiply(BigDecimal.valueOf(medalBonus).divide(new BigDecimal(100), BigDecimal.ROUND_HALF_DOWN));
-        String formattedGain = formatBigNumbersToEFFormat(stageGain);
+        String formattedGain = helperService.formatBigNumbersToEFFormat(stageGain);
 
         if (splittedArgs.length > 2) {
             Integer runDuration = Integer.valueOf(splittedArgs[2]);
             BigDecimal SR = stageGain.divide(BigDecimal.valueOf(runDuration), BigDecimal.ROUND_HALF_DOWN);
-            String formattedSR = formatBigNumbersToEFFormat(SR) + "/min";
+            String formattedSR = helperService.formatBigNumbersToEFFormat(SR) + "/min";
             messagesService.sendBotMessage(channel, "SR au stage " + stage + " : " + formattedSR);
         } else {
             messagesService.sendBotMessage(channel, "Gain immédiat au stage " + stage + " : " + formattedGain);
         }
-    }
-
-    private String formatBigNumbersToEFFormat(BigDecimal value) {
-
-        String result = null;
-
-        BigDecimal medalsBase = BigDecimal.valueOf(1000000);
-        BigDecimal factor = BigDecimal.valueOf(1000);
-
-        if (value.compareTo(medalsBase) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##a");
-            result = decimalFormat.format(value.divide(factor, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##b");
-            result = decimalFormat.format(value.divide(factor).divide(factor, BigDecimal.ROUND_HALF_DOWN));
-
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##c");
-            result = decimalFormat.format(value.divide(factor.multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##d");
-            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##e");
-            result = decimalFormat.format(
-                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##f");
-            result = decimalFormat.format(
-                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##g");
-            result = decimalFormat.format(
-                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN).multiply(
-                            BigDecimal.TEN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##h");
-            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
-                    BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(
-                medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##i");
-            result = decimalFormat.format(
-                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
-                            BigDecimal.ROUND_HALF_DOWN));
-        }
-
-        return result;
     }
 
     private void addVoiceRole(Guild guild, Member member, User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg) {
