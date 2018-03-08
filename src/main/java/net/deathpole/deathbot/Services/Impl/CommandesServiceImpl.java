@@ -139,7 +139,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 String commandeComplete;
                 try {
                         if (msg.matches("^" + prefixCmd + "[^?]\\p{all}+")) {
-                            commandeComplete = msg.split(prefixCmd)[1];
+                            commandeComplete = msg.split(prefixCmd, 2)[1];
 
                             if (commandeComplete != null && !commandeComplete.isEmpty()) {
 
@@ -302,9 +302,9 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-        case HELPDB:
-            channel.sendMessage(buildHelpMessage(guild)).queue();
-            break;
+        // case AIDE:
+        // channel.sendMessage(buildHelpMessage(guild)).queue();
+        // break;
         case CHANGE:
             if (isAdmin) {
                 changePrefixe(author, channel, commandeComplete, args[0], guild);
