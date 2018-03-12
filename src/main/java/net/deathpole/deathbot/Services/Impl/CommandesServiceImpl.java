@@ -319,6 +319,16 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
+        case DCR:
+            if (isAdmin) {
+                manageDeleteCustomReaction(guild, channel, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case LCR:
+            listCustomReactionsForGuild(guild, channel);
+            break;
         case SINGLE:
             if (isAdmin) {
                 toggleSingleRank(channel, guild);
@@ -381,6 +391,23 @@ public class CommandesServiceImpl implements ICommandesService {
         default:
             System.out.println("Commande non prise en charge");
             break;
+        }
+    }
+
+    private void listCustomReactionsForGuild(Guild guild, MessageChannel channel) {
+        HashMap<String, CustomReaction> customReactions = mapCustomReactions.get(guild);
+
+        if (customReactions != null) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Liste des commandes customs : ").append(RETOUR_LIGNE);
+
+            for (String key : customReactions.keySet()) {
+                sb.append(key).append(RETOUR_LIGNE);
+            }
+
+            messagesService.sendBotMessage(channel, sb.toString());
+        } else {
+            messagesService.sendBotMessage(channel, "Aucune commande custom trouvée...");
         }
     }
 
@@ -452,6 +479,12 @@ public class CommandesServiceImpl implements ICommandesService {
         String keyWord = fullParams[0];
         String reaction = fullParams[1];
         addCustomReaction(guild, channel, keyWord, reaction);
+    }
+
+    private void manageDeleteCustomReaction(Guild guild, MessageChannel channel, String arg) {
+        String[] fullParams = arg.split(SEPARATOR_ACTION_ARGS, 1);
+        String keyWord = fullParams[0];
+        deleteCustomReaction(guild, channel, keyWord);
     }
 
     private void manageCadavreExquis(GuildController guildController, MessageChannel channel, String arg) {
@@ -688,6 +721,25 @@ public class CommandesServiceImpl implements ICommandesService {
         globalDao.saveCustomReaction(keyWord, customReaction, guild);
 
         messagesService.sendBotMessage(channel, "Nouvelle réponse ajoutée pour la commande : " + keyWord);
+    }
+
+    private void deleteCustomReaction(Guild guild, MessageChannel channel, String keyWord) {
+        HashMap<String, CustomReaction> mapCustomReactionsForGuild = mapCustomReactions.get(guild);
+        if (mapCustomReactionsForGuild != null) {
+            CustomReaction customReaction = mapCustomReactionsForGuild.remove(keyWord);
+            if (customReaction != null) {
+                boolean deleted = globalDao.deleteCustomReaction(keyWord, guild);
+                if (!deleted) {
+                    messagesService.sendBotMessage(channel, "La commande custom \"" + keyWord + "\" n'a pas pu être supprimée. Merci de contacter l'administrateur.");
+                    return;
+                }
+                messagesService.sendBotMessage(channel, "La commande custom \"" + keyWord + "\" a été supprimée !");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune commande custom trouvée pour le mot-clé : " + keyWord);
+            }
+        } else {
+            messagesService.sendBotMessage(channel, "Aucune commande custom trouvée pour votre serveur !");
+        }
     }
 
     private void sudoMakeMeASandwich(boolean contains, MessageChannel channel, String arg) {

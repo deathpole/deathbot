@@ -32,6 +32,8 @@ public interface IGlobalDao {
 
     void saveCustomReaction(String keyWord, CustomReaction customReaction, Guild guild);
 
+    boolean deleteCustomReaction(String keyWord, Guild guild);
+
     HashMap<String, HashMap<String, String>> initMapVoiceRoles();
 
     void saveVoiceRole(String channelName, String roleName, Guild guild);

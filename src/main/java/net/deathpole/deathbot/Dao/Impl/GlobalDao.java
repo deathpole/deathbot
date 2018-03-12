@@ -58,8 +58,8 @@ public class GlobalDao implements IGlobalDao {
     }
 
     private static Connection getConnection() throws URISyntaxException, SQLException {
-        String dbUrl = System.getenv("JDBC_DATABASE_URL");
-        // String dbUrl = "jdbc:postgresql://localhost:5432/deathbot?user=postgres&password=postgres";
+        // String dbUrl = System.getenv("JDBC_DATABASE_URL");
+        String dbUrl = "jdbc:postgresql://localhost:5432/deathbot?user=postgres&password=postgres";
         return DriverManager.getConnection(dbUrl);
     }
 
@@ -336,6 +336,32 @@ public class GlobalDao implements IGlobalDao {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public boolean deleteCustomReaction(String keyWord, Guild guild) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlUpdate = "DELETE FROM CUSTOM_REACTION WHERE GUILD_NAME = ? AND COMMAND = ?";
+            PreparedStatement statement = conn.prepareStatement(sqlUpdate);
+            statement.setString(1, guild.getName());
+            statement.setString(2, keyWord);
+
+            int count = statement.executeUpdate();
+
+            return count > 0 ? true : false;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
     }
 
     @Override
