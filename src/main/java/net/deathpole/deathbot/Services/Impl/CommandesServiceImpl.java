@@ -669,12 +669,21 @@ public class CommandesServiceImpl implements ICommandesService {
                     }
                 }
             }
-            sendFormattedCustomReactionAndDeleteCommand(message, guildController, channel, customReaction, params);
+            if ("aide".equals(action)) {
+                sendFormattedCustomReaction(message, guildController, channel, customReaction, params);
+            } else {
+                sendFormattedCustomReactionAndDeleteCommand(message, guildController, channel, customReaction, params);
+            }
         }
     }
 
     private void sendFormattedCustomReactionAndDeleteCommand(Message message, GuildController guildController, MessageChannel channel, CustomReaction customReaction,
             String[] params) {
+        sendCustomReaction(guildController, channel, customReaction, params);
+        channel.deleteMessageById(message.getId()).complete();
+    }
+
+    private void sendCustomReaction(GuildController guildController, MessageChannel channel, CustomReaction customReaction, String[] params) {
         String reactionReplaced = customReaction.getReaction();
         for (String param : params) {
 
@@ -689,9 +698,11 @@ public class CommandesServiceImpl implements ICommandesService {
 
             reactionReplaced = reactionReplaced.replaceFirst("\\$[0-9]+", param);
         }
-
-        channel.deleteMessageById(message.getId()).complete();
         messagesService.sendBotMessage(channel, reactionReplaced);
+    }
+
+    private void sendFormattedCustomReaction(Message message, GuildController guildController, MessageChannel channel, CustomReaction customReaction, String[] params) {
+        sendCustomReaction(guildController, channel, customReaction, params);
     }
 
     private void addCustomReaction(Guild guild, MessageChannel channel, String keyWord, String reaction) {
