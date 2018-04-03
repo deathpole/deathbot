@@ -50,6 +50,7 @@ public enum EnumDynoAction {
     ROLL,
     RPS,
     SERVERINVITE,
+    SERVERINFO,
     SHEETS,
     SOFTBAN,
     SR,
