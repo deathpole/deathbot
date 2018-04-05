@@ -6,6 +6,9 @@ import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -366,6 +369,16 @@ public class CommandesServiceImpl implements ICommandesService {
         case REMOVE_REMINDER:
             if (isAdmin) {
                 removeReminder(channel, guildController, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case TIME:
+            if (isAdmin) {
+                ZonedDateTime now = ZonedDateTime.now();
+                DateTimeFormatter dtf = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT);
+
+                messagesService.sendBotMessage(channel, "Heure et date du serveur : " + now.format(dtf));
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }

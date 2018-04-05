@@ -27,6 +27,7 @@ public enum EnumAction {
     SET_WELCOME_MESSAGE,
     SINGLE,
     SUDO,
+    TIME,
     WITH,
     WITHOUT;
 
