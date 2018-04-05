@@ -382,8 +382,8 @@ public class CommandesServiceImpl implements ICommandesService {
                 ZonedDateTime nowZoned = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Paris"));
                 DateTimeFormatter dtf = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT);
 
-                messagesService.sendBotMessage(channel, "Heure et date du serveur (zoné) : " + nowZoned.format(dtf));
-                messagesService.sendBotMessage(channel, "Heure et date du serveur : " + now.format(dtf));
+                messagesService.sendBotMessage(channel, "Heure et date en France : " + nowZoned.format(dtf));
+                messagesService.sendBotMessage(channel, "Heure et date du serveur Deathbot : " + now.format(dtf));
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }

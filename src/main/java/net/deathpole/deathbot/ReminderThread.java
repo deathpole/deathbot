@@ -1,5 +1,6 @@
 package net.deathpole.deathbot;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 
@@ -44,7 +45,7 @@ public class ReminderThread extends Thread {
     }
 
     private boolean isDoItNow(String cronTab) {
-        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime now = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Paris"));
 
         CronDefinition cronDefinition = CronDefinitionBuilder.defineCron().withMinutes().and().withHours().and().withDayOfMonth().and().withMonth().and().withYear().and().instance();
         CronParser parser = new CronParser(cronDefinition);
