@@ -19,7 +19,9 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
-import net.deathpole.deathbot.CustomReaction;
+import net.deathpole.deathbot.Bot;
+import net.deathpole.deathbot.CustomReactionDTO;
+import net.deathpole.deathbot.ReminderDTO;
 import net.deathpole.deathbot.Dao.IGlobalDao;
 import net.deathpole.deathbot.Dao.Impl.GlobalDao;
 import net.deathpole.deathbot.Enums.EnumAction;
@@ -46,39 +48,39 @@ import net.dv8tion.jda.core.managers.GuildController;
  */
 public class CommandesServiceImpl implements ICommandesService {
 
+    private static final String REMINDER_SEPARATOR = ";";
+    private static final int NB_REMINDER_PARAMS = 4;
+    private IGlobalDao globalDao;
+    private IMessagesService messagesService = new MessagesServiceImpl();
+    private IHelperService helperService = new HelperServiceImpl();
+
     private static final String PREFIX_TAG = "@";
     private static final String SEPARATOR_ACTION_ARGS = " ";
     private static final String ROLES_SEPARATOR = ",";
     private static final String RETOUR_LIGNE = "\r\n";
-    private static final BigDecimal MINUTES_PER_HOUR = BigDecimal.valueOf(60);
 
     private List<String> dynoActions = initDynoActions();
 
-    private HashMap<Guild, Set<Role>> selfAssignableRanksByGuild = new HashMap<>();
+    // Maps used after load
     private HashMap<Guild, Set<Role>> notSingleSelfAssignableRanksByGuild = new HashMap<>();
-
-    // Maps used after
+    private HashMap<Guild, Set<Role>> selfAssignableRanksByGuild = new HashMap<>();
     private HashMap<Guild, String> prefixCmdByGuild = new HashMap<>();
-    private HashMap<String, Set<String>> notSingleSelfAssignableRanksByIdsByGuild = initNotSingleAssignableRanksbyGuild();
-    private HashMap<Guild, HashMap<String, CustomReaction>> mapCustomReactions = new HashMap<>();
+    private HashMap<Guild, HashMap<String, CustomReactionDTO>> mapCustomReactions = new HashMap<>();
     private HashMap<Guild, HashMap<String, String>> mapVoiceRole = new HashMap<>();
-    private IGlobalDao globalDao;
+    private HashMap<Guild, String> welcomeMessageByGuild = new HashMap<>();
     private HashMap<Guild, Boolean> singleRoleByGuild = new HashMap<>();
     private HashMap<Guild, Boolean> botActivationByGuild = new HashMap<>();
-    private HashMap<Guild, String> welcomeMessageByGuild = new HashMap<>();
+
     // Maps used on DB load
+    private HashMap<String, Set<String>> notSingleSelfAssignableRanksByIdsByGuild = initNotSingleAssignableRanksbyGuild();
     private HashMap<String, Set<String>> selfAssignableRanksByIdsByGuild = initAssignableRanksbyGuild();
-    private HashMap<String, HashMap<String, CustomReaction>> mapCustomReactionsByGuild = initMapCustomReactions();
+    private HashMap<String, HashMap<String, CustomReactionDTO>> mapCustomReactionsByGuild = initMapCustomReactions();
     private HashMap<String, HashMap<String, String>> mapVoiceRoleByGuild = initMapVoiceRoles();
 
     private List<Member> listCadavreSujet;
     private List<String> listCadavreAction;
     private List<String> listCadavreComplement;
     private List<String> listCadavreAdjectif;
-
-
-    private IMessagesService messagesService = new MessagesServiceImpl();
-    private IHelperService helperService = new HelperServiceImpl();
 
     private HashMap<String, Set<String>> initAssignableRanksbyGuild() {
         if (globalDao == null) {
@@ -94,7 +96,7 @@ public class CommandesServiceImpl implements ICommandesService {
         return globalDao.initAssignableRanksbyGuild(false);
     }
 
-    private HashMap<String, HashMap<String, CustomReaction>> initMapCustomReactions() {
+    private HashMap<String, HashMap<String, CustomReactionDTO>> initMapCustomReactions() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
         }
@@ -158,7 +160,7 @@ public class CommandesServiceImpl implements ICommandesService {
                                     assert action != null;
                                     if (isBotActivated(guildController.getGuild()) || EnumAction.ACTIVATE.name().equals(action.toUpperCase())) {
                                         if (!dynoActions.contains(action.toUpperCase())) {
-                                            HashMap<String, CustomReaction> customReactionsForGuild = getCustomReactionsForGuild(guildController);
+                                            HashMap<String, CustomReactionDTO> customReactionsForGuild = getCustomReactionsForGuild(guildController);
                                             if (customReactionsForGuild != null && customReactionsForGuild.keySet().contains(action)) {
                                                 String param = null;
                                                 if (args.length >= 1) {
@@ -296,7 +298,6 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case CADAVRE:
             if (isAdmin) {
-
                 manageCadavreExquis(guildController, channel, args[0]);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
@@ -355,6 +356,27 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
+        case ADD_REMINDER:
+            if (isAdmin) {
+                addReminder(channel, guildController, args);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case REMOVE_REMINDER:
+            if (isAdmin) {
+                removeReminder(channel, guildController, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case LIST_REMINDERS:
+            if (isAdmin) {
+                listReminders(channel, guildController);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
         case ADD_VOICE_ROLE:
             if (isAdmin) {
                 addVoiceRole(guild, member, author, channel, guildController, commandeComplete, args[0]);
@@ -395,7 +417,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void listCustomReactionsForGuild(Guild guild, MessageChannel channel) {
-        HashMap<String, CustomReaction> customReactions = mapCustomReactions.get(guild);
+        HashMap<String, CustomReactionDTO> customReactions = mapCustomReactions.get(guild);
 
         if (customReactions != null) {
             StringBuilder sb = new StringBuilder();
@@ -487,6 +509,7 @@ public class CommandesServiceImpl implements ICommandesService {
         deleteCustomReaction(guild, channel, keyWord);
     }
 
+    @Deprecated
     private void manageCadavreExquis(GuildController guildController, MessageChannel channel, String arg) {
         String[] params = arg.split(SEPARATOR_ACTION_ARGS, 2);
         EnumCadavreExquisParams param = EnumCadavreExquisParams.valueOf(params[0].toUpperCase());
@@ -581,6 +604,7 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
+    @Deprecated
     private void executeCadavreActions(GuildController guildController, MessageChannel channel, String[] params, EnumCadavreExquisParams param) {
         switch (param) {
             case ADD_SUJET:
@@ -647,7 +671,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void executeCustomReaction(Member member, Message message, GuildController guildController, MessageChannel channel, String arg, String action) {
         Guild guild = guildController.getGuild();
-        CustomReaction customReaction = mapCustomReactions.get(guild).get(action);
+        CustomReactionDTO customReaction = mapCustomReactions.get(guild).get(action);
         String[] params = (arg == null || arg.isEmpty()) ? new String[0] : arg.trim().split(SEPARATOR_ACTION_ARGS + "+");
 
         if (params.length != customReaction.getNumberOfParams()) {
@@ -677,13 +701,13 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void sendFormattedCustomReactionAndDeleteCommand(Message message, GuildController guildController, MessageChannel channel, CustomReaction customReaction,
+    private void sendFormattedCustomReactionAndDeleteCommand(Message message, GuildController guildController, MessageChannel channel, CustomReactionDTO customReaction,
             String[] params) {
         sendCustomReaction(guildController, channel, customReaction, params);
         channel.deleteMessageById(message.getId()).complete();
     }
 
-    private void sendCustomReaction(GuildController guildController, MessageChannel channel, CustomReaction customReaction, String[] params) {
+    private void sendCustomReaction(GuildController guildController, MessageChannel channel, CustomReactionDTO customReaction, String[] params) {
         String reactionReplaced = customReaction.getReaction();
         for (String param : params) {
 
@@ -701,7 +725,7 @@ public class CommandesServiceImpl implements ICommandesService {
         messagesService.sendBotMessage(channel, reactionReplaced);
     }
 
-    private void sendFormattedCustomReaction(Message message, GuildController guildController, MessageChannel channel, CustomReaction customReaction, String[] params) {
+    private void sendFormattedCustomReaction(Message message, GuildController guildController, MessageChannel channel, CustomReactionDTO customReaction, String[] params) {
         sendCustomReaction(guildController, channel, customReaction, params);
     }
 
@@ -718,11 +742,11 @@ public class CommandesServiceImpl implements ICommandesService {
             }
         }
 
-        CustomReaction customReaction = new CustomReaction();
+        CustomReactionDTO customReaction = new CustomReactionDTO();
         customReaction.setReaction(reaction);
         customReaction.setNumberOfParams(reaction.length() - reaction.replace("$", "").length());
 
-        HashMap<String, CustomReaction> mapCustomReactionsForGuild = mapCustomReactions.get(guild);
+        HashMap<String, CustomReactionDTO> mapCustomReactionsForGuild = mapCustomReactions.get(guild);
         if (mapCustomReactionsForGuild == null) {
             mapCustomReactionsForGuild = new HashMap<>();
         }
@@ -735,9 +759,9 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void deleteCustomReaction(Guild guild, MessageChannel channel, String keyWord) {
-        HashMap<String, CustomReaction> mapCustomReactionsForGuild = mapCustomReactions.get(guild);
+        HashMap<String, CustomReactionDTO> mapCustomReactionsForGuild = mapCustomReactions.get(guild);
         if (mapCustomReactionsForGuild != null) {
-            CustomReaction customReaction = mapCustomReactionsForGuild.remove(keyWord);
+            CustomReactionDTO customReaction = mapCustomReactionsForGuild.remove(keyWord);
             if (customReaction != null) {
                 boolean deleted = globalDao.deleteCustomReaction(keyWord, guild);
                 if (!deleted) {
@@ -901,7 +925,7 @@ public class CommandesServiceImpl implements ICommandesService {
         return (notSingleSelfAssignableRanksByGuild != null && !notSingleSelfAssignableRanksByGuild.isEmpty()) ? notSingleSelfAssignableRanksByGuild.get(guild) : new HashSet<>();
     }
 
-    private HashMap<String, CustomReaction> getCustomReactionsForGuild(GuildController guildController) {
+    private HashMap<String, CustomReactionDTO> getCustomReactionsForGuild(GuildController guildController) {
         Guild guild = guildController.getGuild();
 
         if (mapCustomReactions.isEmpty() && !mapCustomReactionsByGuild.isEmpty()) {
@@ -933,14 +957,14 @@ public class CommandesServiceImpl implements ICommandesService {
         return resultMap;
     }
 
-    private HashMap<Guild, HashMap<String, CustomReaction>> transformCustomReactionsGuildNamesToGuild(GuildController guildController,
-            HashMap<String, HashMap<String, CustomReaction>> mapCustomReactionsByGuild) {
-        HashMap<Guild, HashMap<String, CustomReaction>> resultMap = new HashMap<>();
+    private HashMap<Guild, HashMap<String, CustomReactionDTO>> transformCustomReactionsGuildNamesToGuild(GuildController guildController,
+            HashMap<String, HashMap<String, CustomReactionDTO>> mapCustomReactionsByGuild) {
+        HashMap<Guild, HashMap<String, CustomReactionDTO>> resultMap = new HashMap<>();
 
         for (String guildName : mapCustomReactionsByGuild.keySet()) {
             Guild guild = guildController.getJDA().getGuildsByName(guildName, true).get(0);
 
-            HashMap<String, CustomReaction> customReactionMap = mapCustomReactionsByGuild.get(guildName);
+            HashMap<String, CustomReactionDTO> customReactionMap = mapCustomReactionsByGuild.get(guildName);
 
             resultMap.put(guild, customReactionMap);
         }
@@ -1006,6 +1030,123 @@ public class CommandesServiceImpl implements ICommandesService {
 
         if (!listRolesToAdd.isEmpty()) {
             StringBuilder sb = buildNewlyAssignableRolesListMessage(author, commandeComplete, listRolesToAdd);
+            messagesService.sendBotMessage(channel, sb.toString());
+        }
+    }
+
+    private void addReminder(MessageChannel channel, GuildController guildController, String[] arg) {
+
+        if (arg.length == 0) {
+            messagesService.sendBotMessage(channel, "Il manque des paramètres, désolé. Merci de contacter un administrateur ou de consulter l'aide (argument \"help\").");
+            return;
+        }
+
+        String[] reminderParams = arg[0].split(REMINDER_SEPARATOR);
+
+        if (reminderParams.length < NB_REMINDER_PARAMS) {
+            if (reminderParams.length == 1 && "help".equals(reminderParams[0])) {
+                messagesService.sendNormalBotMessage(channel, buildHelpAddReminder().toString());
+                return;
+            } else {
+                messagesService.sendBotMessage(channel, "Il manque des paramètres, désolé. Merci de contacter un administrateur ou de consulter l'aide (argument \"help\").");
+                return;
+            }
+        } else if (reminderParams.length == NB_REMINDER_PARAMS) {
+            String title = reminderParams[0];
+            String destinationChan = reminderParams[1];
+            String reminderText = reminderParams[2];
+            String cronTab = reminderParams[3];
+            ReminderDTO reminder = new ReminderDTO(title, reminderText, destinationChan, cronTab);
+
+            Guild guild = guildController.getGuild();
+            HashMap<String, ReminderDTO> reminders = Bot.reminderThreadsByGuild.get(guild.getName()).getReminders();
+            reminders.put(reminder.getTitle(), reminder);
+
+            globalDao.saveReminder(reminder, guild);
+            messagesService.sendBotMessage(channel, "Nouveau reminder ajouté avec le titre \"" + title + "\" et la cronTab \"" + cronTab + "\"");
+        } else {
+            messagesService.sendBotMessage(channel, "Il y a trop de paramètres, désolé. Merci de contacter un administrateur ou de consulter l'aide (argument \"help\").");
+            return;
+        }
+    }
+
+    private StringBuilder buildHelpAddReminder() {
+        StringBuilder sb = new StringBuilder("*** Syntaxe de la commande add_reminder : ***").append(RETOUR_LIGNE);
+        sb.append("```?add_reminder <NOM_DU_REMINDER_A_CREER>;<SALON_DE_DESTINATION>;<TEXTE_A_AFFICHER>;<CRONTAB>```").append(RETOUR_LIGNE);
+        sb.append(RETOUR_LIGNE);
+        sb.append("**__Détails des paramètres__: **").append(RETOUR_LIGNE);
+        sb.append(RETOUR_LIGNE);
+        sb.append("*<NOM_DU_REMINDER_A_CREER>* : Un titre pour retrouver votre reminder facilement").append(RETOUR_LIGNE);
+        sb.append("*<SALON_DE_DESTINATION>* : Le salon dans lequel le reminder sera affiché. :warning: Ne pas mettre le # :warning:").append(RETOUR_LIGNE);
+        sb.append("*<TEXTE_A_AFFICHER>* : Le texte qui sera affiché. Il peut contenir des mentions (de membres spécifiques ou de rôles)").append(RETOUR_LIGNE);
+        sb.append(RETOUR_LIGNE);
+        sb.append("*<CRONTAB>* : La crontab d'exécution du reminder, au format mm HH DD MM YYYY. Elle supporte les \\* et les /").append(RETOUR_LIGNE);
+        sb.append("*__Exemple de crontab__ :*").append(RETOUR_LIGNE);
+        sb.append("0 9 * * * => L'exécution se fait tous les jours à 9h.").append(RETOUR_LIGNE);
+        sb.append(RETOUR_LIGNE);
+        sb.append("__**Exemple de création de reminder complet : **__").append(RETOUR_LIGNE);
+        sb.append("?add_reminder ToT;annonces;C'est le début de la Tour, messieurs dames du @s3 !;0 9 */3 * *").append(RETOUR_LIGNE);
+        sb.append("=> Tous les 3 jours à 9h, dans le salon #annonces, sera posté le message \"C'est le début de la Tour, messieurs dames du @s3 !\"").append(RETOUR_LIGNE);
+        return sb;
+    }
+
+    private void removeReminder(MessageChannel channel, GuildController guildController, String arg) {
+
+        String[] reminderParams = arg.split(REMINDER_SEPARATOR);
+
+        if (reminderParams.length != 1) {
+            messagesService.sendBotMessage(channel,
+                    "Le nombre de paramètres n'est pas bon, désolé. Merci de contacter un administrateur ou de consulter l'aide (argument \"help\").");
+            return;
+        } else {
+            if ("help".equals(reminderParams[0])) {
+                StringBuilder sb = new StringBuilder("*** Syntaxe de la commande remove_reminder : ***").append(RETOUR_LIGNE);
+                sb.append("```?remove_reminder <NOM_DU_REMINDER_A_SUPPRIMER>```").append(RETOUR_LIGNE);
+                sb.append("*NB : Les noms peuvent être retrouvés grâce à la commande ?list_reminders*");
+
+                messagesService.sendNormalBotMessage(channel, sb.toString());
+                return;
+            } else {
+                String title = reminderParams[0];
+
+                Guild guild = guildController.getGuild();
+                HashMap<String, ReminderDTO> reminders = Bot.reminderThreadsByGuild.get(guild.getName()).getReminders();
+                if (!reminders.isEmpty()) {
+                    if (reminders.get(title) != null) {
+                        reminders.remove(title);
+                        Bot.reminderThreadsByGuild.get(guild.getName()).setReminders(reminders);
+                        boolean deleted = globalDao.deleteRemindersForGuild(guild, title);
+                        if (!deleted) {
+                            messagesService.sendBotMessage(channel, "Le reminder \"" + title + "\" n'a pas pu être supprimée. Merci de contacter l'administrateur.");
+                            return;
+                        }
+                        messagesService.sendBotMessage(channel, "Le reminder \"" + title + "\" a été supprimé !");
+                    } else {
+                        messagesService.sendBotMessage(channel, "Le reminder \"" + title + "\" n'a pas été trouvé ! :thinking:");
+                    }
+                } else {
+                    messagesService.sendBotMessage(channel, "Aucun reminder n'a encore été défini ! :thinking:");
+                }
+            }
+        }
+    }
+
+    private void listReminders(MessageChannel channel, GuildController guildController) {
+
+        HashMap<String, ReminderDTO> reminders = Bot.reminderThreadsByGuild.get(guildController.getGuild().getName()).getReminders();
+
+        if (reminders.isEmpty()) {
+            messagesService.sendBotMessage(channel, "Aucun reminder mis en place pour le moment !");
+            return;
+        } else {
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("Les reminders suivants sont actuellement actifs : ").append(RETOUR_LIGNE);
+            for (ReminderDTO reminder : reminders.values()) {
+                sb.append("\t - Nom : ").append(reminder.getTitle()).append(", Salon : ").append(reminder.getChan()).append(", Expression Cron : ").append(
+                        reminder.getCronTab()).append(RETOUR_LIGNE);
+            }
+
             messagesService.sendBotMessage(channel, sb.toString());
         }
     }

@@ -70,6 +70,11 @@
             <artifactId>postgresql</artifactId>
             <version>9.4.1208</version>
         </dependency>
+        <dependency>
+            <groupId>com.cronutils</groupId>
+            <artifactId>cron-utils</artifactId>
+            <version>7.0.1</version>
+        </dependency>
     </dependencies>
 
     <modules>

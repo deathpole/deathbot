@@ -5,7 +5,8 @@ import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Set;
 
-import net.deathpole.deathbot.CustomReaction;
+import net.deathpole.deathbot.CustomReactionDTO;
+import net.deathpole.deathbot.ReminderDTO;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
 
@@ -28,9 +29,15 @@ public interface IGlobalDao {
 
     String getWelcomeMessage(Guild guild);
 
-    HashMap<String, HashMap<String, CustomReaction>> initMapCustomReactions();
+    HashMap<String, HashMap<String, CustomReactionDTO>> initMapCustomReactions();
 
-    void saveCustomReaction(String keyWord, CustomReaction customReaction, Guild guild);
+    void saveCustomReaction(String keyWord, CustomReactionDTO customReaction, Guild guild);
+
+    HashMap<String, ReminderDTO> getRemindersForGuild(Guild guild);
+
+    boolean deleteRemindersForGuild(Guild guild, String title);
+
+    void saveReminder(ReminderDTO reminder, Guild guild);
 
     boolean deleteCustomReaction(String keyWord, Guild guild);
 

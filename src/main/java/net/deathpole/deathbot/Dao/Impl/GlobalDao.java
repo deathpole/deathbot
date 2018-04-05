@@ -18,7 +18,8 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import net.deathpole.deathbot.CustomReaction;
+import net.deathpole.deathbot.CustomReactionDTO;
+import net.deathpole.deathbot.ReminderDTO;
 import net.deathpole.deathbot.Dao.IGlobalDao;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
@@ -58,8 +59,8 @@ public class GlobalDao implements IGlobalDao {
     }
 
     private static Connection getConnection() throws URISyntaxException, SQLException {
-        String dbUrl = System.getenv("JDBC_DATABASE_URL");
-        // String dbUrl = "jdbc:postgresql://localhost:5432/deathbot?user=postgres&password=postgres";
+        // String dbUrl = System.getenv("JDBC_DATABASE_URL");
+        String dbUrl = "jdbc:postgresql://localhost:5432/deathbot?user=postgres&password=postgres";
         return DriverManager.getConnection(dbUrl);
     }
 
@@ -259,10 +260,10 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
-    public HashMap<String, HashMap<String, CustomReaction>> initMapCustomReactions() {
+    public HashMap<String, HashMap<String, CustomReactionDTO>> initMapCustomReactions() {
         Connection conn = getConnectionToDB();
 
-        HashMap<String, HashMap<String, CustomReaction>> resultMap = new HashMap<>();
+        HashMap<String, HashMap<String, CustomReactionDTO>> resultMap = new HashMap<>();
 
         try {
             Statement statement = conn.createStatement();
@@ -275,12 +276,12 @@ public class GlobalDao implements IGlobalDao {
                 String reaction = rs.getString("REACTION");
                 int noOfParam = rs.getInt("NUMBER_OF_PARAMS");
 
-                HashMap<String, CustomReaction> customReactionForGuild = resultMap.get(guildName);
+                HashMap<String, CustomReactionDTO> customReactionForGuild = resultMap.get(guildName);
                 if (customReactionForGuild == null) {
                     customReactionForGuild = new HashMap<>();
                 }
 
-                CustomReaction cr = new CustomReaction();
+                CustomReactionDTO cr = new CustomReactionDTO();
                 cr.setReaction(reaction);
                 cr.setNumberOfParams(noOfParam);
 
@@ -302,7 +303,7 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
-    public void saveCustomReaction(String keyWord, CustomReaction customReaction, Guild guild) {
+    public void saveCustomReaction(String keyWord, CustomReactionDTO customReaction, Guild guild) {
         Connection conn = getConnectionToDB();
 
         try {
@@ -323,6 +324,112 @@ public class GlobalDao implements IGlobalDao {
                 statement.setInt(2, customReaction.getNumberOfParams());
                 statement.setString(3, guild.getName());
                 statement.setString(4, keyWord);
+
+                statement.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public HashMap<String, ReminderDTO> getRemindersForGuild(Guild guild) {
+        Connection conn = getConnectionToDB();
+
+        HashMap<String, ReminderDTO> results = new HashMap<>();
+
+        try {
+            String sql = "SELECT * FROM REMINDER WHERE GUILD_NAME = '" + guild.getName() + "'";
+            Statement statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(sql);
+
+            while (rs.next()) {
+                String title = rs.getString("TITLE");
+                String text = rs.getString("TEXT");
+                String chan = rs.getString("CHAN");
+                String cronTab = rs.getString("CRONTAB");
+
+                ReminderDTO reminder = new ReminderDTO();
+                reminder.setTitle(title);
+                reminder.setText(text);
+                reminder.setChan(chan);
+                reminder.setCronTab(cronTab);
+
+                results.put(title, reminder);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return results;
+    }
+
+    @Override
+    public boolean deleteRemindersForGuild(Guild guild, String title) {
+        Connection conn = getConnectionToDB();
+
+        HashMap<String, ReminderDTO> results = new HashMap<>();
+
+        try {
+            String sql = "DELETE FROM REMINDER WHERE GUILD_NAME = ? AND TITLE = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, guild.getName());
+            ps.setString(2, title);
+            int count = ps.executeUpdate();
+
+            return count > 0 ? true : false;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public void saveReminder(ReminderDTO reminder, Guild guild) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlUpdate = "UPDATE REMINDER " + "SET TEXT = ?," + "CHAN = ?," + "CRONTAB = ?" + "WHERE GUILD_NAME = ? " + "AND TITLE = ?";
+            PreparedStatement statement = conn.prepareStatement(sqlUpdate);
+            statement.setString(1, reminder.getText());
+            statement.setString(2, reminder.getChan());
+            statement.setString(3, reminder.getCronTab());
+            statement.setString(4, guild.getName());
+            statement.setString(5, reminder.getTitle());
+
+            int count = statement.executeUpdate();
+
+            if (count == 0) {
+                String sqlInsert = "INSERT INTO REMINDER(TEXT, CHAN, CRONTAB, GUILD_NAME, TITLE) VALUES(?, ?, ?, ?, ?)";
+                statement = conn.prepareStatement(sqlInsert);
+
+                statement.setString(1, reminder.getText());
+                statement.setString(2, reminder.getChan());
+                statement.setString(3, reminder.getCronTab());
+                statement.setString(4, guild.getName());
+                statement.setString(5, reminder.getTitle());
 
                 statement.executeUpdate();
             }

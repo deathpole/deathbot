@@ -3,7 +3,7 @@ package net.deathpole.deathbot;
 /**
  * Created by nicolas on 04/10/17.
  */
-public class CustomReaction {
+public class CustomReactionDTO {
 
     private String reaction;
 
