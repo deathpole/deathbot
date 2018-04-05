@@ -59,8 +59,8 @@ public class GlobalDao implements IGlobalDao {
     }
 
     private static Connection getConnection() throws URISyntaxException, SQLException {
-        // String dbUrl = System.getenv("JDBC_DATABASE_URL");
-        String dbUrl = "jdbc:postgresql://localhost:5432/deathbot?user=postgres&password=postgres";
+        String dbUrl = System.getenv("JDBC_DATABASE_URL");
+        // String dbUrl = "jdbc:postgresql://localhost:5432/deathbot?user=postgres&password=postgres";
         return DriverManager.getConnection(dbUrl);
     }
 
