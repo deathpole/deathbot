@@ -45,6 +45,7 @@ public class ReminderThread extends Thread {
 
     private boolean isDoItNow(String cronTab) {
         ZonedDateTime now = ZonedDateTime.now();
+
         CronDefinition cronDefinition = CronDefinitionBuilder.defineCron().withMinutes().and().withHours().and().withDayOfMonth().and().withMonth().and().withYear().and().instance();
         CronParser parser = new CronParser(cronDefinition);
         ExecutionTime executionTime = ExecutionTime.forCron(parser.parse(cronTab));
