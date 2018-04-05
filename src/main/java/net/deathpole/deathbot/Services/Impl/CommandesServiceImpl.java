@@ -6,6 +6,7 @@ import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -375,9 +376,11 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case TIME:
             if (isAdmin) {
-                ZonedDateTime now = ZonedDateTime.now();
+                LocalDateTime now = LocalDateTime.now();
+                ZonedDateTime nowZoned = ZonedDateTime.now();
                 DateTimeFormatter dtf = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT);
 
+                messagesService.sendBotMessage(channel, "Heure et date du serveur (zoné) : " + nowZoned.format(dtf));
                 messagesService.sendBotMessage(channel, "Heure et date du serveur : " + now.format(dtf));
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);

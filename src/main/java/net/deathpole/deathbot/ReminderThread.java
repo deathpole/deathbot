@@ -30,15 +30,6 @@ public class ReminderThread extends Thread {
 
                 Thread.currentThread().sleep(60 * 1000);
 
-                // List<ReminderDTO> reminders = new ArrayList<>();
-                //
-                // ReminderDTO fakeReminder = new ReminderDTO();
-                // fakeReminder.setChan("raid");
-                // fakeReminder.setCronTab("15 16 * * *");
-                // fakeReminder.setText("Ceci est un test !");
-                //
-                // reminders.add(fakeReminder);
-
                 for (ReminderDTO reminder : this.reminders.values()) {
                     boolean doItNow = isDoItNow(reminder.getCronTab());
                     if (doItNow) {
