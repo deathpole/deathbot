@@ -63,6 +63,7 @@ public enum EnumDynoAction {
     UNIT2,
     UNMUTE,
     UPTIME,
+    VIDEO,
     WARN,
     WARNINGS,
     WHOIS;
