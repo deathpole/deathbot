@@ -154,16 +154,21 @@ public class GlobalDao implements IGlobalDao {
         message = message == null || message.isEmpty() ? null : message;
 
         try {
-            String sqlUpdate = "UPDATE WELCOME_MESSAGE SET WELCOME_MESSAGE = ? WHERE GUILD_NAME = '" + guild.getName() + "'";
-            PreparedStatement statement = conn.prepareStatement(sqlUpdate);
-            statement.setString(1, message);
-            int count = statement.executeUpdate();
+
+            String sqlUpdate = "UPDATE WELCOME_MESSAGE SET WELCOME_MESSAGE = ? WHERE GUILD_NAME = ?";
+
+            PreparedStatement stmnt = conn.prepareStatement(sqlUpdate);
+            stmnt.setString(1, message);
+            stmnt.setString(2, guild.getName());
+            int count = stmnt.executeUpdate();
 
             if (count == 0) {
-                String sqlInsert = "INSERT INTO WELCOME_MESSAGE(GUILD_NAME, WELCOME_MESSAGE) VALUES('" + guild.getName() + "', ?)";
-                statement = conn.prepareStatement(sqlInsert);
-                statement.setString(1, message);
-                statement.executeUpdate(sqlInsert);
+                String sqlInsert = "INSERT INTO WELCOME_MESSAGE(GUILD_NAME, WELCOME_MESSAGE) VALUES(?, ?)";
+                stmnt = conn.prepareStatement(sqlInsert);
+                stmnt.setString(1, guild.getName());
+                stmnt.setString(2, message);
+
+                stmnt.executeUpdate();
             }
 
         } catch (SQLException e) {
