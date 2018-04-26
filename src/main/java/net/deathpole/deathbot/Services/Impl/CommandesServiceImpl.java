@@ -68,6 +68,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     // Maps used after load
     private HashMap<Guild, Set<Role>> notSingleSelfAssignableRanksByGuild = new HashMap<>();
+    private HashMap<Guild, Set<Role>> onJoinRanksByGuild = new HashMap<>();
     private HashMap<Guild, Set<Role>> selfAssignableRanksByGuild = new HashMap<>();
     private HashMap<Guild, String> prefixCmdByGuild = new HashMap<>();
     private HashMap<Guild, HashMap<String, CustomReactionDTO>> mapCustomReactions = new HashMap<>();
@@ -78,6 +79,8 @@ public class CommandesServiceImpl implements ICommandesService {
 
     // Maps used on DB load
     private HashMap<String, Set<String>> notSingleSelfAssignableRanksByIdsByGuild = initNotSingleAssignableRanksbyGuild();
+    private HashMap<String, Set<String>> onJoinRanksByIdsByGuild = initOnJoinRanksbyGuild();
+
     private HashMap<String, Set<String>> selfAssignableRanksByIdsByGuild = initAssignableRanksbyGuild();
     private HashMap<String, HashMap<String, CustomReactionDTO>> mapCustomReactionsByGuild = initMapCustomReactions();
     private HashMap<String, HashMap<String, String>> mapVoiceRoleByGuild = initMapVoiceRoles();
@@ -99,6 +102,13 @@ public class CommandesServiceImpl implements ICommandesService {
             globalDao = new GlobalDao();
         }
         return globalDao.initAssignableRanksbyGuild(false);
+    }
+
+    private HashMap<String, Set<String>> initOnJoinRanksbyGuild() {
+        if (globalDao == null) {
+            globalDao = new GlobalDao();
+        }
+        return globalDao.initOnJoinRanksbyGuild();
     }
 
     private HashMap<String, HashMap<String, CustomReactionDTO>> initMapCustomReactions() {
@@ -199,6 +209,18 @@ public class CommandesServiceImpl implements ICommandesService {
         Member connectedMember = e.getMember();
         User user = connectedMember.getUser();
         Guild guild = e.getGuild();
+        sendWelcomeMessageIfExists(user, guild);
+        addOnJoinRankToUserIfExists(connectedMember, guild);
+    }
+
+    private void addOnJoinRankToUserIfExists(Member member, Guild guild) {
+        Set<Role> onJoinRanks = onJoinRanksByGuild.get(guild);
+        for (Role onJoinRank : onJoinRanks) {
+            guild.getController().addSingleRoleToMember(member, onJoinRank).complete();
+        }
+    }
+
+    private void sendWelcomeMessageIfExists(User user, Guild guild) {
         String welcomeMessage = welcomeMessageByGuild.get(guild);
         if (welcomeMessage == null) {
             welcomeMessage = globalDao.getWelcomeMessage(guild);
@@ -342,11 +364,12 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-
         case LIST:
             listAssignableRanks(guildController, author, channel, commandeComplete);
             break;
-
+        case LIST_ONJOIN_RANKS:
+            listOnJoinRanks(guildController, author, channel, commandeComplete);
+            break;
         case ADD_RANK:
             if (isAdmin) {
                 addAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
@@ -358,6 +381,27 @@ public class CommandesServiceImpl implements ICommandesService {
             if(isAdmin) {
                 addNotSingleAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
             }else{
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case ADD_ONJOIN_RANK:
+            if (isAdmin) {
+                addOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case ADD_GLOBAL_RANK:
+            if (isAdmin) {
+                addGlobalRank(author, channel, guildController, commandeComplete, args[0], adminRole);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case REMOVE_GLOBAL_RANK:
+            if (isAdmin) {
+                removeGlobalRank(author, channel, guildController, commandeComplete, args[0], adminRole);
+            } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
@@ -416,6 +460,13 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
+        case REMOVE_ONJOIN_RANK:
+            if (isAdmin) {
+                removeOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
         case RANK:
             String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
             manageRankCmd(author, channel, guildController, roleStr, member);
@@ -432,6 +483,176 @@ public class CommandesServiceImpl implements ICommandesService {
             System.out.println("Commande non prise en charge");
             break;
         }
+    }
+
+    private void removeGlobalRank(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg, Role adminRole) {
+        String[] rolesToRemoveTable = arg.split(ROLES_SEPARATOR);
+
+        Set<Role> listRolesToRemove = createListOfRoleFromStringTable(rolesToRemoveTable, guildController, channel);
+
+        for (Member member : guildController.getGuild().getMembers()) {
+            if (member.getRoles().contains(adminRole) || member.getUser().isBot()) {
+                continue;
+            }
+            for (Role roleToAdd : listRolesToRemove) {
+                guildController.removeSingleRoleFromMember(member, roleToAdd).complete();
+            }
+        }
+
+        if (!listRolesToRemove.isEmpty()) {
+            StringBuilder sb = buildRemoveGlobalRanksMessage(author, commandeComplete, listRolesToRemove);
+            messagesService.sendBotMessage(channel, sb.toString());
+        }
+    }
+
+    private void addGlobalRank(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg, Role adminRole) {
+        String[] rolesToAddTable = arg.split(ROLES_SEPARATOR);
+
+        Set<Role> listRolesToAdd = createListOfRoleFromStringTable(rolesToAddTable, guildController, channel);
+
+        for (Member member : guildController.getGuild().getMembers()) {
+            if (member.getRoles().contains(adminRole) || member.getUser().isBot()) {
+                continue;
+            }
+
+            for (Role roleToAdd : listRolesToAdd) {
+                guildController.addSingleRoleToMember(member, roleToAdd).complete();
+            }
+        }
+
+        if (!listRolesToAdd.isEmpty()) {
+            StringBuilder sb = buildAddGlobalRanksMessage(author, commandeComplete, listRolesToAdd);
+            messagesService.sendBotMessage(channel, sb.toString());
+        }
+    }
+
+    private StringBuilder buildAddGlobalRanksMessage(User author, String commandeComplete, Set<Role> listRolesToAdd) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Les rôles suivants ont été assignés à tous les membres du serveur (sauf Admin) : \r\n");
+
+        for (Role role : sortSetOfRolesToList(listRolesToAdd)) {
+            sb.append(role.getName()).append("\r\n");
+        }
+
+        System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+        return sb;
+    }
+
+    private StringBuilder buildRemoveGlobalRanksMessage(User author, String commandeComplete, Set<Role> listRolesToAdd) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Les rôles suivants ont été retirés de tous les membres du serveur (sauf Admin) : \r\n");
+
+        for (Role role : sortSetOfRolesToList(listRolesToAdd)) {
+            sb.append(role.getName()).append("\r\n");
+        }
+
+        System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+        return sb;
+    }
+
+    private void listOnJoinRanks(GuildController guildController, User author, MessageChannel channel, String commandeComplete) {
+        Set<Role> onJoinRanks = new HashSet<>(getOnJoinRanksForGuild(guildController));
+
+        if (onJoinRanks != null && !onJoinRanks.isEmpty()) {
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("Les ranks assignés à la connexion sont : \r\n");
+
+            for (Role role : sortSetOfRolesToList(onJoinRanks)) {
+                sb.append(role.getName());
+                sb.append(RETOUR_LIGNE);
+            }
+            messagesService.sendBotMessage(channel, sb.toString());
+            String message1 = sb.toString();
+            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
+        } else {
+            String message1 = "Aucun rank assigné à la connexion pour le moment. ";
+            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
+            messagesService.sendBotMessage(channel, message1);
+        }
+    }
+
+    private void removeOnJoinRank(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg) {
+        String[] rolesToRemoveTable = arg.split(ROLES_SEPARATOR);
+
+        Set<Role> listRolesToRemove = createListOfRoleFromStringTable(rolesToRemoveTable, guildController, channel);
+
+        Guild guild = guildController.getGuild();
+        Set<Role> onJoinRanks = getOnJoinRanksForGuild(guildController);
+
+        if (onJoinRanks != null && !onJoinRanks.isEmpty()) {
+            onJoinRanks.removeAll(listRolesToRemove);
+        } else {
+            onJoinRanks = new HashSet<>();
+        }
+
+        setOnJoinRanksForGuild(guild, onJoinRanks);
+        sendMessageOfRemovedOnJoinRanks(author, channel, commandeComplete, listRolesToRemove);
+    }
+
+    private void sendMessageOfRemovedOnJoinRanks(User author, MessageChannel channel, String commandeComplete, Set<Role> listRolesToRemove) {
+        if (!listRolesToRemove.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Les rôles suivants ne sont désormais plus assignés à la connexion : \r\n");
+            for (Role role : listRolesToRemove) {
+                sb.append(role.getName()).append("\r\n");
+            }
+
+            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+            messagesService.sendBotMessage(channel, sb.toString());
+        }
+    }
+
+    private void addOnJoinRank(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg) {
+        String[] rolesToAddTable = arg.split(ROLES_SEPARATOR);
+        Guild guild = guildController.getGuild();
+
+        Set<Role> listRolesToAdd = createListOfRoleFromStringTable(rolesToAddTable, guildController, channel);
+        Set<Role> onJoinRanks = getOnJoinRanksForGuild(guildController);
+
+        if (onJoinRanks != null && !onJoinRanks.isEmpty()) {
+            onJoinRanks.addAll(listRolesToAdd);
+        } else {
+            onJoinRanks = new HashSet<>(listRolesToAdd);
+        }
+        setOnJoinRanksForGuild(guild, onJoinRanks);
+
+        if (!listRolesToAdd.isEmpty()) {
+            StringBuilder sb = buildNewOnJoinRankMessage(author, commandeComplete, listRolesToAdd);
+            messagesService.sendBotMessage(channel, sb.toString());
+        }
+    }
+
+    private StringBuilder buildNewOnJoinRankMessage(User author, String commandeComplete, Set<Role> listRolesToAdd) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Les rôles suivants seront désormais assignés lorsqu'un nouveau membre rejoint le serveur : \r\n");
+
+        for (Role role : sortSetOfRolesToList(listRolesToAdd)) {
+            sb.append(role.getName()).append("\r\n");
+        }
+
+        System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+        return sb;
+    }
+
+    private void setOnJoinRanksForGuild(Guild guild, Set<Role> onJoinRanks) {
+        if (onJoinRanksByGuild == null) {
+            onJoinRanksByGuild = new HashMap<>();
+        }
+        onJoinRanksByGuild.put(guild, onJoinRanks);
+        globalDao.saveOnJoinRanksForGuild(guild, onJoinRanks);
+        // globalDao.saveAssignableRanksForGuild(guild, onJoinRanks, false);
+    }
+
+    private Set<Role> getOnJoinRanksForGuild(GuildController guildController) {
+        Guild guild = guildController.getGuild();
+
+        if (onJoinRanksByGuild.isEmpty() && !onJoinRanksByIdsByGuild.isEmpty()) {
+            onJoinRanksByGuild = transformRanksIdsToObjects(guildController, onJoinRanksByIdsByGuild);
+        }
+
+        return (onJoinRanksByGuild != null && !onJoinRanksByGuild.isEmpty()) ? onJoinRanksByGuild.get(guild) : new HashSet<>();
     }
 
     private void listCustomReactionsForGuild(Guild guild, MessageChannel channel) {

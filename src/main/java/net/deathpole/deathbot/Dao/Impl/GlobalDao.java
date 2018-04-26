@@ -575,4 +575,69 @@ public class GlobalDao implements IGlobalDao {
 
         return medalGain;
     }
+
+    @Override
+    public HashMap<String, Set<String>> initOnJoinRanksbyGuild() {
+        Connection conn = getConnectionToDB();
+
+        HashMap<String, Set<String>> resultMap = new HashMap<>();
+
+        try {
+            Statement statement = conn.createStatement();
+            String sql = "SELECT * FROM ONJOIN_RANKS ORDER BY GUILD_NAME ";
+            ResultSet rs = statement.executeQuery(sql);
+
+            while (rs.next()) {
+                String guildName = rs.getString("GUILD_NAME");
+                String roleName = rs.getString("ROLE_NAME");
+
+                Set<String> rolesForGuild = resultMap.get(guildName);
+                if (rolesForGuild == null) {
+                    rolesForGuild = new HashSet<>();
+                }
+
+                rolesForGuild.add(roleName);
+                resultMap.put(guildName, rolesForGuild);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return resultMap;
+    }
+
+    @Override
+    public void saveOnJoinRanksForGuild(Guild guild, Set<Role> onJoinRanks) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            Statement statement = conn.createStatement();
+            String sqlDelete = "DELETE FROM ONJOIN_RANKS WHERE GUILD_NAME = '" + guild.getName() + "'";
+            int deletedCount = statement.executeUpdate(sqlDelete);
+            System.out.println("Nombre de onjoin ranks supprimés : " + deletedCount);
+
+            Statement stmnt = conn.createStatement();
+            for (Role role : onJoinRanks) {
+                String sqlInsert = "INSERT INTO ONJOIN_RANKS(GUILD_NAME, ROLE_NAME) VALUES ('" + guild.getName() + "', '" + role.getName() + "')";
+                stmnt.addBatch(sqlInsert);
+            }
+
+            stmnt.executeBatch();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

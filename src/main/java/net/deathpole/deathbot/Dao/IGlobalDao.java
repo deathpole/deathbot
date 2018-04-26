@@ -46,4 +46,8 @@ public interface IGlobalDao {
     void saveVoiceRole(String channelName, String roleName, Guild guild);
 
     BigDecimal getMedalGainForStage(Integer stage);
+
+    HashMap<String, Set<String>> initOnJoinRanksbyGuild();
+
+    void saveOnJoinRanksForGuild(Guild guild, Set<Role> onJoinRanks);
 }
