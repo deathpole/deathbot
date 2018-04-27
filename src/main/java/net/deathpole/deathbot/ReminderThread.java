@@ -35,6 +35,9 @@ public class ReminderThread extends Thread {
                     boolean doItNow = isDoItNow(reminder.getCronTab());
                     if (doItNow) {
                         String text = reminder.getText();
+                        ZonedDateTime now = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Paris"));
+                        System.out.println("Reminder crontab matched, sending bot message at " + now.toString());
+
                         messagesService.sendBotMessageWithMentions(this.guild.getTextChannelsByName(reminder.getChan(), true).get(0), text, this.guild);
                     }
                 }
