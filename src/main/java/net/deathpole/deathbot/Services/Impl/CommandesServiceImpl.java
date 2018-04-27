@@ -480,7 +480,7 @@ public class CommandesServiceImpl implements ICommandesService {
         case REVIVE:
             calculateSRandMedals(channel, args);
         default:
-            System.out.println("Commande non prise en charge");
+            System.out.println("DeathbotExecution : Commande non prise en charge");
             break;
         }
     }
@@ -534,7 +534,7 @@ public class CommandesServiceImpl implements ICommandesService {
             sb.append(role.getName()).append("\r\n");
         }
 
-        System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+        System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
         return sb;
     }
 
@@ -546,7 +546,7 @@ public class CommandesServiceImpl implements ICommandesService {
             sb.append(role.getName()).append("\r\n");
         }
 
-        System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+        System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
         return sb;
     }
 
@@ -565,10 +565,10 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             messagesService.sendBotMessage(channel, sb.toString());
             String message1 = sb.toString();
-            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
+            System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
         } else {
             String message1 = "Aucun rank assigné à la connexion pour le moment. ";
-            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
+            System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
             messagesService.sendBotMessage(channel, message1);
         }
     }
@@ -599,7 +599,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 sb.append(role.getName()).append("\r\n");
             }
 
-            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+            System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
             messagesService.sendBotMessage(channel, sb.toString());
         }
     }
@@ -632,7 +632,7 @@ public class CommandesServiceImpl implements ICommandesService {
             sb.append(role.getName()).append("\r\n");
         }
 
-        System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+        System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
         return sb;
     }
 
@@ -1039,14 +1039,14 @@ public class CommandesServiceImpl implements ICommandesService {
     private void changePrefixe(User author, MessageChannel channel, String commandeComplete, String arg, Guild guild) {
         if (arg.trim().length() > 1) {
             String message1 = "Le prefixe de commande doit être un caractère unique. ";
-            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
+            System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
             messagesService.sendBotMessage(channel, message1);
         } else {
             String prefixCmd = "[" + arg + "]";
             setPrefixCmdForGuild(guild, prefixCmd);
 
             String message1 = "Prefixe de commande modifié pour \"" + arg + "\"";
-            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
+            System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
             messagesService.sendBotMessage(channel, message1);
         }
     }
@@ -1074,10 +1074,10 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             messagesService.sendBotMessage(channel, sb.toString());
             String message1 = sb.toString();
-            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
+            System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
         } else {
             String message1 = "Aucun rank assignable pour le moment. ";
-            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
+            System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + message1);
             messagesService.sendBotMessage(channel, message1);
         }
     }
@@ -1137,7 +1137,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 sb.append(role.getName()).append("\r\n");
             }
 
-            System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+            System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
             messagesService.sendBotMessage(channel, sb.toString());
         }
     }
@@ -1406,7 +1406,7 @@ public class CommandesServiceImpl implements ICommandesService {
             sb.append(role.getName()).append("\r\n");
         }
 
-        System.out.println("Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
+        System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
         return sb;
     }
 

@@ -40,11 +40,11 @@ public class GlobalDao implements IGlobalDao {
 
             String[] inst = scriptContent.split(";");
 
-            System.out.println("Init de bdd : \r\n");
+            System.out.println("DeathbotExecution : Init de bdd : \r\n");
             for (int i = 0; i < inst.length; i++) {
                 if (!inst[i].trim().equals("")) {
                     st.executeUpdate(inst[i]);
-                    System.out.println(">>>> " + inst[i]);
+                    System.out.println("DeathbotExecution : >>>> " + inst[i]);
                 }
             }
         } catch (SQLException e) {
@@ -127,7 +127,7 @@ public class GlobalDao implements IGlobalDao {
             Statement statement = conn.createStatement();
             String sqlDelete = "DELETE FROM ASSIGNABLE_RANKS WHERE GUILD_NAME = '" + guild.getName() + "' AND ASSIGNABLE_RANKS.SINGLE = " + single;
             int deletedCount = statement.executeUpdate(sqlDelete);
-            System.out.println("Nombre de ranks assignables supprimés : " + deletedCount);
+            System.out.println("DeathbotExecution : Nombre de ranks assignables supprimés : " + deletedCount);
 
             Statement stmnt = conn.createStatement();
             for (Role role : selfAssignableRanks) {
@@ -621,7 +621,7 @@ public class GlobalDao implements IGlobalDao {
             Statement statement = conn.createStatement();
             String sqlDelete = "DELETE FROM ONJOIN_RANKS WHERE GUILD_NAME = '" + guild.getName() + "'";
             int deletedCount = statement.executeUpdate(sqlDelete);
-            System.out.println("Nombre de onjoin ranks supprimés : " + deletedCount);
+            System.out.println("DeathbotExecution : Nombre de onjoin ranks supprimés : " + deletedCount);
 
             Statement stmnt = conn.createStatement();
             for (Role role : onJoinRanks) {
