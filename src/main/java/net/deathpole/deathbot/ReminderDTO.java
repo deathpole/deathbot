@@ -1,5 +1,7 @@
 package net.deathpole.deathbot;
 
+import java.time.LocalDateTime;
+
 /**
  * Created by nicolas on 04/10/17.
  */
@@ -12,6 +14,8 @@ public class ReminderDTO {
     private String chan;
 
     private String cronTab;
+
+    private LocalDateTime lastExecutionTime;
 
     public ReminderDTO() {
     }
@@ -53,5 +57,13 @@ public class ReminderDTO {
 
     public void setCronTab(String cronTab) {
         this.cronTab = cronTab;
+    }
+
+    public LocalDateTime getLastExecutionTime() {
+        return lastExecutionTime;
+    }
+
+    public void setLastExecutionTime(LocalDateTime lastExecutionTime) {
+        this.lastExecutionTime = lastExecutionTime;
     }
 }

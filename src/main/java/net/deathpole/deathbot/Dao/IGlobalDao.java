@@ -50,4 +50,6 @@ public interface IGlobalDao {
     HashMap<String, Set<String>> initOnJoinRanksbyGuild();
 
     void saveOnJoinRanksForGuild(Guild guild, Set<Role> onJoinRanks);
+
+    void updateExecutedTime(Guild guild, ReminderDTO reminder);
 }

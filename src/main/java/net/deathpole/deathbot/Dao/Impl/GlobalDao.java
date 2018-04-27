@@ -12,6 +12,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
@@ -360,12 +364,16 @@ public class GlobalDao implements IGlobalDao {
                 String text = rs.getString("TEXT");
                 String chan = rs.getString("CHAN");
                 String cronTab = rs.getString("CRONTAB");
+                Timestamp timestamp = rs.getTimestamp("LAST_EXECUTION_TIME");
 
                 ReminderDTO reminder = new ReminderDTO();
                 reminder.setTitle(title);
                 reminder.setText(text);
                 reminder.setChan(chan);
                 reminder.setCronTab(cronTab);
+                if (timestamp != null) {
+                    reminder.setLastExecutionTime(LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp.getTime()), ZoneId.of("Europe/Paris")));
+                }
 
                 results.put(title, reminder);
             }
@@ -630,6 +638,30 @@ public class GlobalDao implements IGlobalDao {
             }
 
             stmnt.executeBatch();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void updateExecutedTime(Guild guild, ReminderDTO reminder) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlUpdate = "UPDATE reminder " + "SET last_execution_time = ? WHERE GUILD_NAME = ? AND TITLE = ?";
+            PreparedStatement statement = conn.prepareStatement(sqlUpdate);
+            statement.setTimestamp(1, Timestamp.valueOf(reminder.getLastExecutionTime()));
+            statement.setString(2, guild.getName());
+            statement.setString(3, reminder.getTitle());
+
+            statement.executeUpdate();
+
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
