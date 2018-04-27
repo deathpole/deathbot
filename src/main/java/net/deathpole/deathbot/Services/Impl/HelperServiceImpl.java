@@ -2,13 +2,17 @@ package net.deathpole.deathbot.Services.Impl;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
 
 import net.deathpole.deathbot.Services.IHelperService;
+import net.deathpole.deathbot.Services.IMessagesService;
 
 /**
  * Created by nicolas on 28/09/17.
  */
-class HelperServiceImpl implements IHelperService {
+public class HelperServiceImpl implements IHelperService {
+
+    private IMessagesService messagesService = new MessagesServiceImpl();
 
     @Override
     public String formatBigNumbersToEFFormat(BigDecimal value) {
@@ -52,5 +56,59 @@ class HelperServiceImpl implements IHelperService {
         }
 
         return result;
+    }
+
+    @Override
+    public LocalDateTime generateNextExecutionTime(String cronTab, LocalDateTime actualNextExecutionTime) {
+        // 6 13 */3
+
+        LocalDateTime nextExecutionTime;
+        if (actualNextExecutionTime == null) {
+            nextExecutionTime = LocalDateTime.now();
+        } else {
+
+            nextExecutionTime = LocalDateTime.from(actualNextExecutionTime);
+        }
+
+        String[] values = cronTab.trim().split(" ");
+        String minutes = values[0];
+        String hours = values[1];
+        String days = values[2];
+
+        if (days.contains("*")) {
+            if (days.contains("/")) {
+                if (actualNextExecutionTime != null) {
+                    nextExecutionTime = nextExecutionTime.plusDays(Long.parseLong(days.split("/")[1]));
+                } else {
+
+                }
+            } else {
+                nextExecutionTime = nextExecutionTime.plusDays(1L);
+            }
+        } else {
+            if (nextExecutionTime.isAfter(LocalDateTime.from(nextExecutionTime).withDayOfMonth(Integer.parseInt(days)))) {
+                nextExecutionTime = nextExecutionTime.withDayOfMonth(Integer.parseInt(days)).plusMonths(1L);
+            } else {
+                nextExecutionTime = nextExecutionTime.withDayOfMonth(Integer.parseInt(days));
+            }
+        }
+
+        if (!minutes.contains("*")) {
+            if (nextExecutionTime.isAfter(LocalDateTime.from(nextExecutionTime).withMinute(Integer.parseInt(minutes)))) {
+                nextExecutionTime = nextExecutionTime.withMinute(Integer.parseInt(minutes)).plusHours(1L);
+            } else {
+                nextExecutionTime = nextExecutionTime.withMinute(Integer.parseInt(minutes));
+            }
+        }
+
+        if (!hours.contains("*")) {
+            if (nextExecutionTime.isAfter(LocalDateTime.from(nextExecutionTime).withHour(Integer.parseInt(hours)))) {
+                nextExecutionTime = nextExecutionTime.withHour(Integer.parseInt(hours)).plusDays(1L);
+            } else {
+                nextExecutionTime = nextExecutionTime.withHour(Integer.parseInt(hours));
+            }
+        }
+
+        return nextExecutionTime;
     }
 }

@@ -1295,7 +1295,8 @@ public class CommandesServiceImpl implements ICommandesService {
             String destinationChan = reminderParams[1];
             String reminderText = reminderParams[2];
             String cronTab = reminderParams[3];
-            ReminderDTO reminder = new ReminderDTO(title, reminderText, destinationChan, cronTab);
+            LocalDateTime nextExecutionTime = helperService.generateNextExecutionTime(cronTab, null);
+            ReminderDTO reminder = new ReminderDTO(title, reminderText, destinationChan, cronTab, nextExecutionTime);
 
             Guild guild = guildController.getGuild();
             HashMap<String, ReminderDTO> reminders = Bot.reminderThreadsByGuild.get(guild.getName()).getReminders();

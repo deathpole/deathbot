@@ -1,20 +1,17 @@
 package net.deathpole.deathbot;
 
+import static java.time.temporal.ChronoUnit.MINUTES;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
-import java.util.Optional;
-
-import com.cronutils.model.CronType;
-import com.cronutils.model.definition.CronDefinition;
-import com.cronutils.model.definition.CronDefinitionBuilder;
-import com.cronutils.model.time.ExecutionTime;
-import com.cronutils.parser.CronParser;
 
 import net.deathpole.deathbot.Dao.IGlobalDao;
 import net.deathpole.deathbot.Dao.Impl.GlobalDao;
+import net.deathpole.deathbot.Services.IHelperService;
 import net.deathpole.deathbot.Services.IMessagesService;
+import net.deathpole.deathbot.Services.Impl.HelperServiceImpl;
 import net.deathpole.deathbot.Services.Impl.MessagesServiceImpl;
 import net.dv8tion.jda.core.entities.Guild;
 
@@ -23,6 +20,7 @@ public class ReminderThread extends Thread {
     private static final String PREFIX_TAG = "@";
     public HashMap<String, ReminderDTO> reminders = new HashMap<>();
     private IMessagesService messagesService = new MessagesServiceImpl();
+    private IHelperService helperService = new HelperServiceImpl();
     private IGlobalDao globalDao = new GlobalDao();
     private Guild guild;
 
@@ -34,41 +32,35 @@ public class ReminderThread extends Thread {
     public void run() {
         try {
             while (true) {
-
-                Thread.currentThread().sleep(60 * 1000);
-
                 for (ReminderDTO reminder : this.reminders.values()) {
-                    boolean doItNow = isDoItNow(reminder.getCronTab(), reminder.getLastExecutionTime());
+                    LocalDateTime nextExecutionTime = reminder.getNextExecutionTime();
+                    boolean doItNow = isDoItNow(nextExecutionTime);
                     if (doItNow) {
                         String text = reminder.getText();
                         ZonedDateTime now = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Paris"));
                         System.out.println("DeathbotExecution : Reminder crontab matched, sending bot message at " + now.toString());
 
-                        reminder.setLastExecutionTime(now.toLocalDateTime());
+                        LocalDateTime newNextExecutionTime = helperService.generateNextExecutionTime(reminder.getCronTab(), nextExecutionTime);
+
+                        reminder.setNextExecutionTime(newNextExecutionTime);
 
                         globalDao.updateExecutedTime(guild, reminder);
-
                         messagesService.sendBotMessageWithMentions(this.guild.getTextChannelsByName(reminder.getChan(), true).get(0), text, this.guild);
                     }
                 }
+
+                Thread.currentThread().sleep(60 * 1000);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    private boolean isDoItNow(String cronTab, LocalDateTime lastExecutionTime) {
-        ZonedDateTime now = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Paris"));
+    private boolean isDoItNow(LocalDateTime nextExecutionTime) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nextExecTime = ZonedDateTime.of(nextExecutionTime, ZoneId.of("Europe/Paris")).toLocalDateTime();
 
-        CronDefinition cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ);
-        CronParser parser = new CronParser(cronDefinition);
-        ExecutionTime executionTime = ExecutionTime.forCron(parser.parse(cronTab));
-        if (lastExecutionTime != null) {
-            Optional<ZonedDateTime> lastExec = executionTime.lastExecution(ZonedDateTime.of(lastExecutionTime, ZoneId.of("Europe/Paris")));
-            System.out.print("DeathbotExecution : Reminder previous exec : " + (lastExec.isPresent() ? lastExec.get().toString() : " Rien"));
-        }
-
-        return executionTime.isMatch(now);
+        return MINUTES.between(now, nextExecTime) < 1;
     }
 
     public HashMap<String, ReminderDTO> getReminders() {

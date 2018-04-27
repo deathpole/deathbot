@@ -372,7 +372,7 @@ public class GlobalDao implements IGlobalDao {
                 reminder.setChan(chan);
                 reminder.setCronTab(cronTab);
                 if (timestamp != null) {
-                    reminder.setLastExecutionTime(LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp.getTime()), ZoneId.of("Europe/Paris")));
+                    reminder.setNextExecutionTime(LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp.getTime()), ZoneId.of("Europe/Paris")));
                 }
 
                 results.put(title, reminder);
@@ -424,18 +424,19 @@ public class GlobalDao implements IGlobalDao {
         Connection conn = getConnectionToDB();
 
         try {
-            String sqlUpdate = "UPDATE REMINDER " + "SET TEXT = ?," + "CHAN = ?," + "CRONTAB = ?" + "WHERE GUILD_NAME = ? " + "AND TITLE = ?";
+            String sqlUpdate = "UPDATE REMINDER " + "SET TEXT = ?, CHAN = ?, CRONTAB = ? , LAST_EXECUTION_TIME = ? WHERE GUILD_NAME = ? " + "AND TITLE = ?";
             PreparedStatement statement = conn.prepareStatement(sqlUpdate);
             statement.setString(1, reminder.getText());
             statement.setString(2, reminder.getChan());
             statement.setString(3, reminder.getCronTab());
-            statement.setString(4, guild.getName());
-            statement.setString(5, reminder.getTitle());
+            statement.setTimestamp(4, Timestamp.valueOf(reminder.getNextExecutionTime()));
+            statement.setString(5, guild.getName());
+            statement.setString(6, reminder.getTitle());
 
             int count = statement.executeUpdate();
 
             if (count == 0) {
-                String sqlInsert = "INSERT INTO REMINDER(TEXT, CHAN, CRONTAB, GUILD_NAME, TITLE) VALUES(?, ?, ?, ?, ?)";
+                String sqlInsert = "INSERT INTO REMINDER(TEXT, CHAN, CRONTAB, GUILD_NAME, TITLE, LAST_EXECUTION_TIME) VALUES(?, ?, ?, ?, ?, ?)";
                 statement = conn.prepareStatement(sqlInsert);
 
                 statement.setString(1, reminder.getText());
@@ -443,6 +444,7 @@ public class GlobalDao implements IGlobalDao {
                 statement.setString(3, reminder.getCronTab());
                 statement.setString(4, guild.getName());
                 statement.setString(5, reminder.getTitle());
+                statement.setTimestamp(6, Timestamp.valueOf(reminder.getNextExecutionTime()));
 
                 statement.executeUpdate();
             }
@@ -656,7 +658,7 @@ public class GlobalDao implements IGlobalDao {
         try {
             String sqlUpdate = "UPDATE reminder " + "SET last_execution_time = ? WHERE GUILD_NAME = ? AND TITLE = ?";
             PreparedStatement statement = conn.prepareStatement(sqlUpdate);
-            statement.setTimestamp(1, Timestamp.valueOf(reminder.getLastExecutionTime()));
+            statement.setTimestamp(1, Timestamp.valueOf(reminder.getNextExecutionTime()));
             statement.setString(2, guild.getName());
             statement.setString(3, reminder.getTitle());
 

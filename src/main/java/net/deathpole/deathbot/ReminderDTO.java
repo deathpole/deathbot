@@ -15,16 +15,18 @@ public class ReminderDTO {
 
     private String cronTab;
 
-    private LocalDateTime lastExecutionTime;
+    private LocalDateTime nextExecutionTime;
 
     public ReminderDTO() {
     }
 
-    public ReminderDTO(String title, String text, String chan, String cronTab) {
+    public ReminderDTO(String title, String text, String chan, String cronTab, LocalDateTime nextExecutionTime) {
         this.title = title;
         this.text = text;
         this.chan = chan;
         this.cronTab = cronTab;
+        this.nextExecutionTime = nextExecutionTime;
+
     }
 
     public String getTitle() {
@@ -59,11 +61,11 @@ public class ReminderDTO {
         this.cronTab = cronTab;
     }
 
-    public LocalDateTime getLastExecutionTime() {
-        return lastExecutionTime;
+    public LocalDateTime getNextExecutionTime() {
+        return nextExecutionTime;
     }
 
-    public void setLastExecutionTime(LocalDateTime lastExecutionTime) {
-        this.lastExecutionTime = lastExecutionTime;
+    public void setNextExecutionTime(LocalDateTime nextExecutionTime) {
+        this.nextExecutionTime = nextExecutionTime;
     }
 }
