@@ -79,11 +79,15 @@ public class HelperServiceImpl implements IHelperService {
             if (days.contains("/")) {
                 if (actualNextExecutionTime != null) {
                     nextExecutionTime = nextExecutionTime.plusDays(Long.parseLong(days.split("/")[1]));
-                } else {
-
                 }
             } else {
-                nextExecutionTime = nextExecutionTime.plusDays(1L);
+                LocalDateTime tempTime = LocalDateTime.from(nextExecutionTime);
+                tempTime = tempTime.withHour(Integer.parseInt(hours));
+                tempTime = tempTime.withMinute(Integer.parseInt(minutes));
+
+                if (tempTime.isBefore(nextExecutionTime)) {
+                    nextExecutionTime = nextExecutionTime.plusDays(1L);
+                }
             }
         } else {
             if (nextExecutionTime.isAfter(LocalDateTime.from(nextExecutionTime).withDayOfMonth(Integer.parseInt(days)))) {

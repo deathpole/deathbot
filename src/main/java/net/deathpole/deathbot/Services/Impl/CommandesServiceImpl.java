@@ -413,6 +413,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case REMOVE_REMINDER:
+        case RR:
             if (isAdmin) {
                 removeReminder(channel, guildController, args[0]);
             } else {

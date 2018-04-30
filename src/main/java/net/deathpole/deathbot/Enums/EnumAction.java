@@ -28,6 +28,7 @@ public enum EnumAction {
     REMOVE_ONJOIN_RANK,
     REMOVE_RANK,
     REMOVE_REMINDER,
+    RR,
     REVIVE,
     SET_WELCOME_MESSAGE,
     SINGLE,
