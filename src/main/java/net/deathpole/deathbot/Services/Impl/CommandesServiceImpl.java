@@ -216,6 +216,12 @@ public class CommandesServiceImpl implements ICommandesService {
     private void addOnJoinRankToUserIfExists(Member member, Guild guild) {
         Set<Role> onJoinRanks = onJoinRanksByGuild.get(guild);
         for (Role onJoinRank : onJoinRanks) {
+
+            System.out.println("Guild is : " + guild);
+            System.out.println("GuildController is : " + guild.getController());
+            System.out.println("Member is : " + member);
+            System.out.println("Rank is : " + onJoinRank);
+
             guild.getController().addSingleRoleToMember(member, onJoinRank).complete();
         }
     }
@@ -289,6 +295,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
         switch (actionEnum) {
         case SET_WELCOME_MESSAGE:
+        case SWM:
                 if (isAdmin) {
                 setWelcomeMessageForGuild(originalMessage, guild);
                 messagesService.sendBotMessage(channel, "Le message privé de bienvenue a bien été mis à jour.");
@@ -368,9 +375,11 @@ public class CommandesServiceImpl implements ICommandesService {
             listAssignableRanks(guildController, author, channel, commandeComplete);
             break;
         case LIST_ONJOIN_RANKS:
+        case LOJR:
             listOnJoinRanks(guildController, author, channel, commandeComplete);
             break;
         case ADD_RANK:
+        case AR:
             if (isAdmin) {
                 addAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
             } else {
@@ -378,6 +387,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case ADD_NOTSINGLE_RANK:
+        case ANSR:
             if(isAdmin) {
                 addNotSingleAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
             }else{
@@ -385,6 +395,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case ADD_ONJOIN_RANK:
+        case AOJR:
             if (isAdmin) {
                 addOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
             } else {
@@ -392,6 +403,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case ADD_GLOBAL_RANK:
+        case AGR:
             if (isAdmin) {
                 addGlobalRank(author, channel, guildController, commandeComplete, args[0], adminRole);
             } else {
@@ -399,6 +411,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case REMOVE_GLOBAL_RANK:
+        case RGR:
             if (isAdmin) {
                 removeGlobalRank(author, channel, guildController, commandeComplete, args[0], adminRole);
             } else {
@@ -406,6 +419,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case ADD_REMINDER:
+        case AREM:
             if (isAdmin) {
                 addReminder(channel, guildController, args);
             } else {
@@ -413,7 +427,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case REMOVE_REMINDER:
-        case RR:
+        case RREM:
             if (isAdmin) {
                 removeReminder(channel, guildController, args[0]);
             } else {
@@ -434,6 +448,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case LIST_REMINDERS:
+        case LREM:
             if (isAdmin) {
                 listReminders(channel, guildController);
             } else {
@@ -441,6 +456,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case ADD_VOICE_ROLE:
+        case AVR:
             if (isAdmin) {
                 addVoiceRole(guild, member, author, channel, guildController, commandeComplete, args[0]);
             } else {
@@ -448,6 +464,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case REMOVE_RANK:
+        case RR:
             if (isAdmin) {
                 removeAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
             } else {
@@ -455,6 +472,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case REMOVE_NOTSINGLE_RANK:
+        case RNSR:
             if (isAdmin) {
                 removeNotSingleAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
             } else {
@@ -462,6 +480,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case REMOVE_ONJOIN_RANK:
+        case ROJR:
             if (isAdmin) {
                 removeOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
             } else {
@@ -1611,5 +1630,4 @@ public class CommandesServiceImpl implements ICommandesService {
 
         return userRoles.stream().filter(userRole -> selfAssignableRanks != null && selfAssignableRanks.contains(userRole)).collect(Collectors.toList());
     }
-
 }
