@@ -1,6 +1,8 @@
 package net.deathpole.deathbot.Services.Impl;
 
 import java.awt.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import net.deathpole.deathbot.Services.IMessagesService;
@@ -21,6 +23,8 @@ public class MessagesServiceImpl implements IMessagesService {
 
     @Override
     public void sendBotMessageWithMention(MessageChannel channel, String message, IMentionable mentionable) {
+        message = replaceDateAndTime(message);
+
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(Color.RED);
 
@@ -33,6 +37,8 @@ public class MessagesServiceImpl implements IMessagesService {
     }
 
     @Override public void sendBotMessage(MessageChannel channel, String message) {
+        message = replaceDateAndTime(message);
+
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(Color.RED);
 
@@ -45,6 +51,8 @@ public class MessagesServiceImpl implements IMessagesService {
 
     @Override
     public void sendBotMessageWithMentions(MessageChannel channel, String message, Guild guild) {
+        message = replaceDateAndTime(message);
+
         MessageBuilder messageBuilder = new MessageBuilder();
 
         while (message.contains(PREFIX_TAG)) {
@@ -72,10 +80,23 @@ public class MessagesServiceImpl implements IMessagesService {
         channel.sendMessage(messageBuilder.build()).queue();
     }
 
+    private String replaceDateAndTime(String message) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (message.contains("{time}")) {
+            message = message.replace("{time}", DateTimeFormatter.ofPattern("hh:mm").format(now));
+        }
+
+        if (message.contains("{date}")) {
+            message = message.replace("{date}", DateTimeFormatter.ofPattern("dd/MM/yyyy").format(now));
+        }
+        return message;
+    }
+
     @Override
     public void sendNormalBotMessage(MessageChannel channel, String message) {
         MessageBuilder messageBuilder = new MessageBuilder();
-        messageBuilder.append(message);
+        messageBuilder.append(replaceDateAndTime(message));
         channel.sendMessage(messageBuilder.build()).queue();
     }
 
