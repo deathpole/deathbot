@@ -45,6 +45,9 @@ public class ReminderThread extends Thread {
                         reminder.setNextExecutionTime(newNextExecutionTime);
 
                         globalDao.updateExecutedTime(guild, reminder);
+                        if (text.contains("{time}")) {
+                            text.replace("{time}", now.toString());
+                        }
                         messagesService.sendBotMessageWithMentions(this.guild.getTextChannelsByName(reminder.getChan(), true).get(0), text, this.guild);
                     }
                 }
