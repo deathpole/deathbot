@@ -82,11 +82,35 @@ public class HelperServiceImpl implements IHelperService {
                 }
             } else {
                 LocalDateTime tempTime = LocalDateTime.from(nextExecutionTime);
-                tempTime = tempTime.withHour(Integer.parseInt(hours));
-                tempTime = tempTime.withMinute(Integer.parseInt(minutes));
+                if ("*".equals(hours)) {
+                    if ("*".equals(minutes)) {
+                        nextExecutionTime = nextExecutionTime.plusMinutes(1L);
+                    } else {
+                        tempTime = tempTime.withMinute(Integer.parseInt(minutes));
 
-                if (tempTime.isBefore(nextExecutionTime)) {
-                    nextExecutionTime = nextExecutionTime.plusDays(1L);
+                        if (tempTime.isBefore(nextExecutionTime)) {
+                            nextExecutionTime = nextExecutionTime.withMinute(Integer.parseInt(minutes));
+                            nextExecutionTime = nextExecutionTime.plusHours(1L);
+                        }
+                    }
+                } else {
+                    if ("*".equals(minutes)) {
+                        tempTime = tempTime.withHour(Integer.parseInt(hours));
+
+                        if (tempTime.isBefore(nextExecutionTime)) {
+                            nextExecutionTime = nextExecutionTime.withHour(Integer.parseInt(hours));
+                            nextExecutionTime = nextExecutionTime.plusDays(1L);
+                        }
+                    } else {
+                        tempTime = tempTime.withHour(Integer.parseInt(hours));
+                        tempTime = tempTime.withMinute(Integer.parseInt(minutes));
+
+                        if (tempTime.isBefore(nextExecutionTime)) {
+                            nextExecutionTime = nextExecutionTime.withHour(Integer.parseInt(hours));
+                            nextExecutionTime = nextExecutionTime.withMinute(Integer.parseInt(minutes));
+                            nextExecutionTime = nextExecutionTime.plusDays(1L);
+                        }
+                    }
                 }
             }
         } else {
