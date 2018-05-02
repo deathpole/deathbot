@@ -84,11 +84,11 @@ public class MessagesServiceImpl implements IMessagesService {
         LocalDateTime now = LocalDateTime.now();
 
         if (message.contains("{time}")) {
-            message = message.replace("{time}", DateTimeFormatter.ofPattern("hh:mm").format(now));
+            message = message.replace("{time}", DateTimeFormatter.ofPattern("HH:mm").format(now));
         }
 
         if (message.contains("{date}")) {
-            message = message.replace("{date}", DateTimeFormatter.ofPattern("dd/MM/yyyy").format(now));
+            message = message.replace("{date}", DateTimeFormatter.ofPattern("dd MMMM yyyy").format(now));
         }
         return message;
     }
