@@ -62,13 +62,7 @@ public class HelperServiceImpl implements IHelperService {
     public LocalDateTime generateNextExecutionTime(String cronTab, LocalDateTime actualNextExecutionTime) {
         // 6 13 */3
 
-        LocalDateTime nextExecutionTime;
-        if (actualNextExecutionTime == null) {
-            nextExecutionTime = LocalDateTime.now();
-        } else {
-
-            nextExecutionTime = LocalDateTime.from(actualNextExecutionTime);
-        }
+        LocalDateTime nextExecutionTime = LocalDateTime.now();
 
         String[] values = cronTab.trim().split(" ");
         String minutes = values[0];
@@ -78,6 +72,7 @@ public class HelperServiceImpl implements IHelperService {
         if (days.contains("*")) {
             if (days.contains("/")) {
                 if (actualNextExecutionTime != null) {
+                    nextExecutionTime = LocalDateTime.from(actualNextExecutionTime);
                     nextExecutionTime = nextExecutionTime.plusDays(Long.parseLong(days.split("/")[1]));
                 }
             } else {
