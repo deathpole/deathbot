@@ -7,6 +7,7 @@ public enum EnumDynoAction {
 
     AFK,
     // AIDE,
+    AIRSHIP,
     ARTEFACTS,
     AVATAR,
     BAN,
