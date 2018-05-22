@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -183,7 +184,7 @@ public class CommandesServiceImpl implements ICommandesService {
                                                 }
                                                 executeCustomReaction(member, e.getMessage(), guildController, channel, param, action);
                                             } else {
-                                                executeEmbeddedAction(guildController, adminRole, author, member, channel, commandeComplete, args, action, msg);
+                                                executeEmbeddedAction(guildController, adminRole, author, member, channel, commandeComplete, args, action, msg, e.getMessage());
                                             }
                                         }
                                     }
@@ -287,7 +288,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void executeEmbeddedAction(GuildController guildController, Role adminRole, User author, Member member, MessageChannel channel, String commandeComplete, String[] args,
-                                       String action, String originalMessage) {
+            String action, String originalMessage, Message message) {
 
         EnumAction actionEnum = EnumAction.fromValue(action);
         boolean isAdmin = member.getRoles().contains(adminRole);
@@ -471,6 +472,13 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
+        case PUNISH:
+            if (isAdmin) {
+                punishUser(author, channel, guildController, commandeComplete, args[0], message);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
         case REMOVE_NOTSINGLE_RANK:
         case RNSR:
             if (isAdmin) {
@@ -502,6 +510,155 @@ public class CommandesServiceImpl implements ICommandesService {
         default:
             System.out.println("DeathbotExecution : Commande non prise en charge");
             break;
+        }
+    }
+
+    private void punishUser(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg, Message message) {
+
+        String[] args;
+
+        String action;
+        String user;
+        String duration = null;
+        String comment;
+
+        if (arg.contains("mute") || arg.contains("ban")) {
+            args = arg.split(SEPARATOR_ACTION_ARGS, 4);
+            if (args.length < 4) {
+                messagesService.sendBotMessage(channel, "Il manque des paramètres !");
+                return;
+            }
+
+            action = args[0];
+            user = args[1];
+            duration = args[2];
+            comment = args[3];
+
+        } else {
+            args = arg.split(SEPARATOR_ACTION_ARGS, 3);
+            if (args.length < 3) {
+                messagesService.sendBotMessage(channel, "Il manque des paramètres !");
+                return;
+            }
+
+            action = args[0];
+            user = args[1];
+            comment = args[2];
+
+        }
+        Role adminRole = guildController.getGuild().getRolesByName("Admin", true).get(0);
+        Role modoRole = guildController.getGuild().getRolesByName("Moderateur", true).get(0);
+
+        Member memberToPerformActionOn = guildController.getGuild().getMembersByEffectiveName(user.replace("@", ""), true).get(0);
+
+        if (memberToPerformActionOn.getRoles().contains(adminRole) || memberToPerformActionOn.getRoles().contains(modoRole)) {
+            messagesService.sendBotMessage(channel, "Hin hin, ce mec, c'est presque Dieu... On lui crache pas au visage ;)");
+            return;
+        }
+
+        switch (action) {
+        case "mute":
+            muteUser(duration, comment, guildController, memberToPerformActionOn, channel, message);
+            break;
+        case "kick":
+            kickUser(comment, guildController, memberToPerformActionOn, channel, message);
+            break;
+        case "warn":
+            warnUser(comment, memberToPerformActionOn, channel, message);
+            break;
+        case "ban":
+            banUser(duration, comment, guildController, memberToPerformActionOn, channel, message);
+            break;
+        case "unban":
+            unbanUser(comment, guildController, user);
+            break;
+        case "unmute":
+            unmuteUser(comment, guildController, memberToPerformActionOn);
+            break;
+        }
+    }
+
+    private void banUser(String duration, String comment, GuildController guildController, Member memberToBan, MessageChannel channel, Message message) {
+        if (memberToBan != null) {
+            guildController.ban(memberToBan, 0, comment).complete();
+            sendPrivateMessage(memberToBan.getUser(), "Vous avez été banni ! \r\nLa raison : " + comment);
+            StringBuilder sb = new StringBuilder("L'utilisateur " + memberToBan.getEffectiveName() + " a été banni");
+
+            if (!"".equals(duration)) {
+                try {
+                    long durationLong = Long.parseLong(duration);
+                    sb.append(" pour une période de " + durationLong + " minutes");
+                    guildController.unban(memberToBan.getUser()).queueAfter(durationLong, TimeUnit.MINUTES);
+                } catch (NumberFormatException e) {
+
+                }
+            }
+
+            sb.append(" !");
+            messagesService.sendBotMessage(channel, sb.toString());
+            channel.deleteMessageById(message.getId()).complete();
+        }
+    }
+
+    private void warnUser(String comment, Member memberToWarn, MessageChannel channel, Message message) {
+        if (memberToWarn != null) {
+            sendPrivateMessage(memberToWarn.getUser(), "Ceci est un avertissement ! \r\nLa raison : " + comment);
+            channel.deleteMessageById(message.getId()).complete();
+        }
+    }
+
+    private void kickUser(String comment, GuildController guildController, Member memberToKick, MessageChannel channel, Message message) {
+        if (memberToKick != null) {
+            guildController.kick(memberToKick, comment).complete();
+            sendPrivateMessage(memberToKick.getUser(), comment);
+            StringBuilder sb = new StringBuilder("L'utilisateur " + memberToKick.getEffectiveName() + " a été kické !");
+            messagesService.sendBotMessage(channel, sb.toString());
+            channel.deleteMessageById(message.getId()).complete();
+        }
+    }
+
+    private void muteUser(String duration, String comment, GuildController guildController, Member memberToMute, MessageChannel channel, Message message) {
+        if (memberToMute != null) {
+            guildController.setMute(memberToMute, true).complete();
+
+            List<Role> muted = guildController.getGuild().getRolesByName("Muted", true);
+            if (!muted.isEmpty()) {
+                Role mutedRole = muted.get(0);
+                guildController.addSingleRoleToMember(memberToMute, mutedRole).complete();
+                StringBuilder sb = new StringBuilder("L'utilisateur " + memberToMute.getEffectiveName() + " a été muté");
+                if (!"".equals(duration)) {
+                    try {
+                        long durationLong = Long.parseLong(duration);
+
+                        sb.append(" pour une période de " + durationLong + " minutes");
+
+                        guildController.removeSingleRoleFromMember(memberToMute, mutedRole).queueAfter(durationLong, TimeUnit.MINUTES);
+                    } catch (NumberFormatException e) {
+
+                    }
+                    sb.append(" !");
+                    messagesService.sendBotMessage(channel, sb.toString());
+                }
+            }
+            // TODO Ajouter le user à la liste des mutés
+            sendPrivateMessage(memberToMute.getUser(), comment);
+            channel.deleteMessageById(message.getId()).complete();
+        }
+
+    }
+
+    private void unbanUser(String comment, GuildController guildController, String user) {
+        if (user != null) {
+            User userObject = guildController.getJDA().getUsersByName(user, true).get(0);
+            guildController.unban(userObject);
+            sendPrivateMessage(userObject, comment);
+        }
+    }
+
+    private void unmuteUser(String comment, GuildController guildController, Member member) {
+        if (member != null) {
+            guildController.setMute(member, false);
+            sendPrivateMessage(member.getUser(), comment);
         }
     }
 

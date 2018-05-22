@@ -30,6 +30,7 @@ public enum EnumAction {
     LREM,
     LCR,
     MAKE,
+    PUNISH,
     RANK,
     REMOVE_GLOBAL_RANK,
     RGR,
