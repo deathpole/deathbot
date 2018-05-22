@@ -587,8 +587,10 @@ public class CommandesServiceImpl implements ICommandesService {
             if (!"".equals(duration)) {
                 try {
                     long durationLong = Long.parseLong(duration);
-                    sb.append(" pour une période de " + durationLong + " minutes");
-                    guildController.unban(memberToBan.getUser()).queueAfter(durationLong, TimeUnit.MINUTES);
+                    if (durationLong != 0L) {
+                        sb.append(" pour une période de " + durationLong + " minutes");
+                        guildController.unban(memberToBan.getUser()).queueAfter(durationLong, TimeUnit.MINUTES);
+                    }
                 } catch (NumberFormatException e) {
 
                 }
