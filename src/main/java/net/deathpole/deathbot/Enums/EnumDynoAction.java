@@ -6,6 +6,7 @@ package net.deathpole.deathbot.Enums;
 public enum EnumDynoAction {
 
     AFK,
+    ADMIN,
     // AIDE,
     AIRSHIP,
     ARTEFACTS,
@@ -26,6 +27,7 @@ public enum EnumDynoAction {
     KICK,
     KL,
     MEMBERCOUNT,
+    MOD,
     MODLOGS,
     MUTE,
     NINJA,

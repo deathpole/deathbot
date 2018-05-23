@@ -56,15 +56,13 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private static final String REMINDER_SEPARATOR = ";";
     private static final int NB_REMINDER_PARAMS = 4;
-    private IGlobalDao globalDao;
-    private IMessagesService messagesService = new MessagesServiceImpl();
-    private IHelperService helperService = new HelperServiceImpl();
-
     private static final String PREFIX_TAG = "@";
     private static final String SEPARATOR_ACTION_ARGS = " ";
     private static final String ROLES_SEPARATOR = ",";
     private static final String RETOUR_LIGNE = "\r\n";
-
+    private IGlobalDao globalDao;
+    private IMessagesService messagesService = new MessagesServiceImpl();
+    private IHelperService helperService = new HelperServiceImpl();
     private List<String> dynoActions = initDynoActions();
 
     // Maps used after load
@@ -91,6 +89,16 @@ public class CommandesServiceImpl implements ICommandesService {
     private List<String> listCadavreComplement;
     private List<String> listCadavreAdjectif;
 
+    private static List<String> initDynoActions() {
+
+        List<String> tempDynoActions = new ArrayList<>();
+
+        for (EnumDynoAction action : EnumDynoAction.values()) {
+            tempDynoActions.add(action.name());
+        }
+        return tempDynoActions;
+    }
+
     private HashMap<String, Set<String>> initAssignableRanksbyGuild() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
@@ -98,7 +106,7 @@ public class CommandesServiceImpl implements ICommandesService {
         return globalDao.initAssignableRanksbyGuild(true);
     }
 
-    private HashMap<String,Set<String>> initNotSingleAssignableRanksbyGuild() {
+    private HashMap<String, Set<String>> initNotSingleAssignableRanksbyGuild() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
         }
@@ -126,16 +134,6 @@ public class CommandesServiceImpl implements ICommandesService {
         return globalDao.initMapVoiceRoles();
     }
 
-    private static List<String> initDynoActions() {
-
-        List<String> tempDynoActions = new ArrayList<>();
-
-        for (EnumDynoAction action : EnumDynoAction.values()) {
-            tempDynoActions.add(action.name());
-        }
-        return tempDynoActions;
-    }
-
     @Override
     public void executeAction(MessageReceivedEvent e) {
 
@@ -143,6 +141,7 @@ public class CommandesServiceImpl implements ICommandesService {
         ChannelType channelType = e.getChannelType();
         if (!ChannelType.PRIVATE.equals(channelType)) {
             Role adminRole = guildController.getGuild().getRolesByName("Admin", true).get(0);
+            Role modoRole = guildController.getGuild().getRolesByName("Moderateur", true).get(0);
             User author = e.getAuthor();
 
             String prefixCmd = getPrefixCmdForGuild(guildController.getGuild());
@@ -154,8 +153,8 @@ public class CommandesServiceImpl implements ICommandesService {
                 String msg = message.getContent();
                 String prefixTrimed = prefixCmd.replace("[", "").replace("]", "");
                 if (!prefixTrimed.equals(msg.trim())) {
-                String commandeComplete;
-                try {
+                    String commandeComplete;
+                    try {
                         if (msg.matches("^" + prefixCmd + "[^?]\\p{all}+")) {
                             commandeComplete = msg.split(prefixCmd, 2)[1];
 
@@ -184,7 +183,8 @@ public class CommandesServiceImpl implements ICommandesService {
                                                 }
                                                 executeCustomReaction(member, e.getMessage(), guildController, channel, param, action);
                                             } else {
-                                                executeEmbeddedAction(guildController, adminRole, author, member, channel, commandeComplete, args, action, msg, e.getMessage());
+                                                executeEmbeddedAction(guildController, adminRole, modoRole, author, member, channel, commandeComplete, args, action, msg,
+                                                        e.getMessage());
                                             }
                                         }
                                     }
@@ -287,31 +287,33 @@ public class CommandesServiceImpl implements ICommandesService {
         return botActivationByGuild.get(guild);
     }
 
-    private void executeEmbeddedAction(GuildController guildController, Role adminRole, User author, Member member, MessageChannel channel, String commandeComplete, String[] args,
-            String action, String originalMessage, Message message) {
+    private void executeEmbeddedAction(GuildController guildController, Role adminRole, Role modoRole, User author, Member member, MessageChannel channel, String commandeComplete,
+            String[] args, String action, String originalMessage, Message message) {
 
         EnumAction actionEnum = EnumAction.fromValue(action);
         boolean isAdmin = member.getRoles().contains(adminRole);
+        boolean isModo = member.getRoles().contains(modoRole);
         Guild guild = guildController.getGuild();
 
         switch (actionEnum) {
         case SET_WELCOME_MESSAGE:
         case SWM:
-                if (isAdmin) {
+            if (isAdmin) {
                 setWelcomeMessageForGuild(originalMessage, guild);
                 messagesService.sendBotMessage(channel, "Le message privé de bienvenue a bien été mis à jour.");
-                } else {
-                    messagesService.sendMessageNotEnoughRights(channel);
-                }
-                break;case DEACTIVATE:
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case DEACTIVATE:
             if (isAdmin) {
-                deactivateBot(channel,guild);
+                deactivateBot(channel, guild);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
         case LARO:
-            if (isAdmin) {
+            if (isAdmin || isModo) {
                 listRolesForGuild(channel, guild);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
@@ -319,25 +321,33 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case ACTIVATE:
             if (isAdmin) {
-                activateBot(channel,guild);
+                activateBot(channel, guild);
 
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
         case WITHOUT:
-            searchUsersWithoutRole(guildController, channel, args[0]);
-            break;
-        case WITH:
-            searchUsersWithRole(guildController, channel, args[0]);
-            break;
-        case CADAVRE:
-            if (isAdmin) {
-                manageCadavreExquis(guildController, channel, args[0]);
+            if (isAdmin || isModo) {
+                searchUsersWithoutRole(guildController, channel, args[0]);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
+        case WITH:
+            if (isAdmin || isModo) {
+                searchUsersWithRole(guildController, channel, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        // case CADAVRE:
+        // if (isAdmin) {
+        // manageCadavreExquis(guildController, channel, args[0]);
+        // } else {
+        // messagesService.sendMessageNotEnoughRights(channel);
+        // }
+        // break;
         // case AIDE:
         // channel.sendMessage(buildHelpMessage(guild)).queue();
         // break;
@@ -349,7 +359,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case ACR:
-            if (isAdmin) {
+            if (isAdmin || isModo) {
                 manageAddCustomReaction(guild, channel, args[0]);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
@@ -375,13 +385,17 @@ public class CommandesServiceImpl implements ICommandesService {
         case LIST:
             listAssignableRanks(guildController, author, channel, commandeComplete);
             break;
-        case LIST_ONJOIN_RANKS:
-        case LOJR:
-            listOnJoinRanks(guildController, author, channel, commandeComplete);
-            break;
+        // case LIST_ONJOIN_RANKS:
+        // case LOJR:
+        // if (isModo || isAdmin) {
+        // listOnJoinRanks(guildController, author, channel, commandeComplete);
+        // } else {
+        // messagesService.sendMessageNotEnoughRights(channel);
+        // }
+        // break;
         case ADD_RANK:
         case AR:
-            if (isAdmin) {
+            if (isAdmin || isModo) {
                 addAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
@@ -389,20 +403,20 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case ADD_NOTSINGLE_RANK:
         case ANSR:
-            if(isAdmin) {
+            if (isAdmin || isModo) {
                 addNotSingleAssignableRanks(author, channel, guildController, commandeComplete, args[0]);
-            }else{
-                messagesService.sendMessageNotEnoughRights(channel);
-            }
-            break;
-        case ADD_ONJOIN_RANK:
-        case AOJR:
-            if (isAdmin) {
-                addOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
+        // case ADD_ONJOIN_RANK:
+        // case AOJR:
+        // if (isAdmin || isModo) {
+        // addOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
+        // } else {
+        // messagesService.sendMessageNotEnoughRights(channel);
+        // }
+        // break;
         case ADD_GLOBAL_RANK:
         case AGR:
             if (isAdmin) {
@@ -419,24 +433,24 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-        case ADD_REMINDER:
-        case AREM:
-            if (isAdmin) {
-                addReminder(channel, guildController, args);
-            } else {
-                messagesService.sendMessageNotEnoughRights(channel);
-            }
-            break;
-        case REMOVE_REMINDER:
-        case RREM:
-            if (isAdmin) {
-                removeReminder(channel, guildController, args[0]);
-            } else {
-                messagesService.sendMessageNotEnoughRights(channel);
-            }
-            break;
+        // case ADD_REMINDER:
+        // case AREM:
+        // if (isAdmin) {
+        // addReminder(channel, guildController, args);
+        // } else {
+        // messagesService.sendMessageNotEnoughRights(channel);
+        // }
+        // break;
+        // case REMOVE_REMINDER:
+        // case RREM:
+        // if (isAdmin) {
+        // removeReminder(channel, guildController, args[0]);
+        // } else {
+        // messagesService.sendMessageNotEnoughRights(channel);
+        // }
+        // break;
         case TIME:
-            if (isAdmin) {
+            if (isAdmin || isModo) {
                 LocalDateTime now = LocalDateTime.now();
 
                 ZonedDateTime nowZoned = ZonedDateTime.now().withZoneSameInstant(ZoneId.of("Europe/Paris"));
@@ -448,14 +462,14 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-        case LIST_REMINDERS:
-        case LREM:
-            if (isAdmin) {
-                listReminders(channel, guildController);
-            } else {
-                messagesService.sendMessageNotEnoughRights(channel);
-            }
-            break;
+        // case LIST_REMINDERS:
+        // case LREM:
+        // if (isAdmin) {
+        // listReminders(channel, guildController);
+        // } else {
+        // messagesService.sendMessageNotEnoughRights(channel);
+        // }
+        // break;
         case ADD_VOICE_ROLE:
         case AVR:
             if (isAdmin) {
@@ -473,8 +487,8 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case PUNISH:
-            if (isAdmin) {
-                punishUser(author, channel, guildController, commandeComplete, args[0], message);
+            if (isAdmin || isModo) {
+                punishUser(author, channel, guildController, commandeComplete, args[0], message, isAdmin);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
@@ -487,14 +501,14 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-        case REMOVE_ONJOIN_RANK:
-        case ROJR:
-            if (isAdmin) {
-                removeOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
-            } else {
-                messagesService.sendMessageNotEnoughRights(channel);
-            }
-            break;
+        // case REMOVE_ONJOIN_RANK:
+        // case ROJR:
+        // if (isAdmin) {
+        // removeOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
+        // } else {
+        // messagesService.sendMessageNotEnoughRights(channel);
+        // }
+        // break;
         case RANK:
             String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
             manageRankCmd(author, channel, guildController, roleStr, member);
@@ -513,7 +527,7 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void punishUser(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg, Message message) {
+    private void punishUser(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg, Message message, boolean isAdmin) {
 
         String[] args;
 
@@ -567,10 +581,18 @@ public class CommandesServiceImpl implements ICommandesService {
             warnUser(comment, memberToPerformActionOn, channel, message);
             break;
         case "ban":
-            banUser(duration, comment, guildController, memberToPerformActionOn, channel, message);
+            if (isAdmin) {
+                banUser(duration, comment, guildController, memberToPerformActionOn, channel, message);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
             break;
         case "unban":
-            unbanUser(comment, guildController, user);
+            if (isAdmin) {
+                unbanUser(comment, guildController, user);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
             break;
         case "unmute":
             unmuteUser(comment, guildController, memberToPerformActionOn);
@@ -935,23 +957,23 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void activateBot(MessageChannel channel, Guild guild) {
-        if(!isBotActivated(guild)) {
+        if (!isBotActivated(guild)) {
             activateOrDeactivateBotForGuild(guild, true);
             messagesService.sendBotMessage(channel, "Le bot est à présent activé !");
-        }else{
+        } else {
             messagesService.sendBotMessage(channel, "Le bot est déjà activé !");
         }
     }
 
     private void deactivateBot(MessageChannel channel, Guild guild) {
-        if(isBotActivated(guild)) {
+        if (isBotActivated(guild)) {
             activateOrDeactivateBotForGuild(guild, false);
 
             String prefixCmd = getPrefixCmdForGuild(guild);
 
             String prefixTrimed = prefixCmd.replace("[", "").replace("]", "");
             messagesService.sendBotMessage(channel, "Le bot est à présent désactivé !\r\nPour le réactiver tapez \"" + prefixTrimed + "activate\" (commande administrateur)");
-        }else{
+        } else {
             messagesService.sendBotMessage(channel, "Le bot est déjà désactivé !");
         }
     }
@@ -962,9 +984,9 @@ public class CommandesServiceImpl implements ICommandesService {
 
         if (allRoles != null && !allRoles.isEmpty()) {
             sb.append("Les roles du serveur sont : ").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
-            allRoles.stream().filter(role -> !role.getName().startsWith("@everyone")).forEach(role -> sb.append(role.getName()).append(" (").append(
-                    guild.getMembersWithRoles(role).size()).append(" membres)").append(RETOUR_LIGNE));
-        }else{
+            allRoles.stream().filter(role -> !role.getName().startsWith("@everyone")).forEach(
+                    role -> sb.append(role.getName()).append(" (").append(guild.getMembersWithRoles(role).size()).append(" membres)").append(RETOUR_LIGNE));
+        } else {
             sb.append("Aucun rôle sur ce serveur ! Ce n'est pas normal ! ¯\\_(ツ)_/¯");
         }
         messagesService.sendBotMessage(channel, sb.toString());
@@ -1025,21 +1047,21 @@ public class CommandesServiceImpl implements ICommandesService {
     @Deprecated
     private void executeCadavreActions(GuildController guildController, MessageChannel channel, String[] params, EnumCadavreExquisParams param) {
         switch (param) {
-            case ADD_SUJET:
-                addSujetCadavre(guildController, params[1]);
-                break;
-            case ADD_ACTION:
-                addActionCadavre(params[1]);
-                break;
-            case ADD_COMPLEMENT:
-                addComplementCadavre(params[1]);
-                break;
-            case ADD_ADJECTIF:
-                addAdjectifCadavre(params[1]);
-                break;
-            case EXQUIS:
-                displayCadavreExquis(channel);
-                break;
+        case ADD_SUJET:
+            addSujetCadavre(guildController, params[1]);
+            break;
+        case ADD_ACTION:
+            addActionCadavre(params[1]);
+            break;
+        case ADD_COMPLEMENT:
+            addComplementCadavre(params[1]);
+            break;
+        case ADD_ADJECTIF:
+            addAdjectifCadavre(params[1]);
+            break;
+        case EXQUIS:
+            displayCadavreExquis(channel);
+            break;
         }
     }
 
@@ -1047,9 +1069,9 @@ public class CommandesServiceImpl implements ICommandesService {
         if (!listCadavreSujet.isEmpty() && !listCadavreAction.isEmpty() && !listCadavreComplement.isEmpty() && !listCadavreAdjectif.isEmpty()) {
             Member cadavre = listCadavreSujet.get(new Random().nextInt(listCadavreSujet.size()));
 
-            String sb = SEPARATOR_ACTION_ARGS + listCadavreAction.get(new Random().nextInt(listCadavreAction.size())) + SEPARATOR_ACTION_ARGS +
-                    listCadavreComplement.get(new Random().nextInt(listCadavreComplement.size())) + SEPARATOR_ACTION_ARGS +
-                    listCadavreAdjectif.get(new Random().nextInt(listCadavreAdjectif.size()));
+            String sb = SEPARATOR_ACTION_ARGS + listCadavreAction.get(new Random().nextInt(listCadavreAction.size())) + SEPARATOR_ACTION_ARGS
+                    + listCadavreComplement.get(new Random().nextInt(listCadavreComplement.size())) + SEPARATOR_ACTION_ARGS
+                    + listCadavreAdjectif.get(new Random().nextInt(listCadavreAdjectif.size()));
 
             messagesService.sendBotMessageWithMention(channel, sb, cadavre);
         }
@@ -1203,7 +1225,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendBotMessage(channel, "No way, you're not even Admin !");
             }
         } else {
-            messagesService.sendBotMessage(channel, "/shrug");
+            messagesService.sendBotMessage(channel, "¯\\_(ツ)_/¯ Apprends à taper sur un clavier...");
         }
     }
 
@@ -1211,7 +1233,7 @@ public class CommandesServiceImpl implements ICommandesService {
         if ("me a sandwich".equals(arg)) {
             messagesService.sendBotMessage(channel, "No, YOU make me a sandwich !");
         } else {
-            messagesService.sendBotMessage(channel, "/shrug");
+            messagesService.sendBotMessage(channel, "¯\\_(ツ)_/¯ Apprends à taper sur un clavier...");
         }
     }
 
@@ -1264,10 +1286,8 @@ public class CommandesServiceImpl implements ICommandesService {
     private List<Role> sortSetOfRolesToList(Set<Role> selfAssignableRanks) {
         List<Role> selfAssignableRanksList = new ArrayList<>(selfAssignableRanks);
 
-        selfAssignableRanksList.sort(Comparator.comparing(Role::getName)
-                .thenComparingInt(e -> e.getName().contains("Chevalier ") ?
-                        Integer.parseInt(e.getName().replace("Chevalier ", "")) :
-                        e.getPosition()));
+        selfAssignableRanksList.sort(Comparator.comparing(Role::getName).thenComparingInt(
+                e -> e.getName().contains("Chevalier ") ? Integer.parseInt(e.getName().replace("Chevalier ", "")) : e.getPosition()));
 
         return selfAssignableRanksList;
     }
@@ -1336,7 +1356,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
         Guild guild = guildController.getGuild();
 
-        if(notSingleSelfAssignableRanksByGuild.isEmpty() && !notSingleSelfAssignableRanksByIdsByGuild.isEmpty()){
+        if (notSingleSelfAssignableRanksByGuild.isEmpty() && !notSingleSelfAssignableRanksByIdsByGuild.isEmpty()) {
             notSingleSelfAssignableRanksByGuild = transformRanksIdsToObjects(guildController, notSingleSelfAssignableRanksByIdsByGuild);
         }
 
@@ -1571,7 +1591,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void setNotSingleAssignableRanksForGuild(Guild guild, Set<Role> selfAssignableRanks) {
-        if(notSingleSelfAssignableRanksByGuild == null){
+        if (notSingleSelfAssignableRanksByGuild == null) {
             notSingleSelfAssignableRanksByGuild = new HashMap<>();
         }
         notSingleSelfAssignableRanksByGuild.put(guild, selfAssignableRanks);
@@ -1609,8 +1629,7 @@ public class CommandesServiceImpl implements ICommandesService {
         messageBuilder.append("Utilisation", UNDERLINE, ITALICS, BOLD).append(RETOUR_LIGNE);
         messageBuilder.append(RETOUR_LIGNE);
         messageBuilder.append("Toutes les commandes doivent commencer par le symbole '").append(prefixTrimed).append(
-                "', le nom de la commande et les valeurs possible (si besoin).").append(
-                RETOUR_LIGNE);
+                "', le nom de la commande et les valeurs possible (si besoin).").append(RETOUR_LIGNE);
         messageBuilder.append(prefixTrimed + "<COMMANDE>", BLOCK).append(RETOUR_LIGNE);
         messageBuilder.append(prefixTrimed + "<COMMANDE> <VALEUR_1>", BLOCK).append(RETOUR_LIGNE);
         messageBuilder.append(RETOUR_LIGNE);
