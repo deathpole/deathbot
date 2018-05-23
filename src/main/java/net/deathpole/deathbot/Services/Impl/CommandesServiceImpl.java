@@ -1133,7 +1133,7 @@ public class CommandesServiceImpl implements ICommandesService {
                     }
                 }
             }
-            if ("aide".equals(action)) {
+            if ("aide".equals(action) || "mod".equals(action) || "admin".equals(action)) {
                 sendFormattedCustomReaction(message, guildController, channel, customReaction, params);
             } else {
                 sendFormattedCustomReactionAndDeleteCommand(message, guildController, channel, customReaction, params);
