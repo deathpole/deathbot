@@ -221,15 +221,17 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void addOnJoinRankToUserIfExists(Member member, Guild guild) {
-        Set<Role> onJoinRanks = onJoinRanksByGuild.get(guild);
-        for (Role onJoinRank : onJoinRanks) {
+        if (!onJoinRanksByGuild.isEmpty() && onJoinRanksByGuild.containsKey(guild)) {
+            Set<Role> onJoinRanks = onJoinRanksByGuild.get(guild);
+            for (Role onJoinRank : onJoinRanks) {
 
-            System.out.println("Guild is : " + guild);
-            System.out.println("GuildController is : " + guild.getController());
-            System.out.println("Member is : " + member);
-            System.out.println("Rank is : " + onJoinRank);
+                System.out.println("Guild is : " + guild);
+                System.out.println("GuildController is : " + guild.getController());
+                System.out.println("Member is : " + member);
+                System.out.println("Rank is : " + onJoinRank);
 
-            guild.getController().addSingleRoleToMember(member, onJoinRank).complete();
+                guild.getController().addSingleRoleToMember(member, onJoinRank).complete();
+            }
         }
     }
 
