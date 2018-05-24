@@ -580,7 +580,7 @@ public class CommandesServiceImpl implements ICommandesService {
             memberToPerformActionOn = guildController.getGuild().getMembersByEffectiveName(user.replace("@", ""), true).get(0);
 
             if (memberToPerformActionOn.getRoles().contains(adminRole) || memberToPerformActionOn.getRoles().contains(modoRole)) {
-                messagesService.sendBotMessage(actualChannel, "Hin hin, ce mec, c'est presque Dieu... On lui crache pas au visage ;)");
+                messagesService.sendBotMessage(channel, "Hin hin, ce mec, c'est presque Dieu... On lui crache pas au visage ;)");
                 return;
             }
 
