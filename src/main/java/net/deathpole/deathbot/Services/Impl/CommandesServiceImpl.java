@@ -336,18 +336,18 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case WITHOUT:
-            if (isAdmin || isModo) {
+            // if (isAdmin || isModo) {
                 searchUsersWithoutRole(guildController, channel, args[0]);
-            } else {
-                messagesService.sendMessageNotEnoughRights(channel);
-            }
+            // } else {
+            // messagesService.sendMessageNotEnoughRights(channel);
+            // }
             break;
         case WITH:
-            if (isAdmin || isModo) {
+            // if (isAdmin || isModo) {
                 searchUsersWithRole(guildController, channel, args[0]);
-            } else {
-                messagesService.sendMessageNotEnoughRights(channel);
-            }
+            // } else {
+            // messagesService.sendMessageNotEnoughRights(channel);
+            // }
             break;
         // case CADAVRE:
         // if (isAdmin) {
