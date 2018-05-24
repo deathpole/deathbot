@@ -43,6 +43,7 @@ import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.Role;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
@@ -54,11 +55,12 @@ import net.dv8tion.jda.core.managers.GuildController;
  */
 public class CommandesServiceImpl implements ICommandesService {
 
-    private static final String REMINDER_SEPARATOR = ";";
     private static final int NB_REMINDER_PARAMS = 4;
     private static final String PREFIX_TAG = "@";
-    private static final String SEPARATOR_ACTION_ARGS = " ";
+    private static final String ACTION_ARGS_SEPARATOR = " ";
     private static final String ROLES_SEPARATOR = ",";
+    private static final String PARAMETERS_SEPARATOR = ";;";
+    private static final String REMINDER_SEPARATOR = ";";
     private static final String RETOUR_LIGNE = "\r\n";
     private IGlobalDao globalDao;
     private IMessagesService messagesService = new MessagesServiceImpl();
@@ -160,14 +162,14 @@ public class CommandesServiceImpl implements ICommandesService {
 
                             if (commandeComplete != null && !commandeComplete.isEmpty()) {
 
-                                String[] cmdSplit = commandeComplete.split(SEPARATOR_ACTION_ARGS, 2);
+                                String[] cmdSplit = commandeComplete.split(ACTION_ARGS_SEPARATOR, 2);
 
                                 String[] args = new String[0];
                                 String action = null;
                                 if (cmdSplit.length > 0) {
                                     action = cmdSplit[0];
                                     if (cmdSplit.length > 1) {
-                                        args = cmdSplit[1].split(SEPARATOR_ACTION_ARGS, 1);
+                                        args = cmdSplit[1].split(ACTION_ARGS_SEPARATOR, 1);
                                     }
                                 }
 
@@ -183,8 +185,10 @@ public class CommandesServiceImpl implements ICommandesService {
                                                 }
                                                 executeCustomReaction(member, e.getMessage(), guildController, channel, param, action);
                                             } else {
+                                                List<TextChannel> modChannels = guildController.getGuild().getTextChannelsByName("logs-moderation", true);
+                                                MessageChannel modChannel = modChannels.isEmpty() ? null : modChannels.get(0);
                                                 executeEmbeddedAction(guildController, adminRole, modoRole, author, member, channel, commandeComplete, args, action, msg,
-                                                        e.getMessage());
+                                                        e.getMessage(), modChannel);
                                             }
                                         }
                                     }
@@ -202,7 +206,9 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void sendPrivateMessage(User user, String content) {
-        user.openPrivateChannel().queue((channel) -> channel.sendMessage(content).queue());
+
+        user.openPrivateChannel().complete().sendMessage(content).complete();
+        // user.openPrivateChannel().queue((channel) -> channel.sendMessage(content).queue());
     }
 
     @Override
@@ -288,7 +294,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void executeEmbeddedAction(GuildController guildController, Role adminRole, Role modoRole, User author, Member member, MessageChannel channel, String commandeComplete,
-            String[] args, String action, String originalMessage, Message message) {
+            String[] args, String action, String originalMessage, Message message, MessageChannel modChannel) {
 
         EnumAction actionEnum = EnumAction.fromValue(action);
         boolean isAdmin = member.getRoles().contains(adminRole);
@@ -488,7 +494,7 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case PUNISH:
             if (isAdmin || isModo) {
-                punishUser(author, channel, guildController, commandeComplete, args[0], message, isAdmin);
+                punishUser(channel, guildController, args[0], message, isAdmin, modChannel);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
@@ -527,80 +533,93 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void punishUser(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg, Message message, boolean isAdmin) {
+    private void punishUser(MessageChannel channel, GuildController guildController, String arg, Message message, boolean isAdmin, MessageChannel modChannel) {
+
+        MessageChannel actualChannel = modChannel != null ? modChannel : channel;
 
         String[] args;
+        String[] parameters;
 
         String action;
         String user;
         String duration = null;
         String comment;
 
-        if (arg.contains("mute") || arg.contains("ban")) {
-            args = arg.split(SEPARATOR_ACTION_ARGS, 4);
-            if (args.length < 4) {
-                messagesService.sendBotMessage(channel, "Il manque des paramètres !");
+        args = arg.split(ACTION_ARGS_SEPARATOR, 2);
+        action = args[0];
+        String parametersString = args[1];
+
+        if (action.contains("mute") || action.contains("ban")) {
+            parameters = parametersString.split(PARAMETERS_SEPARATOR, 3);
+            if (parameters.length < 3) {
+                messagesService.sendBotMessage(actualChannel, "Il manque des paramètres !");
                 return;
             }
 
-            action = args[0];
-            user = args[1];
-            duration = args[2];
-            comment = args[3];
+            user = StringUtils.trim(parameters[0]);
+            duration = StringUtils.trim(parameters[1]);
+            comment = StringUtils.trim(parameters[2]);
 
         } else {
-            args = arg.split(SEPARATOR_ACTION_ARGS, 3);
-            if (args.length < 3) {
-                messagesService.sendBotMessage(channel, "Il manque des paramètres !");
+            parameters = parametersString.split(PARAMETERS_SEPARATOR, 2);
+            if (parameters.length < 2) {
+                messagesService.sendBotMessage(actualChannel, "Il manque des paramètres !");
                 return;
             }
 
-            action = args[0];
-            user = args[1];
-            comment = args[2];
+            user = StringUtils.trim(parameters[0]);
+            comment = StringUtils.trim(parameters[1]);
 
         }
         Role adminRole = guildController.getGuild().getRolesByName("Admin", true).get(0);
         Role modoRole = guildController.getGuild().getRolesByName("Moderateur", true).get(0);
 
-        Member memberToPerformActionOn = guildController.getGuild().getMembersByEffectiveName(user.replace("@", ""), true).get(0);
+        Member memberToPerformActionOn;
 
-        if (memberToPerformActionOn.getRoles().contains(adminRole) || memberToPerformActionOn.getRoles().contains(modoRole)) {
-            messagesService.sendBotMessage(channel, "Hin hin, ce mec, c'est presque Dieu... On lui crache pas au visage ;)");
+        try {
+            memberToPerformActionOn = guildController.getGuild().getMembersByEffectiveName(user.replace("@", ""), true).get(0);
+
+            if (memberToPerformActionOn.getRoles().contains(adminRole) || memberToPerformActionOn.getRoles().contains(modoRole)) {
+                messagesService.sendBotMessage(actualChannel, "Hin hin, ce mec, c'est presque Dieu... On lui crache pas au visage ;)");
+                return;
+            }
+
+            switch (action) {
+            case "mute":
+                muteUser(duration, comment, guildController, memberToPerformActionOn, actualChannel, message, channel);
+                break;
+            case "kick":
+                kickUser(comment, guildController, memberToPerformActionOn, actualChannel, message, channel);
+                break;
+            case "warn":
+                warnUser(comment, memberToPerformActionOn, actualChannel, message, channel);
+                break;
+            case "ban":
+                if (isAdmin) {
+                    banUser(duration, comment, guildController, memberToPerformActionOn, actualChannel, message, channel);
+                } else {
+                    messagesService.sendMessageNotEnoughRights(channel);
+                }
+                break;
+            case "unban":
+                if (isAdmin) {
+                    unbanUser(comment, guildController, user);
+                } else {
+                    messagesService.sendMessageNotEnoughRights(channel);
+                }
+                break;
+            case "unmute":
+                unmuteUser(comment, guildController, memberToPerformActionOn);
+                break;
+            }
+        } catch (IndexOutOfBoundsException e) {
+            messagesService.sendBotMessage(actualChannel, "L'utilisateur " + user + " n'a pas été trouvé ! =(");
             return;
-        }
-
-        switch (action) {
-        case "mute":
-            muteUser(duration, comment, guildController, memberToPerformActionOn, channel, message);
-            break;
-        case "kick":
-            kickUser(comment, guildController, memberToPerformActionOn, channel, message);
-            break;
-        case "warn":
-            warnUser(comment, memberToPerformActionOn, channel, message);
-            break;
-        case "ban":
-            if (isAdmin) {
-                banUser(duration, comment, guildController, memberToPerformActionOn, channel, message);
-            } else {
-                messagesService.sendMessageNotEnoughRights(channel);
-            }
-            break;
-        case "unban":
-            if (isAdmin) {
-                unbanUser(comment, guildController, user);
-            } else {
-                messagesService.sendMessageNotEnoughRights(channel);
-            }
-            break;
-        case "unmute":
-            unmuteUser(comment, guildController, memberToPerformActionOn);
-            break;
         }
     }
 
-    private void banUser(String duration, String comment, GuildController guildController, Member memberToBan, MessageChannel channel, Message message) {
+    private void banUser(String duration, String comment, GuildController guildController, Member memberToBan, MessageChannel channel, Message message,
+            MessageChannel originChannel) {
         if (memberToBan != null) {
             guildController.ban(memberToBan, 0, comment).complete();
             sendPrivateMessage(memberToBan.getUser(), "Vous avez été banni ! \r\nLa raison : " + comment);
@@ -620,28 +639,31 @@ public class CommandesServiceImpl implements ICommandesService {
 
             sb.append(" !");
             messagesService.sendBotMessage(channel, sb.toString());
-            channel.deleteMessageById(message.getId()).complete();
+            originChannel.deleteMessageById(message.getId()).complete();
         }
     }
 
-    private void warnUser(String comment, Member memberToWarn, MessageChannel channel, Message message) {
+    private void warnUser(String comment, Member memberToWarn, MessageChannel channel, Message message, MessageChannel originChannel) {
         if (memberToWarn != null) {
             sendPrivateMessage(memberToWarn.getUser(), "Ceci est un avertissement ! \r\nLa raison : " + comment);
-            channel.deleteMessageById(message.getId()).complete();
+            StringBuilder sb = new StringBuilder("L'utilisateur " + memberToWarn.getEffectiveName() + " a été averti !");
+            messagesService.sendBotMessage(channel, sb.toString());
+            originChannel.deleteMessageById(message.getId()).complete();
         }
     }
 
-    private void kickUser(String comment, GuildController guildController, Member memberToKick, MessageChannel channel, Message message) {
+    private void kickUser(String comment, GuildController guildController, Member memberToKick, MessageChannel channel, Message message, MessageChannel originChannel) {
         if (memberToKick != null) {
+            sendPrivateMessage(memberToKick.getUser(), "Vous avez été kické ! \r\nLa raison : " + comment);
             guildController.kick(memberToKick, comment).complete();
-            sendPrivateMessage(memberToKick.getUser(), comment);
             StringBuilder sb = new StringBuilder("L'utilisateur " + memberToKick.getEffectiveName() + " a été kické !");
             messagesService.sendBotMessage(channel, sb.toString());
-            channel.deleteMessageById(message.getId()).complete();
+            originChannel.deleteMessageById(message.getId()).complete();
         }
     }
 
-    private void muteUser(String duration, String comment, GuildController guildController, Member memberToMute, MessageChannel channel, Message message) {
+    private void muteUser(String duration, String comment, GuildController guildController, Member memberToMute, MessageChannel channel, Message message,
+            MessageChannel originChannel) {
         if (memberToMute != null) {
             guildController.setMute(memberToMute, true).complete();
 
@@ -666,7 +688,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             // TODO Ajouter le user à la liste des mutés
             sendPrivateMessage(memberToMute.getUser(), comment);
-            channel.deleteMessageById(message.getId()).complete();
+            originChannel.deleteMessageById(message.getId()).complete();
         }
 
     }
@@ -931,27 +953,27 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void setWelcomeMessageForGuild(String originalMessage, Guild guild) {
-        String text = originalMessage.split(SEPARATOR_ACTION_ARGS, 2)[1];
+        String text = originalMessage.split(ACTION_ARGS_SEPARATOR, 2)[1];
         welcomeMessageByGuild.put(guild, text);
         globalDao.saveWelcomeMessage(guild, text);
     }
 
     private void manageAddCustomReaction(Guild guild, MessageChannel channel, String arg) {
-        String[] fullParams = arg.split(SEPARATOR_ACTION_ARGS, 2);
+        String[] fullParams = arg.split(ACTION_ARGS_SEPARATOR, 2);
         String keyWord = fullParams[0];
         String reaction = fullParams[1];
         addCustomReaction(guild, channel, keyWord, reaction);
     }
 
     private void manageDeleteCustomReaction(Guild guild, MessageChannel channel, String arg) {
-        String[] fullParams = arg.split(SEPARATOR_ACTION_ARGS, 1);
+        String[] fullParams = arg.split(ACTION_ARGS_SEPARATOR, 1);
         String keyWord = fullParams[0];
         deleteCustomReaction(guild, channel, keyWord);
     }
 
     @Deprecated
     private void manageCadavreExquis(GuildController guildController, MessageChannel channel, String arg) {
-        String[] params = arg.split(SEPARATOR_ACTION_ARGS, 2);
+        String[] params = arg.split(ACTION_ARGS_SEPARATOR, 2);
         EnumCadavreExquisParams param = EnumCadavreExquisParams.valueOf(params[0].toUpperCase());
         executeCadavreActions(guildController, channel, params, param);
     }
@@ -1069,8 +1091,8 @@ public class CommandesServiceImpl implements ICommandesService {
         if (!listCadavreSujet.isEmpty() && !listCadavreAction.isEmpty() && !listCadavreComplement.isEmpty() && !listCadavreAdjectif.isEmpty()) {
             Member cadavre = listCadavreSujet.get(new Random().nextInt(listCadavreSujet.size()));
 
-            String sb = SEPARATOR_ACTION_ARGS + listCadavreAction.get(new Random().nextInt(listCadavreAction.size())) + SEPARATOR_ACTION_ARGS
-                    + listCadavreComplement.get(new Random().nextInt(listCadavreComplement.size())) + SEPARATOR_ACTION_ARGS
+            String sb = ACTION_ARGS_SEPARATOR + listCadavreAction.get(new Random().nextInt(listCadavreAction.size())) + ACTION_ARGS_SEPARATOR
+                    + listCadavreComplement.get(new Random().nextInt(listCadavreComplement.size())) + ACTION_ARGS_SEPARATOR
                     + listCadavreAdjectif.get(new Random().nextInt(listCadavreAdjectif.size()));
 
             messagesService.sendBotMessageWithMention(channel, sb, cadavre);
@@ -1112,7 +1134,7 @@ public class CommandesServiceImpl implements ICommandesService {
     private void executeCustomReaction(Member member, Message message, GuildController guildController, MessageChannel channel, String arg, String action) {
         Guild guild = guildController.getGuild();
         CustomReactionDTO customReaction = mapCustomReactions.get(guild).get(action);
-        String[] params = (arg == null || arg.isEmpty()) ? new String[0] : arg.trim().split(SEPARATOR_ACTION_ARGS + "+");
+        String[] params = (arg == null || arg.isEmpty()) ? new String[0] : arg.trim().split(ACTION_ARGS_SEPARATOR + "+");
 
         if (params.length != customReaction.getNumberOfParams()) {
             messagesService.sendBotMessage(channel, "Le nombre d'argument n'est pas le bon ! Try again !");
@@ -1748,8 +1770,8 @@ public class CommandesServiceImpl implements ICommandesService {
         } else {
             Pattern pattern = Pattern.compile("^Chevalier.*[^0]+$", Pattern.CASE_INSENSITIVE);
             if (pattern.matcher(rankToAdd).find()) {
-                String kl = rankToAdd.split(SEPARATOR_ACTION_ARGS)[1];
-                String chevalier = rankToAdd.split(SEPARATOR_ACTION_ARGS)[0];
+                String kl = rankToAdd.split(ACTION_ARGS_SEPARATOR)[1];
+                String chevalier = rankToAdd.split(ACTION_ARGS_SEPARATOR)[0];
                 if (kl != null && Integer.valueOf(kl) > 10) {
                     rankToAdd = chevalier + " " + kl.substring(0, kl.length() - 1) + "0";
                 } else {
