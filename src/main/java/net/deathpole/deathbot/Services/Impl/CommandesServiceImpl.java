@@ -533,6 +533,7 @@ public class CommandesServiceImpl implements ICommandesService {
             calculateSRandMedals(channel, args);
         case INACTIVITY:
             if (isAdmin || isModo) {
+                System.out.println("DeathbotExecution : Commande non prise en charge");
                 listInactiveMember(channel, guildController, args[0]);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
@@ -544,6 +545,8 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void listInactiveMember(MessageChannel channel, GuildController guildController, String paramStr) {
+        System.out.println("Commande ?inactivity lancée.");
+
         Guild guild = guildController.getGuild();
         int limit;
         String specChannel = null;
@@ -571,10 +574,12 @@ public class CommandesServiceImpl implements ICommandesService {
             for (Member curMember : allMembers) {
                 if (curMember.getUser().isBot()) {
                     inactiveMembers.remove(curMember);
+                    System.out.println("Le membre " + curMember.getEffectiveName() + " est un bot, ignoré.");
                 } else {
                     for (TextChannel curChannel : allChannels) {
                         if (!getMessagesByUserAfterLimit(curChannel, curMember.getUser(), limitDateTime).isEmpty()) {
                             inactiveMembers.remove(curMember);
+                            System.out.println("Le membre " + curMember.getEffectiveName() + " n'est pas inactif.");
                             break;
                         }
                     }
@@ -589,9 +594,11 @@ public class CommandesServiceImpl implements ICommandesService {
             for (Member curMember : allMembers) {
                 if (curMember.getUser().isBot()) {
                     inactiveMembers.remove(curMember);
+                    System.out.println("Le membre " + curMember.getEffectiveName() + " est un bot, ignoré.");
                 } else {
                     if (!getMessagesByUserAfterLimit(specChannels.get(0), curMember.getUser(), limitDateTime).isEmpty()) {
                         inactiveMembers.remove(curMember);
+                        System.out.println("Le membre " + curMember.getEffectiveName() + " n'est pas inactif.");
                         break;
                     }
                 }
