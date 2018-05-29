@@ -7,6 +7,7 @@ import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -62,6 +63,7 @@ public class CommandesServiceImpl implements ICommandesService {
     private static final String PARAMETERS_SEPARATOR = ";;";
     private static final String REMINDER_SEPARATOR = ";";
     private static final String RETOUR_LIGNE = "\r\n";
+    private static final int DEFAULT_INACTIVITY_LIMIT = 7;
     private IGlobalDao globalDao;
     private IMessagesService messagesService = new MessagesServiceImpl();
     private IHelperService helperService = new HelperServiceImpl();
@@ -529,10 +531,88 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case REVIVE:
             calculateSRandMedals(channel, args);
+        case INACTIVITY:
+            if (isAdmin || isModo) {
+                listInactiveMember(channel, guildController, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
         default:
             System.out.println("DeathbotExecution : Commande non prise en charge");
             break;
         }
+    }
+
+    private void listInactiveMember(MessageChannel channel, GuildController guildController, String paramStr) {
+        Guild guild = guildController.getGuild();
+        int limit;
+        String specChannel = null;
+
+        if (!paramStr.isEmpty() && paramStr != null) {
+            String[] params = paramStr.split(ACTION_ARGS_SEPARATOR);
+
+            if (params.length == 2) {
+                specChannel = params[1];
+            }
+            String limitStr = params[0];
+            limit = Integer.parseInt(limitStr);
+        } else {
+            limit = DEFAULT_INACTIVITY_LIMIT;
+        }
+
+        OffsetDateTime limitDateTime = OffsetDateTime.now().minusDays(limit);
+
+        List<Member> allMembers = guild.getMembers();
+        List<Member> inactiveMembers = new ArrayList<>();
+        inactiveMembers.addAll(allMembers);
+
+        if (specChannel == null) {
+            List<TextChannel> allChannels = guild.getTextChannels();
+            for (Member curMember : allMembers) {
+                if (curMember.getUser().isBot()) {
+                    inactiveMembers.remove(curMember);
+                } else {
+                    for (TextChannel curChannel : allChannels) {
+                        if (!getMessagesByUserAfterLimit(curChannel, curMember.getUser(), limitDateTime).isEmpty()) {
+                            inactiveMembers.remove(curMember);
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            List<TextChannel> specChannels = guild.getTextChannelsByName(specChannel, true);
+            if (specChannels.isEmpty() || specChannels == null) {
+                messagesService.sendBotMessage(channel, "Channel inconnu ! =(");
+                return;
+            }
+            for (Member curMember : allMembers) {
+                if (curMember.getUser().isBot()) {
+                    inactiveMembers.remove(curMember);
+                } else {
+                    if (!getMessagesByUserAfterLimit(specChannels.get(0), curMember.getUser(), limitDateTime).isEmpty()) {
+                        inactiveMembers.remove(curMember);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!inactiveMembers.isEmpty()) {
+            StringBuilder sb = new StringBuilder("Les membres actuellement inactifs depuis plus de " + limit + " jours sont : \r\n");
+            for (Member member : inactiveMembers) {
+                sb.append(member.getEffectiveName()).append(RETOUR_LIGNE);
+            }
+
+            messagesService.sendBotMessage(channel, sb.toString());
+        } else {
+            messagesService.sendBotMessage(channel, "Aucun membre inactif ! Pas mal !");
+        }
+
+    }
+
+    private List<Message> getMessagesByUserAfterLimit(MessageChannel channel, User user, OffsetDateTime limitDateTime) {
+        return channel.getIterableHistory().stream().filter(m -> m.getAuthor().equals(user)).filter(m -> m.getCreationTime().isAfter(limitDateTime)).collect(Collectors.toList());
     }
 
     private void punishUser(MessageChannel channel, GuildController guildController, String arg, Message message, boolean isAdmin, MessageChannel modChannel) {

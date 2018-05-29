@@ -22,6 +22,7 @@ public enum EnumAction {
     CHANGE,
     DCR,
     DEACTIVATE,
+    INACTIVITY,
     LARO,
     LIST,
     // LIST_ONJOIN_RANKS,
