@@ -606,7 +606,7 @@ public class CommandesServiceImpl implements ICommandesService {
         }
 
         if (!inactiveMembers.isEmpty()) {
-            StringBuilder sb = new StringBuilder("Les membres actuellement inactifs depuis plus de " + limit + " jours sont : \r\n");
+            StringBuilder sb = new StringBuilder("Les membres actuellement inactifs depuis plus de " + limit + " jours sont : " + RETOUR_LIGNE);
             for (Member member : inactiveMembers) {
                 sb.append(member.getEffectiveName()).append(RETOUR_LIGNE);
             }
@@ -711,7 +711,7 @@ public class CommandesServiceImpl implements ICommandesService {
             MessageChannel originChannel) {
         if (memberToBan != null) {
             guildController.ban(memberToBan, 0, comment).complete();
-            sendPrivateMessage(memberToBan.getUser(), "Vous avez été banni ! \r\nLa raison : " + comment);
+            sendPrivateMessage(memberToBan.getUser(), "Vous avez été banni ! " + RETOUR_LIGNE + "La raison : " + comment);
             StringBuilder sb = new StringBuilder("L'utilisateur " + memberToBan.getEffectiveName() + " a été banni");
 
             if (!"".equals(duration)) {
@@ -734,7 +734,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void warnUser(String comment, Member memberToWarn, MessageChannel channel, Message message, MessageChannel originChannel) {
         if (memberToWarn != null) {
-            sendPrivateMessage(memberToWarn.getUser(), "Ceci est un avertissement ! \r\nLa raison : " + comment);
+            sendPrivateMessage(memberToWarn.getUser(), "Ceci est un avertissement ! " + RETOUR_LIGNE + "La raison : " + comment);
             StringBuilder sb = new StringBuilder("L'utilisateur " + memberToWarn.getEffectiveName() + " a été averti !");
             messagesService.sendBotMessage(channel, sb.toString());
             originChannel.deleteMessageById(message.getId()).complete();
@@ -743,7 +743,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void kickUser(String comment, GuildController guildController, Member memberToKick, MessageChannel channel, Message message, MessageChannel originChannel) {
         if (memberToKick != null) {
-            sendPrivateMessage(memberToKick.getUser(), "Vous avez été kické ! \r\nLa raison : " + comment);
+            sendPrivateMessage(memberToKick.getUser(), "Vous avez été kické ! " + RETOUR_LIGNE + "La raison : " + comment);
             guildController.kick(memberToKick, comment).complete();
             StringBuilder sb = new StringBuilder("L'utilisateur " + memberToKick.getEffectiveName() + " a été kické !");
             messagesService.sendBotMessage(channel, sb.toString());
@@ -840,10 +840,10 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private StringBuilder buildAddGlobalRanksMessage(User author, String commandeComplete, Set<Role> listRolesToAdd) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Les rôles suivants ont été assignés à tous les membres du serveur (sauf Admin) : \r\n");
+        sb.append("Les rôles suivants ont été assignés à tous les membres du serveur (sauf Admin) : " + RETOUR_LIGNE);
 
         for (Role role : sortSetOfRolesToList(listRolesToAdd)) {
-            sb.append(role.getName()).append("\r\n");
+            sb.append(role.getName()).append(RETOUR_LIGNE);
         }
 
         System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
@@ -852,10 +852,10 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private StringBuilder buildRemoveGlobalRanksMessage(User author, String commandeComplete, Set<Role> listRolesToAdd) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Les rôles suivants ont été retirés de tous les membres du serveur (sauf Admin) : \r\n");
+        sb.append("Les rôles suivants ont été retirés de tous les membres du serveur (sauf Admin) : " + RETOUR_LIGNE);
 
         for (Role role : sortSetOfRolesToList(listRolesToAdd)) {
-            sb.append(role.getName()).append("\r\n");
+            sb.append(role.getName()).append(RETOUR_LIGNE);
         }
 
         System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
@@ -869,7 +869,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
             StringBuilder sb = new StringBuilder();
 
-            sb.append("Les ranks assignés à la connexion sont : \r\n");
+            sb.append("Les ranks assignés à la connexion sont : " + RETOUR_LIGNE);
 
             for (Role role : sortSetOfRolesToList(onJoinRanks)) {
                 sb.append(role.getName());
@@ -906,9 +906,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private void sendMessageOfRemovedOnJoinRanks(User author, MessageChannel channel, String commandeComplete, Set<Role> listRolesToRemove) {
         if (!listRolesToRemove.isEmpty()) {
             StringBuilder sb = new StringBuilder();
-            sb.append("Les rôles suivants ne sont désormais plus assignés à la connexion : \r\n");
+            sb.append("Les rôles suivants ne sont désormais plus assignés à la connexion : " + RETOUR_LIGNE);
             for (Role role : listRolesToRemove) {
-                sb.append(role.getName()).append("\r\n");
+                sb.append(role.getName()).append(RETOUR_LIGNE);
             }
 
             System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
@@ -938,10 +938,10 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private StringBuilder buildNewOnJoinRankMessage(User author, String commandeComplete, Set<Role> listRolesToAdd) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Les rôles suivants seront désormais assignés lorsqu'un nouveau membre rejoint le serveur : \r\n");
+        sb.append("Les rôles suivants seront désormais assignés lorsqu'un nouveau membre rejoint le serveur : " + RETOUR_LIGNE);
 
         for (Role role : sortSetOfRolesToList(listRolesToAdd)) {
-            sb.append(role.getName()).append("\r\n");
+            sb.append(role.getName()).append(RETOUR_LIGNE);
         }
 
         System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
@@ -1083,7 +1083,8 @@ public class CommandesServiceImpl implements ICommandesService {
             String prefixCmd = getPrefixCmdForGuild(guild);
 
             String prefixTrimed = prefixCmd.replace("[", "").replace("]", "");
-            messagesService.sendBotMessage(channel, "Le bot est à présent désactivé !\r\nPour le réactiver tapez \"" + prefixTrimed + "activate\" (commande administrateur)");
+            messagesService.sendBotMessage(channel,
+                    "Le bot est à présent désactivé !" + RETOUR_LIGNE + "Pour le réactiver tapez \"" + prefixTrimed + "activate\" (commande administrateur)");
         } else {
             messagesService.sendBotMessage(channel, "Le bot est déjà désactivé !");
         }
@@ -1118,7 +1119,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 sb.append("Les membres suivants ont le rôle **").append(seekRole.getName()).append("** : \r\n");
 
                 for (Member memberWithRole : membersWithRole) {
-                    sb.append(memberWithRole.getEffectiveName()).append("\r\n");
+                    sb.append(memberWithRole.getEffectiveName()).append("" + RETOUR_LIGNE);
                 }
 
             } else {
@@ -1142,10 +1143,10 @@ public class CommandesServiceImpl implements ICommandesService {
             List<Member> membersWithoutRole = allMembers.stream().filter(guildMember -> !membersWithRole.contains(guildMember)).collect(Collectors.toList());
 
             StringBuilder sb = new StringBuilder();
-            sb.append("Les membres suivants n'ont pas le rôle **").append(seekRole.getName()).append("** : \r\n");
+            sb.append("Les membres suivants n'ont pas le rôle **").append(seekRole.getName()).append("** : " + RETOUR_LIGNE);
 
             for (Member memberWithoutRole : membersWithoutRole) {
-                sb.append(memberWithoutRole.getEffectiveName()).append("\r\n");
+                sb.append(memberWithoutRole.getEffectiveName()).append(RETOUR_LIGNE);
             }
 
             messagesService.sendBotMessage(channel, sb.toString());
@@ -1378,7 +1379,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
             StringBuilder sb = new StringBuilder();
 
-            sb.append("Les ranks assignables sont : \r\n");
+            sb.append("Les ranks assignables sont : " + RETOUR_LIGNE);
 
             for (Role role : sortSetOfRolesToList(selfAssignableRanks)) {
                 sb.append(role.getName());
@@ -1442,9 +1443,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private void sendMessageOfRemovedRanks(User author, MessageChannel channel, String commandeComplete, Set<Role> listRolesToRemove) {
         if (!listRolesToRemove.isEmpty()) {
             StringBuilder sb = new StringBuilder();
-            sb.append("Les rôles suivants ne sont désormais plus assignables : \r\n");
+            sb.append("Les rôles suivants ne sont désormais plus assignables : " + RETOUR_LIGNE);
             for (Role role : listRolesToRemove) {
-                sb.append(role.getName()).append("\r\n");
+                sb.append(role.getName()).append(RETOUR_LIGNE);
             }
 
             System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
@@ -1711,10 +1712,10 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private StringBuilder buildNewlyAssignableRolesListMessage(User author, String commandeComplete, Set<Role> listRolesToAdd) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Les rôles suivants sont désormais assignables : \r\n");
+        sb.append("Les rôles suivants sont désormais assignables : " + RETOUR_LIGNE);
 
         for (Role role : sortSetOfRolesToList(listRolesToAdd)) {
-            sb.append(role.getName()).append("\r\n");
+            sb.append(role.getName()).append(RETOUR_LIGNE);
         }
 
         System.out.println("DeathbotExecution : Commande " + commandeComplete + " lancée par " + author.getName() + " : " + sb.toString());
@@ -1854,7 +1855,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
             } else {
                 messagesService.sendBotMessage(channel,
-                        "Le rôle **" + rankToAdd + "** n'est pas assignable à soi-même.\r\nMerci de contacter un admin ou un modérateur pour vous l'ajouter.");
+                        "Le rôle **" + rankToAdd + "** n'est pas assignable à soi-même." + RETOUR_LIGNE + "Merci de contacter un admin ou un modérateur pour vous l'ajouter.");
             }
         } else {
             Pattern pattern = Pattern.compile("^Chevalier.*[^0]+$", Pattern.CASE_INSENSITIVE);
@@ -1866,8 +1867,8 @@ public class CommandesServiceImpl implements ICommandesService {
                 } else {
                     rankToAdd = chevalier + " 1";
                 }
-                messagesService.sendBotMessage(channel, "Les rôles 'Chevalier' vont de 10 en 10 !\r\nComme je suis sympa, j'ai corrigé votre commande par `?rank " + rankToAdd
-                        + "`.\r\nLa prochaine fois, pensez à arrondir à la dizaine inférieure ;) ");
+                messagesService.sendBotMessage(channel, "Les rôles 'Chevalier' vont de 10 en 10 !" + RETOUR_LIGNE + "Comme je suis sympa, j'ai corrigé votre commande par `?rank "
+                        + rankToAdd + "`." + RETOUR_LIGNE + "La prochaine fois, pensez à arrondir à la dizaine inférieure ;) ");
                 addOrRemoveRankToUser(author, channel, guildController, rankToAdd, member, userRoles, userAssignableRoles);
             } else {
                 messagesService.sendBotMessage(channel, "Le rôle **" + rankToAdd + "** n'existe pas.");
@@ -1897,7 +1898,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void logRolesOfMember(Member member) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Le membre ").append(member.getEffectiveName()).append(" a désormais les rôles suivants : \r\n");
+        sb.append("Le membre ").append(member.getEffectiveName()).append(" a désormais les rôles suivants : " + RETOUR_LIGNE);
         for (Role role : member.getRoles()) {
             sb.append(role.getName()).append(RETOUR_LIGNE);
         }
@@ -1906,7 +1907,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void listRanksOfUser(MessageChannel channel, Member member) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Vous avez actuellement les rôles suivants : \r\n");
+        sb.append("Vous avez actuellement les rôles suivants : " + RETOUR_LIGNE);
         for (Role role : member.getRoles()) {
             sb.append(role.getName()).append(RETOUR_LIGNE);
         }
