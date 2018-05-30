@@ -638,7 +638,7 @@ public class CommandesServiceImpl implements ICommandesService {
         action = args[0];
         String parametersString = args[1];
 
-        if (action.contains("mute") || action.contains("ban")) {
+        if ("mute".equals(action.trim()) || "ban".equals(action.trim())) {
             parameters = parametersString.split(PARAMETERS_SEPARATOR, 3);
             if (parameters.length < 3) {
                 messagesService.sendBotMessage(actualChannel, "Il manque des paramètres !");
@@ -692,13 +692,13 @@ public class CommandesServiceImpl implements ICommandesService {
                 break;
             case "unban":
                 if (isAdmin) {
-                    unbanUser(comment, guildController, user);
+                    unbanUser(comment, guildController, user, message, actualChannel, channel);
                 } else {
                     messagesService.sendMessageNotEnoughRights(channel);
                 }
                 break;
             case "unmute":
-                unmuteUser(comment, guildController, memberToPerformActionOn);
+                unmuteUser(comment, guildController, memberToPerformActionOn, message, actualChannel, channel);
                 break;
             }
         } catch (IndexOutOfBoundsException e) {
@@ -711,7 +711,6 @@ public class CommandesServiceImpl implements ICommandesService {
             MessageChannel originChannel) {
         if (memberToBan != null) {
             guildController.ban(memberToBan, 0, comment).complete();
-            sendPrivateMessage(memberToBan.getUser(), "Vous avez été banni ! " + RETOUR_LIGNE + "La raison : " + comment);
             StringBuilder sb = new StringBuilder("L'utilisateur " + memberToBan.getEffectiveName() + " a été banni");
 
             if (!"".equals(duration)) {
@@ -729,27 +728,32 @@ public class CommandesServiceImpl implements ICommandesService {
             sb.append(" !");
             messagesService.sendBotMessage(originChannel, sb.toString());
             messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
+            sendPrivateMessage(memberToBan.getUser(), "Vous avez été banni ! " + RETOUR_LIGNE + "La raison : " + comment);
+
             originChannel.deleteMessageById(message.getId()).complete();
         }
     }
 
     private void warnUser(String comment, Member memberToWarn, MessageChannel channel, Message message, MessageChannel originChannel) {
         if (memberToWarn != null) {
-            sendPrivateMessage(memberToWarn.getUser(), "Ceci est un avertissement ! " + RETOUR_LIGNE + "La raison : " + comment);
             StringBuilder sb = new StringBuilder("L'utilisateur **" + memberToWarn.getEffectiveName() + "** a été averti !");
             messagesService.sendBotMessage(originChannel, sb.toString());
             messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
+            sendPrivateMessage(memberToWarn.getUser(), "Ceci est un avertissement ! " + RETOUR_LIGNE + "La raison : " + comment);
+
             originChannel.deleteMessageById(message.getId()).complete();
         }
     }
 
     private void kickUser(String comment, GuildController guildController, Member memberToKick, MessageChannel channel, Message message, MessageChannel originChannel) {
         if (memberToKick != null) {
-            sendPrivateMessage(memberToKick.getUser(), "Vous avez été kické ! " + RETOUR_LIGNE + "La raison : " + comment);
             guildController.kick(memberToKick, comment).complete();
+
             StringBuilder sb = new StringBuilder("L'utilisateur **" + memberToKick.getEffectiveName() + "** a été kické !");
             messagesService.sendBotMessage(originChannel, sb.toString());
             messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
+            sendPrivateMessage(memberToKick.getUser(), "Vous avez été kické ! " + RETOUR_LIGNE + "La raison : " + comment);
+
             originChannel.deleteMessageById(message.getId()).complete();
         }
     }
@@ -778,25 +782,42 @@ public class CommandesServiceImpl implements ICommandesService {
                     messagesService.sendBotMessage(originChannel, sb.toString());
                     messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
                 }
+
+                sendPrivateMessage(memberToMute.getUser(), "Vous avez été muté ! " + RETOUR_LIGNE + "La raison : " + comment);
+                originChannel.deleteMessageById(message.getId()).complete();
             }
-            sendPrivateMessage(memberToMute.getUser(), comment);
-            originChannel.deleteMessageById(message.getId()).complete();
         }
 
     }
 
-    private void unbanUser(String comment, GuildController guildController, String user) {
+    private void unbanUser(String comment, GuildController guildController, String user, Message message, MessageChannel channel, MessageChannel originChannel) {
         if (user != null) {
             User userObject = guildController.getJDA().getUsersByName(user, true).get(0);
             guildController.unban(userObject);
-            sendPrivateMessage(userObject, comment);
+
+            StringBuilder sb = new StringBuilder("L'utilisateur " + userObject.getName() + " été \"dé-banni\" !");
+            messagesService.sendBotMessage(originChannel, sb.toString());
+            messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
+            sendPrivateMessage(userObject, "Vous avez été dé-banni ! " + RETOUR_LIGNE + "La raison : " + comment);
+
+            originChannel.deleteMessageById(message.getId()).complete();
         }
     }
 
-    private void unmuteUser(String comment, GuildController guildController, Member member) {
+    private void unmuteUser(String comment, GuildController guildController, Member member, Message message, MessageChannel channel, MessageChannel originChannel) {
         if (member != null) {
-            guildController.setMute(member, false);
-            sendPrivateMessage(member.getUser(), comment);
+            List<Role> muted = guildController.getGuild().getRolesByName("Muted", true);
+            if (!muted.isEmpty()) {
+                Role mutedRole = muted.get(0);
+                guildController.setMute(member, false);
+                guildController.removeSingleRoleFromMember(member, mutedRole).complete();
+
+                StringBuilder sb = new StringBuilder("L'utilisateur " + member.getEffectiveName() + " été \"dé-muté\" !");
+                messagesService.sendBotMessage(originChannel, sb.toString());
+                messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
+                sendPrivateMessage(member.getUser(), "Vous avez été dé-muté ! " + RETOUR_LIGNE + "La raison : " + comment);
+                originChannel.deleteMessageById(message.getId()).complete();
+            }
         }
     }
 
