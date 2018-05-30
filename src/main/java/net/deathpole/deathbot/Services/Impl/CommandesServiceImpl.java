@@ -727,7 +727,8 @@ public class CommandesServiceImpl implements ICommandesService {
             }
 
             sb.append(" !");
-            messagesService.sendBotMessage(channel, sb.toString());
+            messagesService.sendBotMessage(originChannel, sb.toString());
+            messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
             originChannel.deleteMessageById(message.getId()).complete();
         }
     }
@@ -735,8 +736,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private void warnUser(String comment, Member memberToWarn, MessageChannel channel, Message message, MessageChannel originChannel) {
         if (memberToWarn != null) {
             sendPrivateMessage(memberToWarn.getUser(), "Ceci est un avertissement ! " + RETOUR_LIGNE + "La raison : " + comment);
-            StringBuilder sb = new StringBuilder("L'utilisateur " + memberToWarn.getEffectiveName() + " a été averti !");
-            messagesService.sendBotMessage(channel, sb.toString());
+            StringBuilder sb = new StringBuilder("L'utilisateur **" + memberToWarn.getEffectiveName() + "** a été averti !");
+            messagesService.sendBotMessage(originChannel, sb.toString());
+            messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
             originChannel.deleteMessageById(message.getId()).complete();
         }
     }
@@ -745,8 +747,9 @@ public class CommandesServiceImpl implements ICommandesService {
         if (memberToKick != null) {
             sendPrivateMessage(memberToKick.getUser(), "Vous avez été kické ! " + RETOUR_LIGNE + "La raison : " + comment);
             guildController.kick(memberToKick, comment).complete();
-            StringBuilder sb = new StringBuilder("L'utilisateur " + memberToKick.getEffectiveName() + " a été kické !");
-            messagesService.sendBotMessage(channel, sb.toString());
+            StringBuilder sb = new StringBuilder("L'utilisateur **" + memberToKick.getEffectiveName() + "** a été kické !");
+            messagesService.sendBotMessage(originChannel, sb.toString());
+            messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
             originChannel.deleteMessageById(message.getId()).complete();
         }
     }
@@ -760,7 +763,7 @@ public class CommandesServiceImpl implements ICommandesService {
             if (!muted.isEmpty()) {
                 Role mutedRole = muted.get(0);
                 guildController.addSingleRoleToMember(memberToMute, mutedRole).complete();
-                StringBuilder sb = new StringBuilder("L'utilisateur " + memberToMute.getEffectiveName() + " a été muté");
+                StringBuilder sb = new StringBuilder("L'utilisateur **" + memberToMute.getEffectiveName() + "** a été muté");
                 if (!"".equals(duration)) {
                     try {
                         long durationLong = Long.parseLong(duration);
@@ -772,10 +775,10 @@ public class CommandesServiceImpl implements ICommandesService {
 
                     }
                     sb.append(" !");
-                    messagesService.sendBotMessage(channel, sb.toString());
+                    messagesService.sendBotMessage(originChannel, sb.toString());
+                    messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
                 }
             }
-            // TODO Ajouter le user à la liste des mutés
             sendPrivateMessage(memberToMute.getUser(), comment);
             originChannel.deleteMessageById(message.getId()).complete();
         }
