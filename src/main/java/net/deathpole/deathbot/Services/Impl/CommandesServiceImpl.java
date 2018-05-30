@@ -711,7 +711,7 @@ public class CommandesServiceImpl implements ICommandesService {
             MessageChannel originChannel) {
         if (memberToBan != null) {
             guildController.ban(memberToBan, 0, comment).complete();
-            StringBuilder sb = new StringBuilder("L'utilisateur " + memberToBan.getEffectiveName() + " a été banni");
+            StringBuilder sb = new StringBuilder("L'utilisateur **" + memberToBan.getEffectiveName() + "** a été banni");
 
             if (!"".equals(duration)) {
                 try {
@@ -795,7 +795,7 @@ public class CommandesServiceImpl implements ICommandesService {
             User userObject = guildController.getJDA().getUsersByName(user, true).get(0);
             guildController.unban(userObject);
 
-            StringBuilder sb = new StringBuilder("L'utilisateur " + userObject.getName() + " été \"dé-banni\" !");
+            StringBuilder sb = new StringBuilder("L'utilisateur **" + userObject.getName() + "** été \"dé-banni\" !");
             messagesService.sendBotMessage(originChannel, sb.toString());
             messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
             sendPrivateMessage(userObject, "Vous avez été dé-banni ! " + RETOUR_LIGNE + "La raison : " + comment);
@@ -812,7 +812,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 guildController.setMute(member, false);
                 guildController.removeSingleRoleFromMember(member, mutedRole).complete();
 
-                StringBuilder sb = new StringBuilder("L'utilisateur " + member.getEffectiveName() + " été \"dé-muté\" !");
+                StringBuilder sb = new StringBuilder("L'utilisateur **" + member.getEffectiveName() + "** été \"dé-muté\" !");
                 messagesService.sendBotMessage(originChannel, sb.toString());
                 messagesService.sendBotMessage(channel, sb.toString() + " Raison : " + comment);
                 sendPrivateMessage(member.getUser(), "Vous avez été dé-muté ! " + RETOUR_LIGNE + "La raison : " + comment);
