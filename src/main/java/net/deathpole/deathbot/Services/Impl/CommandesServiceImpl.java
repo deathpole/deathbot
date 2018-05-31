@@ -564,6 +564,7 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case REVIVE:
             calculateSRandMedals(channel, args);
+            break;
         case INACTIVITY:
             if (isAdmin || isModo) {
                 System.out.println("DeathbotExecution : Commande non prise en charge");
@@ -1044,7 +1045,12 @@ public class CommandesServiceImpl implements ICommandesService {
     private void calculateSRandMedals(MessageChannel channel, String[] args) {
 
         if (args.length < 1) {
-            messagesService.sendBotMessage(channel, "Il faut mettre des paramètres, hein...");
+            StringBuilder sb = new StringBuilder("Aide de la commande ?revive : " + RETOUR_LIGNE);
+            sb.append("```?revive <STAGE_ATTEINT> <BONUS_DE_MEDAILLES> (<TEMPS_DE_RUN_EN_MIN>) :").append(RETOUR_LIGNE);
+            sb.append("\t- Si le temps de run N'EST PAS renseigné : Permet de connaître le nombre de médailles gagnées lors de la résurrection.").append(RETOUR_LIGNE);
+            sb.append("\t- Si le temps EST renseigné : Permet de connaître les médailles par minute que génère ce run.```");
+
+            messagesService.sendBotMessage(channel, sb.toString());
             return;
         }
 
