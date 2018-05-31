@@ -193,8 +193,9 @@ public class CommandesServiceImpl implements ICommandesService {
                                                 customReactions.add(customReaction);
                                             }
 
-                                            if (lookForSimilarCommandInList(channel, action, dynoActions) || lookForSimilarCommandInList(channel, action, customReactions)
-                                                    || lookForSimilarCommandInList(channel, action, dbActions)) {
+                                            if (lookForSimilarCommandInList(prefixTrimed, channel, action, dynoActions)
+                                                    || lookForSimilarCommandInList(prefixTrimed, channel, action, customReactions)
+                                                    || lookForSimilarCommandInList(prefixTrimed, channel, action, dbActions)) {
                                                 return;
                                             }
 
@@ -225,10 +226,10 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private boolean lookForSimilarCommandInList(MessageChannel channel, String action, List<String> listToSearch) {
+    private boolean lookForSimilarCommandInList(String prefixCmd, MessageChannel channel, String action, List<String> listToSearch) {
         for (String dynoAction : listToSearch) {
             if ((dynoAction + "s").equalsIgnoreCase(action)) {
-                messagesService.sendBotMessage(channel, "Cette commande n'existe pas. Pensiez-vous à " + dynoAction + "  ?");
+                messagesService.sendBotMessage(channel, "Cette commande n'existe pas. Pensiez-vous à " + prefixCmd + "" + dynoAction.toLowerCase() + "  ?");
                 return true;
             }
         }
