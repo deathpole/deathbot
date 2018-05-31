@@ -1046,9 +1046,9 @@ public class CommandesServiceImpl implements ICommandesService {
 
         if (args.length < 1) {
             StringBuilder sb = new StringBuilder("Aide de la commande ?revive : " + RETOUR_LIGNE);
-            sb.append("```?revive <STAGE_ATTEINT> <BONUS_DE_MEDAILLES> (<TEMPS_DE_RUN_EN_MIN>) :").append(RETOUR_LIGNE);
+            sb.append("?revive <STAGE_ATTEINT> <BONUS_DE_MEDAILLES> (<TEMPS_DE_RUN_EN_MIN>) :").append(RETOUR_LIGNE);
             sb.append("\t- Si le temps de run N'EST PAS renseigné : Permet de connaître le nombre de médailles gagnées lors de la résurrection.").append(RETOUR_LIGNE);
-            sb.append("\t- Si le temps EST renseigné : Permet de connaître les médailles par minute que génère ce run.```");
+            sb.append("\t- Si le temps EST renseigné : Permet de connaître les médailles par minute que génère ce run.");
 
             messagesService.sendBotMessage(channel, sb.toString());
             return;
