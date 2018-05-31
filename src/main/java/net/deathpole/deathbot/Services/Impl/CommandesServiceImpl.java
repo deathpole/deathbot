@@ -179,7 +179,25 @@ public class CommandesServiceImpl implements ICommandesService {
                                     assert action != null;
                                     if (isBotActivated(guildController.getGuild()) || EnumAction.ACTIVATE.name().equals(action.toUpperCase())) {
                                         if (!dynoActions.contains(action.toUpperCase())) {
+
                                             HashMap<String, CustomReactionDTO> customReactionsForGuild = getCustomReactionsForGuild(guildController);
+                                            List<String> dbActions = new ArrayList<>();
+
+                                            for (EnumAction dbAction : EnumAction.values()) {
+                                                dbActions.add(dbAction.name());
+                                            }
+
+                                            List<String> customReactions = new ArrayList<>();
+
+                                            for (String customReaction : customReactionsForGuild.keySet()) {
+                                                customReactions.add(customReaction);
+                                            }
+
+                                            if (lookForSimilarCommandInList(channel, action, dynoActions) || lookForSimilarCommandInList(channel, action, customReactions)
+                                                    || lookForSimilarCommandInList(channel, action, dbActions)) {
+                                                return;
+                                            }
+
                                             if (customReactionsForGuild != null && customReactionsForGuild.keySet().contains(action)) {
                                                 String param = null;
                                                 if (args.length >= 1) {
@@ -205,6 +223,16 @@ public class CommandesServiceImpl implements ICommandesService {
                 }
             }
         }
+    }
+
+    private boolean lookForSimilarCommandInList(MessageChannel channel, String action, List<String> listToSearch) {
+        for (String dynoAction : listToSearch) {
+            if ((dynoAction + "s").equalsIgnoreCase(action)) {
+                messagesService.sendBotMessage(channel, "Cette commande n'existe pas. Pensiez-vous à " + dynoAction + "  ?");
+                return true;
+            }
+        }
+        return false;
     }
 
     private void sendPrivateMessage(User user, String content) {
@@ -519,6 +547,10 @@ public class CommandesServiceImpl implements ICommandesService {
         // messagesService.sendMessageNotEnoughRights(channel);
         // }
         // break;
+        case CHEVALIER:
+            messagesService.sendBotMessage(channel, "La commande correcte est ?rank Chevalier XXX. Comme je suis sympa je l'ai corrigée pour vous !");
+            String[] temp = {"Chevalier", args[0]};
+            args = temp;
         case RANK:
             String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
             manageRankCmd(author, channel, guildController, roleStr, member);
