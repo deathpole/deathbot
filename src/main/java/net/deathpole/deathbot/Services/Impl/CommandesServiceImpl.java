@@ -38,6 +38,7 @@ import net.deathpole.deathbot.Services.ICommandesService;
 import net.deathpole.deathbot.Services.IHelperService;
 import net.deathpole.deathbot.Services.IMessagesService;
 import net.dv8tion.jda.core.MessageBuilder;
+import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.ChannelType;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
@@ -617,6 +618,10 @@ public class CommandesServiceImpl implements ICommandesService {
                     System.out.println("Le membre " + curMember.getEffectiveName() + " est un bot, ignoré.");
                 } else {
                     for (TextChannel curChannel : allChannels) {
+                        List<Permission> permissionList = curMember.getPermissions(curChannel);
+                        if (permissionList.size() == 0) {
+                            continue;
+                        }
                         if (!getMessagesByUserAfterLimit(curChannel, curMember.getUser(), limitDateTime).isEmpty()) {
                             inactiveMembers.remove(curMember);
                             System.out.println("Le membre " + curMember.getEffectiveName() + " n'est pas inactif.");
@@ -635,6 +640,12 @@ public class CommandesServiceImpl implements ICommandesService {
             }
 
             for (Member curMember : allMembers) {
+                List<Permission> permissionList = curMember.getPermissions(specChannels.get(0));
+                if (permissionList.size() == 0) {
+                    inactiveMembers.remove(curMember);
+                    continue;
+                }
+
                 if (curMember.getUser().isBot()) {
                     inactiveMembers.remove(curMember);
                     System.out.println("Le membre " + curMember.getEffectiveName() + " est un bot, ignoré.");
@@ -642,7 +653,7 @@ public class CommandesServiceImpl implements ICommandesService {
                     if (!getMessagesByUserAfterLimit(specChannels.get(0), curMember.getUser(), limitDateTime).isEmpty()) {
                         inactiveMembers.remove(curMember);
                         System.out.println("Le membre " + curMember.getEffectiveName() + " n'est pas inactif.");
-                        break;
+                        continue;
                     }
                 }
             }
