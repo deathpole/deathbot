@@ -641,8 +641,11 @@ public class CommandesServiceImpl implements ICommandesService {
                 return;
             }
 
-            List<Member> curMembers = specChannels.get(0).getMembers();
+            TextChannel specChannelObject = specChannels.get(0);
+            List<Member> curMembers = specChannelObject.getMembers();
             inactiveMembers.addAll(curMembers);
+
+            System.out.println("---> Membres récupérés pour le channel : " + specChannelObject.getName() + " = " + curMembers.size());
 
             for (Member curMember : curMembers) {
                 if (curMember.getUser().isBot()) {
@@ -650,7 +653,7 @@ public class CommandesServiceImpl implements ICommandesService {
                     System.out.println("Le membre " + curMember.getEffectiveName() + " est un bot, ignoré.");
                     continue;
                 } else {
-                    if (!getMessagesByUserAfterLimit(specChannels.get(0), curMember.getUser(), limitDateTime).isEmpty()) {
+                    if (!getMessagesByUserAfterLimit(specChannelObject, curMember.getUser(), limitDateTime).isEmpty()) {
                         inactiveMembers.remove(curMember);
                         System.out.println("Le membre " + curMember.getEffectiveName() + " n'est pas inactif.");
                         continue;
