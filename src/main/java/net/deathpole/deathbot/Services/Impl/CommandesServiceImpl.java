@@ -599,12 +599,18 @@ public class CommandesServiceImpl implements ICommandesService {
 
         OffsetDateTime limitDateTime = OffsetDateTime.now().minusDays(limit);
 
+        System.out.println("---> Paramètres récupérés : " + specChannel + ", " + limit);
+
         List<Member> allMembers = guild.getMembers();
+        System.out.println("---> Membres récupérés : " + allMembers.size());
+
         List<Member> inactiveMembers = new ArrayList<>();
         inactiveMembers.addAll(allMembers);
 
         if (specChannel == null) {
             List<TextChannel> allChannels = guild.getTextChannels();
+            System.out.println("---> Channels récupérés : " + allChannels.size());
+
             for (Member curMember : allMembers) {
                 if (curMember.getUser().isBot()) {
                     inactiveMembers.remove(curMember);
@@ -621,10 +627,13 @@ public class CommandesServiceImpl implements ICommandesService {
             }
         } else {
             List<TextChannel> specChannels = guild.getTextChannelsByName(specChannel, true);
+            System.out.println("---> Channels spécifiques récupérés : " + specChannels.size());
+
             if (specChannels.isEmpty() || specChannels == null) {
                 messagesService.sendBotMessage(channel, "Channel inconnu ! =(");
                 return;
             }
+
             for (Member curMember : allMembers) {
                 if (curMember.getUser().isBot()) {
                     inactiveMembers.remove(curMember);
