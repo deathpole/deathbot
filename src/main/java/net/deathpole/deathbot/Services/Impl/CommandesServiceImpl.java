@@ -38,7 +38,6 @@ import net.deathpole.deathbot.Services.ICommandesService;
 import net.deathpole.deathbot.Services.IHelperService;
 import net.deathpole.deathbot.Services.IMessagesService;
 import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.ChannelType;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
@@ -573,6 +572,7 @@ public class CommandesServiceImpl implements ICommandesService {
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
+            break;
         default:
             System.out.println("DeathbotExecution : Commande non prise en charge");
             break;
@@ -606,27 +606,29 @@ public class CommandesServiceImpl implements ICommandesService {
         System.out.println("---> Membres récupérés : " + allMembers.size());
 
         List<Member> inactiveMembers = new ArrayList<>();
-        inactiveMembers.addAll(allMembers);
+
 
         if (specChannel == null) {
+
+            inactiveMembers.addAll(allMembers);
+
             List<TextChannel> allChannels = guild.getTextChannels();
             System.out.println("---> Channels récupérés : " + allChannels.size());
 
-            for (Member curMember : allMembers) {
-                if (curMember.getUser().isBot()) {
-                    inactiveMembers.remove(curMember);
-                    System.out.println("Le membre " + curMember.getEffectiveName() + " est un bot, ignoré.");
-                } else {
-                    for (TextChannel curChannel : allChannels) {
-                        List<Permission> permissionList = curMember.getPermissions(curChannel);
-                        if (permissionList.size() == 0) {
-                            continue;
-                        }
-                        if (!getMessagesByUserAfterLimit(curChannel, curMember.getUser(), limitDateTime).isEmpty()) {
-                            inactiveMembers.remove(curMember);
-                            System.out.println("Le membre " + curMember.getEffectiveName() + " n'est pas inactif.");
-                            break;
-                        }
+            for (TextChannel curChannel : allChannels) {
+                List<Member> curMembers = curChannel.getMembers();
+                System.out.println("---> Membres récupérés pour le channel : " + curChannel.getName() + " = " + curMembers.size());
+
+                for (Member curMember : curMembers) {
+                    if (curMember.getUser().isBot()) {
+                        inactiveMembers.remove(curMember);
+                        System.out.println("Le membre " + curMember.getEffectiveName() + " est un bot, ignoré.");
+                        continue;
+                    }
+                    if (!getMessagesByUserAfterLimit(curChannel, curMember.getUser(), limitDateTime).isEmpty()) {
+                        inactiveMembers.remove(curMember);
+                        System.out.println("Le membre " + curMember.getEffectiveName() + " n'est pas inactif.");
+                        continue;
                     }
                 }
             }
@@ -639,16 +641,14 @@ public class CommandesServiceImpl implements ICommandesService {
                 return;
             }
 
-            for (Member curMember : allMembers) {
-                List<Permission> permissionList = curMember.getPermissions(specChannels.get(0));
-                if (permissionList.size() == 0) {
-                    inactiveMembers.remove(curMember);
-                    continue;
-                }
+            List<Member> curMembers = specChannels.get(0).getMembers();
+            inactiveMembers.addAll(curMembers);
 
+            for (Member curMember : curMembers) {
                 if (curMember.getUser().isBot()) {
                     inactiveMembers.remove(curMember);
                     System.out.println("Le membre " + curMember.getEffectiveName() + " est un bot, ignoré.");
+                    continue;
                 } else {
                     if (!getMessagesByUserAfterLimit(specChannels.get(0), curMember.getUser(), limitDateTime).isEmpty()) {
                         inactiveMembers.remove(curMember);
