@@ -23,6 +23,7 @@ public enum EnumAction {
     CHEVALIER,
     DCR,
     DEACTIVATE,
+    ISACTIVE,
     INACTIVITY,
     LARO,
     LIST,

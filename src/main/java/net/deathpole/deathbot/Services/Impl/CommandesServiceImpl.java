@@ -567,8 +567,14 @@ public class CommandesServiceImpl implements ICommandesService {
             break;
         case INACTIVITY:
             if (isAdmin || isModo) {
-                System.out.println("DeathbotExecution : Commande non prise en charge");
                 listInactiveMember(channel, guildController, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case ISACTIVE:
+            if (isAdmin || isModo) {
+                isMemberActive(channel, guildController, args[0]);
             } else {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
@@ -576,6 +582,56 @@ public class CommandesServiceImpl implements ICommandesService {
         default:
             System.out.println("DeathbotExecution : Commande non prise en charge");
             break;
+        }
+    }
+
+    private void isMemberActive(MessageChannel channel, GuildController guildController, String arg) {
+
+        Guild guild = guildController.getGuild();
+
+        String[] args = arg.split(PARAMETERS_SEPARATOR);
+        String name = args[0];
+        int limit = Integer.parseInt(args[1]);
+
+        String specChannelName = null;
+
+        if (args.length == 3) {
+            specChannelName = args[2];
+        }
+
+        OffsetDateTime limitDateTime = OffsetDateTime.now().minusDays(limit);
+
+        List<Member> members = guild.getMembersByEffectiveName(name, true);
+        if (members != null && !members.isEmpty()) {
+
+            if (specChannelName == null) {
+                for (TextChannel textChannel : guild.getTextChannels()) {
+                    if (!getMessagesByUserAfterLimit(textChannel, members.get(0).getUser(), limitDateTime).isEmpty()) {
+                        messagesService.sendBotMessage(channel,
+                                "Le membre " + name + " a été actif pendant ces " + limit + " derniers jours sur le salon : " + textChannel.getName());
+                        return;
+                    }
+                }
+                messagesService.sendBotMessage(channel, "Le membre " + name + " est apparemment inactif depuis plus de " + limit + " jours !");
+            } else {
+
+                List<TextChannel> specChannels = guild.getTextChannelsByName(specChannelName, true);
+                if (specChannels != null && !specChannels.isEmpty()) {
+                    TextChannel specChannel = specChannels.get(0);
+                    if (!getMessagesByUserAfterLimit(specChannel, members.get(0).getUser(), limitDateTime).isEmpty()) {
+                        messagesService.sendBotMessage(channel,
+                                "Le membre " + name + " a été actif pendant ces " + limit + " derniers jours sur le salon : " + specChannel.getName());
+                        return;
+                    } else {
+                        messagesService.sendBotMessage(channel,
+                                "Le membre " + name + " est apparemment inactif depuis plus de " + limit + " jours sur le salon " + specChannelName);
+                    }
+                } else {
+                    messagesService.sendBotMessage(channel, "Le salon " + specChannelName + " n'a pas été trouvé, désolé !");
+                }
+            }
+        } else {
+            messagesService.sendBotMessage(channel, "Le membre " + name + " n'a pas été trouvé, désolé !");
         }
     }
 
