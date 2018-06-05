@@ -743,7 +743,8 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private List<Message> getMessagesByUserAfterLimit(MessageChannel channel, User user, OffsetDateTime limitDateTime) {
-        return channel.getIterableHistory().stream().filter(m -> m.getAuthor().equals(user)).filter(m -> m.getCreationTime().isAfter(limitDateTime)).collect(Collectors.toList());
+        return channel.getIterableHistory().stream().limit(15000).filter(m -> m.getAuthor().equals(user)).filter(m -> m.getCreationTime().isAfter(limitDateTime)).collect(
+                Collectors.toList());
     }
 
     private void punishUser(MessageChannel channel, GuildController guildController, String arg, Message message, boolean isAdmin, MessageChannel modChannel) {
