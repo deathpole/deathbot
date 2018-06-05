@@ -598,20 +598,25 @@ public class CommandesServiceImpl implements ICommandesService {
             specChannelName = args[2].trim();
         }
 
+        System.out.println("---> Paramètres récupérés : " + name + ", " + specChannelName + ", " + limit);
+
         OffsetDateTime limitDateTime = OffsetDateTime.now().minusDays(limit);
 
         List<Member> members = new ArrayList<>(guild.getMembersByNickname(name, true));
         members.addAll(guild.getMembersByEffectiveName(name, true));
-        members.addAll(guild.getMembersByNickname(name, true));
+        members.addAll(guild.getMembersByName(name, true));
 
         if (members != null && !members.isEmpty()) {
 
             Member member = members.get(0);
+
+            System.out.println("Membre récupéré : " + member.getEffectiveName());
+
             if (specChannelName == null) {
                 for (TextChannel textChannel : guild.getTextChannels()) {
                     if (!getMessagesByUserAfterLimit(textChannel, member.getUser(), limitDateTime).isEmpty()) {
                         messagesService.sendBotMessage(channel,
-                                "Le membre " + member.getNickname() + " a été actif pendant ces " + limit + " derniers jours sur le salon : " + textChannel.getName());
+                                "Le membre " + member.getEffectiveName() + " a été actif pendant ces " + limit + " derniers jours sur le salon : " + textChannel.getName());
                         return;
                     }
                 }
@@ -621,13 +626,16 @@ public class CommandesServiceImpl implements ICommandesService {
                 List<TextChannel> specChannels = guild.getTextChannelsByName(specChannelName, true);
                 if (specChannels != null && !specChannels.isEmpty()) {
                     TextChannel specChannel = specChannels.get(0);
+
+                    System.out.println("Channel spécifique récupéré : " + specChannel.getName());
+
                     if (!getMessagesByUserAfterLimit(specChannel, member.getUser(), limitDateTime).isEmpty()) {
                         messagesService.sendBotMessage(channel,
-                                "Le membre " + member.getNickname() + " a été actif pendant ces " + limit + " derniers jours sur le salon : " + specChannel.getName());
+                                "Le membre " + member.getEffectiveName() + " a été actif pendant ces " + limit + " derniers jours sur le salon : " + specChannel.getName());
                         return;
                     } else {
                         messagesService.sendBotMessage(channel,
-                                "Le membre " + member.getNickname() + " est apparemment inactif depuis plus de " + limit + " jours sur le salon " + specChannelName);
+                                "Le membre " + member.getEffectiveName() + " est apparemment inactif depuis plus de " + limit + " jours sur le salon " + specChannelName);
                     }
                 } else {
                     messagesService.sendBotMessage(channel, "Le salon " + specChannelName + " n'a pas été trouvé, désolé !");
