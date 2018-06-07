@@ -1257,8 +1257,16 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void manageAddDynoAction(Guild guild, MessageChannel channel, String arg) {
-        String action = arg.trim();
-        addDynoAction(guild, channel, action);
+
+        if (arg.contains(ROLES_SEPARATOR)) {
+            String[] actions = arg.split(ROLES_SEPARATOR);
+            for (String action : actions) {
+                addDynoAction(guild, channel, action.trim());
+            }
+        } else {
+            String action = arg.trim();
+            addDynoAction(guild, channel, action);
+        }
     }
 
     private void manageDeleteCustomReaction(Guild guild, MessageChannel channel, String arg) {
