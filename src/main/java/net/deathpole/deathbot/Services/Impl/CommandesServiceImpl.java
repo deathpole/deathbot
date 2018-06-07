@@ -205,6 +205,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
                                             if (lookForSimilarCommandInList(prefixTrimed, channel, action, dynoActions)
                                                     || lookForSimilarCommandInList(prefixTrimed, channel, action, customReactions)
+                                                    || lookForSimilarCommandInList(prefixTrimed, channel, action, dynoActionsForGuild)
                                                     || lookForSimilarCommandInList(prefixTrimed, channel, action, dbActions)) {
                                                 return;
                                             }
