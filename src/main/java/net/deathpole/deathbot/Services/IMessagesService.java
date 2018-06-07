@@ -18,4 +18,6 @@ public interface IMessagesService {
     void sendNormalBotMessage(MessageChannel channel, String message);
 
     void sendMessageNotEnoughRights(MessageChannel channel);
+
+    String replaceChannel(String reactionReplaced, Guild guild);
 }

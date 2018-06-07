@@ -13,6 +13,7 @@ import net.dv8tion.jda.core.entities.IMentionable;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.Role;
+import net.dv8tion.jda.core.entities.TextChannel;
 
 /**
  * Created by nicolas on 28/09/17.
@@ -102,6 +103,19 @@ public class MessagesServiceImpl implements IMessagesService {
 
     @Override public void sendMessageNotEnoughRights(MessageChannel channel) {
         sendBotMessage(channel, "Désolé, vous n'avez pas les droits pour exécuter cette commande. ");
+    }
+
+    @Override
+    public String replaceChannel(String message, Guild guild) {
+        while (message.contains("{#")) {
+            String channelName = message.substring(message.indexOf("{#") + 2, message.indexOf("}", message.indexOf("{#")));
+            List<TextChannel> channels = guild.getTextChannelsByName(channelName, true);
+            if (channels != null && !channels.isEmpty()) {
+                TextChannel channel = channels.get(0);
+                message = message.replaceFirst("\\{\\#[a-zA-Z0-9_-]*\\}", channel.getAsMention());
+            }
+        }
+        return message;
     }
 }
 

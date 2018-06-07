@@ -1495,6 +1495,8 @@ public class CommandesServiceImpl implements ICommandesService {
 
             reactionReplaced = reactionReplaced.replaceFirst("\\$[0-9]+", param);
         }
+
+        reactionReplaced = messagesService.replaceChannel(reactionReplaced, guildController.getGuild());
         messagesService.sendBotMessage(channel, reactionReplaced);
     }
 
