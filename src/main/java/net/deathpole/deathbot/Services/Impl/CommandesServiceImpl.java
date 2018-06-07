@@ -72,6 +72,7 @@ public class CommandesServiceImpl implements ICommandesService {
     // Maps used after load
     private HashMap<Guild, Set<Role>> notSingleSelfAssignableRanksByGuild = new HashMap<>();
     private HashMap<Guild, Set<Role>> onJoinRanksByGuild = new HashMap<>();
+    private HashMap<Guild, List<String>> mapDynoActions = new HashMap<>();
     private HashMap<Guild, Set<Role>> selfAssignableRanksByGuild = new HashMap<>();
     private HashMap<Guild, String> prefixCmdByGuild = new HashMap<>();
     private HashMap<Guild, HashMap<String, CustomReactionDTO>> mapCustomReactions = new HashMap<>();
@@ -86,6 +87,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private HashMap<String, Set<String>> selfAssignableRanksByIdsByGuild = initAssignableRanksbyGuild();
     private HashMap<String, HashMap<String, CustomReactionDTO>> mapCustomReactionsByGuild = initMapCustomReactions();
+    private HashMap<String, List<String>> mapDynoActionsByGuild = initMapDynoActions();
     private HashMap<String, HashMap<String, String>> mapVoiceRoleByGuild = initMapVoiceRoles();
 
     private List<Member> listCadavreSujet;
@@ -129,6 +131,13 @@ public class CommandesServiceImpl implements ICommandesService {
             globalDao = new GlobalDao();
         }
         return globalDao.initMapCustomReactions();
+    }
+
+    private HashMap<String, List<String>> initMapDynoActions() {
+        if (globalDao == null) {
+            globalDao = new GlobalDao();
+        }
+        return globalDao.initMapDynoActions();
     }
 
     private HashMap<String, HashMap<String, String>> initMapVoiceRoles() {
@@ -178,7 +187,8 @@ public class CommandesServiceImpl implements ICommandesService {
                                 try {
                                     assert action != null;
                                     if (isBotActivated(guildController.getGuild()) || EnumAction.ACTIVATE.name().equals(action.toUpperCase())) {
-                                        if (!dynoActions.contains(action.toUpperCase())) {
+                                        List<String> dynoActionsForGuild = getDynoActionsForGuild(guildController);
+                                        if (!(dynoActions.contains(action.toUpperCase()) || dynoActionsForGuild.contains(action.toUpperCase().toLowerCase()))) {
 
                                             HashMap<String, CustomReactionDTO> customReactionsForGuild = getCustomReactionsForGuild(guildController);
                                             List<String> dbActions = new ArrayList<>();
@@ -335,6 +345,27 @@ public class CommandesServiceImpl implements ICommandesService {
         Guild guild = guildController.getGuild();
 
         switch (actionEnum) {
+        case IGNORE:
+            if (isAdmin || isModo) {
+                manageAddDynoAction(guild, channel, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case REMOVE_IGNORE:
+            if (isAdmin || isModo) {
+                manageDeleteDynoAction(guild, channel, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case LIST_IGNORE:
+            if (isAdmin || isModo) {
+                listDynoActionsForGuild(guild, channel);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
         case SET_WELCOME_MESSAGE:
         case SWM:
             if (isAdmin) {
@@ -1133,6 +1164,23 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
+    private void listDynoActionsForGuild(Guild guild, MessageChannel channel) {
+        List<String> dynoActions = mapDynoActions.get(guild);
+
+        if (dynoActions != null) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Liste des commandes Dyno ignorées : ").append(RETOUR_LIGNE);
+
+            for (String dynoAction : dynoActions) {
+                sb.append(dynoAction).append(RETOUR_LIGNE);
+            }
+
+            messagesService.sendBotMessage(channel, sb.toString());
+        } else {
+            messagesService.sendBotMessage(channel, "Aucune commande Dyno ignorée de façon spécifique pour ce serveur.");
+        }
+    }
+
     private void calculateSRandMedals(MessageChannel channel, String[] args) {
 
         if (args.length < 1) {
@@ -1208,10 +1256,20 @@ public class CommandesServiceImpl implements ICommandesService {
         addCustomReaction(guild, channel, keyWord, reaction);
     }
 
+    private void manageAddDynoAction(Guild guild, MessageChannel channel, String arg) {
+        String action = arg.trim();
+        addDynoAction(guild, channel, action);
+    }
+
     private void manageDeleteCustomReaction(Guild guild, MessageChannel channel, String arg) {
         String[] fullParams = arg.split(ACTION_ARGS_SEPARATOR, 1);
         String keyWord = fullParams[0];
         deleteCustomReaction(guild, channel, keyWord);
+    }
+
+    private void manageDeleteDynoAction(Guild guild, MessageChannel channel, String arg) {
+        String action = arg.trim();
+        deleteDynoAction(guild, channel, action);
     }
 
     @Deprecated
@@ -1378,7 +1436,7 @@ public class CommandesServiceImpl implements ICommandesService {
     private void executeCustomReaction(Member member, Message message, GuildController guildController, MessageChannel channel, String arg, String action) {
         Guild guild = guildController.getGuild();
         CustomReactionDTO customReaction = mapCustomReactions.get(guild).get(action);
-        String[] params = (arg == null || arg.isEmpty()) ? new String[0] : arg.trim().split(ACTION_ARGS_SEPARATOR + "+");
+        String[] params = (arg == null || arg.isEmpty()) ? new String[0] : arg.trim().split(PARAMETERS_SEPARATOR + "+");
 
         if (params.length != customReaction.getNumberOfParams()) {
             messagesService.sendBotMessage(channel, "Le nombre d'argument n'est pas le bon ! Try again !");
@@ -1480,6 +1538,50 @@ public class CommandesServiceImpl implements ICommandesService {
             }
         } else {
             messagesService.sendBotMessage(channel, "Aucune commande custom trouvée pour votre serveur !");
+        }
+    }
+
+    private void addDynoAction(Guild guild, MessageChannel channel, String dynoAction) {
+
+        if (mapDynoActions == null) {
+            mapDynoActions = new HashMap<>();
+        }
+
+        for (EnumDynoAction action : EnumDynoAction.values()) {
+            if (dynoAction.equalsIgnoreCase(action.name())) {
+                messagesService.sendBotMessage(channel, "La commande " + dynoAction + " est déjà ignorée Deathbot.");
+                return;
+            }
+        }
+
+        List<String> mapDynoActionsForGuild = mapDynoActions.get(guild);
+        if (mapDynoActionsForGuild == null) {
+            mapDynoActionsForGuild = new ArrayList<>();
+        }
+        mapDynoActionsForGuild.add(dynoAction);
+        mapDynoActions.put(guild, mapDynoActionsForGuild);
+
+        globalDao.addDynoAction(dynoAction, guild);
+
+        messagesService.sendBotMessage(channel, "Nouvelle commande Dyno ignorée : " + dynoAction);
+    }
+
+    private void deleteDynoAction(Guild guild, MessageChannel channel, String action) {
+        List<String> mapDynoActionsForGuild = mapDynoActions.get(guild);
+        if (mapDynoActionsForGuild != null) {
+            if (mapDynoActionsForGuild.remove(action)) {
+                boolean deleted = globalDao.deleteDynoAction(action, guild);
+                if (!deleted) {
+                    messagesService.sendBotMessage(channel,
+                            "La commande Dyno \"" + action + "\" n'a pas pu être supprimée de la liste des commandes à ignorer. Merci de contacter l'administrateur.");
+                    return;
+                }
+                messagesService.sendBotMessage(channel, "La commande Dyno \"" + action + "\" a été supprimée de la liste des commandes à ignorer.");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune commande Dyno ignorée n'a été trouvée pour le mot-clé : " + action);
+            }
+        } else {
+            messagesService.sendBotMessage(channel, "Aucune commande Dyno ignorée pour votre serveur !");
         }
     }
 
@@ -1638,6 +1740,15 @@ public class CommandesServiceImpl implements ICommandesService {
         return (mapCustomReactions != null && !mapCustomReactions.isEmpty()) ? mapCustomReactions.get(guild) : new HashMap<>();
     }
 
+    private List<String> getDynoActionsForGuild(GuildController guildController) {
+        Guild guild = guildController.getGuild();
+
+        if (mapDynoActions.isEmpty() && !mapDynoActionsByGuild.isEmpty()) {
+            mapDynoActions = transformDynoActionsGuildNamesToGuild(guildController, mapDynoActionsByGuild);
+        }
+        return (mapDynoActions != null && !mapDynoActions.isEmpty()) ? mapDynoActions.get(guild) : new ArrayList<>();
+    }
+
     private HashMap<String, String> getVoiceRolesForGuild(GuildController guildController) {
         Guild guild = guildController.getGuild();
 
@@ -1671,6 +1782,19 @@ public class CommandesServiceImpl implements ICommandesService {
             HashMap<String, CustomReactionDTO> customReactionMap = mapCustomReactionsByGuild.get(guildName);
 
             resultMap.put(guild, customReactionMap);
+        }
+        return resultMap;
+    }
+
+    private HashMap<Guild, List<String>> transformDynoActionsGuildNamesToGuild(GuildController guildController, HashMap<String, List<String>> mapDynoActionsByGuild) {
+        HashMap<Guild, List<String>> resultMap = new HashMap<>();
+
+        for (String guildName : mapDynoActionsByGuild.keySet()) {
+            Guild guild = guildController.getJDA().getGuildsByName(guildName, true).get(0);
+
+            List<String> dynoActionsMap = mapDynoActionsByGuild.get(guildName);
+
+            resultMap.put(guild, dynoActionsMap);
         }
         return resultMap;
     }

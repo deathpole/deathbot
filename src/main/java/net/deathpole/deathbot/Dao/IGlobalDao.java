@@ -3,6 +3,7 @@ package net.deathpole.deathbot.Dao;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 import net.deathpole.deathbot.CustomReactionDTO;
@@ -31,7 +32,13 @@ public interface IGlobalDao {
 
     HashMap<String, HashMap<String, CustomReactionDTO>> initMapCustomReactions();
 
+    HashMap<String, List<String>> initMapDynoActions();
+
     void saveCustomReaction(String keyWord, CustomReactionDTO customReaction, Guild guild);
+
+    void addDynoAction(String action, Guild guild);
+
+    boolean deleteDynoAction(String action, Guild guild);
 
     HashMap<String, ReminderDTO> getRemindersForGuild(Guild guild);
 

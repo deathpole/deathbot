@@ -16,8 +16,10 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -312,6 +314,44 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
+    public HashMap<String, List<String>> initMapDynoActions() {
+        Connection conn = getConnectionToDB();
+
+        HashMap<String, List<String>> resultMap = new HashMap<>();
+
+        try {
+            Statement statement = conn.createStatement();
+            String sql = "SELECT * FROM DYNO_ACTIONS ORDER BY GUILD_NAME ";
+            ResultSet rs = statement.executeQuery(sql);
+
+            while (rs.next()) {
+                String guildName = rs.getString("GUILD_NAME");
+                String action = rs.getString("ACTION");
+
+                List<String> actions = resultMap.get(guildName);
+
+                if (actions == null) {
+                    actions = new ArrayList<>();
+                }
+
+                actions.add(action);
+                resultMap.put(guildName, actions);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return resultMap;
+    }
+
+    @Override
     public void saveCustomReaction(String keyWord, CustomReactionDTO customReaction, Guild guild) {
         Connection conn = getConnectionToDB();
 
@@ -346,6 +386,58 @@ public class GlobalDao implements IGlobalDao {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public void addDynoAction(String action, Guild guild) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlInsert = "INSERT INTO DYNO_ACTIONS(GUILD_NAME, ACTION) VALUES(?, ?)";
+
+            PreparedStatement statement = conn.prepareStatement(sqlInsert);
+            statement.setString(1, guild.getName());
+            statement.setString(2, action);
+
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public boolean deleteDynoAction(String action, Guild guild) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlInsert = "DELETE FROM DYNO_ACTIONS WHERE ACTION = ? AND GUILD_NAME = ?";
+
+            PreparedStatement statement = conn.prepareStatement(sqlInsert);
+            statement.setString(1, action);
+            statement.setString(2, guild.getName());
+
+            int count = statement.executeUpdate();
+
+            return count > 0 ? true : false;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return false;
     }
 
     @Override

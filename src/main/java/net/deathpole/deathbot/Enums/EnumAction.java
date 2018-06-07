@@ -23,10 +23,12 @@ public enum EnumAction {
     CHEVALIER,
     DCR,
     DEACTIVATE,
-    ISACTIVE,
+    IGNORE,
     INACTIVITY,
+    ISACTIVE,
     LARO,
     LIST,
+    LIST_IGNORE,
     // LIST_ONJOIN_RANKS,
     // LOJR,
     // LIST_REMINDERS,
@@ -40,7 +42,9 @@ public enum EnumAction {
     REMOVE_NOTSINGLE_RANK,
     RNSR,
     // REMOVE_ONJOIN_RANK,
+    WITHOUT,
     // ROJR,
+    REMOVE_IGNORE,
     REMOVE_RANK,
     RR,
     // REMOVE_REMINDER,
@@ -50,9 +54,8 @@ public enum EnumAction {
     SWM,
     SINGLE,
     SUDO,
-    TIME,
     WITH,
-    WITHOUT;
+    TIME;
 
 
     public static EnumAction fromValue(String v){
