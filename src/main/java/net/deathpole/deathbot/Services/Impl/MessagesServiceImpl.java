@@ -113,6 +113,8 @@ public class MessagesServiceImpl implements IMessagesService {
             if (channels != null && !channels.isEmpty()) {
                 TextChannel channel = channels.get(0);
                 message = message.replaceFirst("\\{\\#[a-zA-Z0-9_-]*\\}", channel.getAsMention());
+            } else {
+                message = message.replaceFirst("\\{\\#[a-zA-Z0-9_-]*\\}", channelName);
             }
         }
         return message;
