@@ -655,7 +655,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void addRankToRank(Guild guild, MessageChannel channel, String arg) {
-        String[] args = arg.split(REMINDER_SEPARATOR);
+        String[] args = arg.split(PARAMETERS_SEPARATOR);
         List<String> rolesToSearch = Arrays.asList(args[1].trim().split(ROLES_SEPARATOR));
         String roleToAdd = args[0].trim();
 
@@ -1274,7 +1274,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private StringBuilder buildNewLinkedRankMessage(Set<Role> linkedRoles, Role role) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Les rôles suivants seront désormais assignés lorsqu'un membre s'affectera le rôle" + role.getName() + " : " + RETOUR_LIGNE);
+        sb.append("Le rôle " + role.getName() + " sera désormais assigné lorsqu'un membre s'affectera un des rôles suivants : " + RETOUR_LIGNE);
 
         for (Role linkedRole : sortSetOfRolesToList(linkedRoles)) {
             sb.append(linkedRole.getName()).append(RETOUR_LIGNE);
@@ -2361,6 +2361,7 @@ public class CommandesServiceImpl implements ICommandesService {
         for (Role linkedRole : linkedRoles.keySet()) {
             for (Role role : linkedRoles.get(linkedRole)) {
                 if (roleToAdd.equals(role)) {
+                    System.out.println("Suppression du rôle lié " + linkedRole + " pour le membre " + member.getEffectiveName());
                     guildController.removeSingleRoleFromMember(member, linkedRole).complete();
                     break;
                 }
@@ -2371,6 +2372,11 @@ public class CommandesServiceImpl implements ICommandesService {
     private Member addRankToUser(GuildController guildController, Member member, List<Role> userAssignableRoles, Role roleToAdd, StringBuilder messageBuilder, boolean isSingle) {
 
         if (isSingle && getSingleRoleForGuild(guildController.getGuild()) && !userAssignableRoles.isEmpty()) {
+
+            for (Role role : userAssignableRoles) {
+                System.out.println("Le rôle suivant est retiré du membre " + member.getEffectiveName() + " : " + role.getName());
+            }
+
             guildController.removeRolesFromMember(member, userAssignableRoles).complete();
             for (Role roleToRemove : userAssignableRoles) {
                 removeLinkedRankToMember(guildController, member, roleToRemove);
