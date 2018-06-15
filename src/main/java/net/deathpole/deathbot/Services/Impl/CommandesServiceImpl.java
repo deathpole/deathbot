@@ -730,6 +730,9 @@ public class CommandesServiceImpl implements ICommandesService {
             linkedRolesByGuild = new HashMap<>();
         }
         HashMap<Role, Set<Role>> linkedRolesForGuild = linkedRolesByGuild.get(guild);
+        if (linkedRolesForGuild == null) {
+            linkedRolesForGuild = new HashMap<>();
+        }
         linkedRolesForGuild.put(role, linkedRoles);
         linkedRolesByGuild.put(guild, linkedRolesForGuild);
         globalDao.createRankLink(guild, role, linkedRoles);
