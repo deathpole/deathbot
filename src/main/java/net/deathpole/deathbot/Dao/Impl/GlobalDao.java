@@ -716,6 +716,71 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
+    public HashMap<String, HashMap<String, Set<String>>> initLinkedRanksbyGuild() {
+        Connection conn = getConnectionToDB();
+
+        HashMap<String, HashMap<String, Set<String>>> resultMap = new HashMap<>();
+
+        try {
+            Statement statement = conn.createStatement();
+            String sql = "SELECT * FROM RANKS_LINK ORDER BY GUILD_NAME, LINKED_RANK, RANK";
+            ResultSet rs = statement.executeQuery(sql);
+
+            while (rs.next()) {
+                String guildName = rs.getString("GUILD_NAME");
+                String linkedRank = rs.getString("LINKED_RANK");
+                String rank = rs.getString("RANK");
+
+                HashMap<String, Set<String>> roleLinksForGuild = resultMap.get(guildName);
+                if (roleLinksForGuild == null) {
+                    roleLinksForGuild = new HashMap<>();
+                }
+
+                Set<String> linkedRoles = roleLinksForGuild.get(linkedRank);
+                if (linkedRoles == null) {
+                    linkedRoles = new HashSet<>();
+                }
+                linkedRoles.add(rank);
+                roleLinksForGuild.put(linkedRank, linkedRoles);
+                resultMap.put(guildName, roleLinksForGuild);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return resultMap;
+    }
+
+    @Override
+    public void deleteRankLink(Guild guild, Role role) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlDelete = "DELETE FROM ranks_link WHERE GUILD_NAME = ? AND LINKED_RANK = ?";
+            PreparedStatement statement = conn.prepareStatement(sqlDelete);
+            statement.setString(1, guild.getName());
+            statement.setString(2, role.getName());
+            int deletedCount = statement.executeUpdate();
+            System.out.println("DeathbotExecution : Nombre de ranks liés supprimés : " + deletedCount);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
     public void saveOnJoinRanksForGuild(Guild guild, Set<Role> onJoinRanks) {
         Connection conn = getConnectionToDB();
 
@@ -756,6 +821,38 @@ public class GlobalDao implements IGlobalDao {
 
             statement.executeUpdate();
 
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void createRankLink(Guild guild, Role role, Set<Role> linkedRoles) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlDelete = "DELETE FROM ranks_link WHERE GUILD_NAME = ? AND LINKED_RANK = ?";
+            PreparedStatement statement = conn.prepareStatement(sqlDelete);
+            statement.setString(1, guild.getName());
+            statement.setString(2, role.getName());
+            int deletedCount = statement.executeUpdate();
+            System.out.println("DeathbotExecution : Nombre de ranks liés supprimés : " + deletedCount);
+
+            String sqlInsert = "INSERT INTO ranks_link(GUILD_NAME, RANK, LINKED_RANK) VALUES (?,?,?)";
+            PreparedStatement stmnt = conn.prepareStatement(sqlInsert);
+            for (Role linkedRole : linkedRoles) {
+                stmnt.setString(1, guild.getName());
+                stmnt.setString(2, linkedRole.getName());
+                stmnt.setString(3, role.getName());
+                stmnt.addBatch();
+            }
+            stmnt.executeBatch();
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {

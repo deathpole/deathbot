@@ -72,6 +72,7 @@ public class CommandesServiceImpl implements ICommandesService {
     // Maps used after load
     private HashMap<Guild, Set<Role>> notSingleSelfAssignableRanksByGuild = new HashMap<>();
     private HashMap<Guild, Set<Role>> onJoinRanksByGuild = new HashMap<>();
+    private HashMap<Guild, HashMap<Role, Set<Role>>> linkedRolesByGuild = new HashMap<>();
     private HashMap<Guild, List<String>> mapDynoActions = new HashMap<>();
     private HashMap<Guild, Set<Role>> selfAssignableRanksByGuild = new HashMap<>();
     private HashMap<Guild, String> prefixCmdByGuild = new HashMap<>();
@@ -84,6 +85,14 @@ public class CommandesServiceImpl implements ICommandesService {
     // Maps used on DB load
     private HashMap<String, Set<String>> notSingleSelfAssignableRanksByIdsByGuild = initNotSingleAssignableRanksbyGuild();
     private HashMap<String, Set<String>> onJoinRanksByIdsByGuild = initOnJoinRanksbyGuild();
+    private HashMap<String, HashMap<String, Set<String>>> linkedRanksByIdsByGuild = initLinkedRanksByGuild();
+
+    private HashMap<String, HashMap<String, Set<String>>> initLinkedRanksByGuild() {
+        if (globalDao == null) {
+            globalDao = new GlobalDao();
+        }
+        return globalDao.initLinkedRanksbyGuild();
+    }
 
     private HashMap<String, Set<String>> selfAssignableRanksByIdsByGuild = initAssignableRanksbyGuild();
     private HashMap<String, HashMap<String, CustomReactionDTO>> mapCustomReactionsByGuild = initMapCustomReactions();
@@ -346,6 +355,34 @@ public class CommandesServiceImpl implements ICommandesService {
         Guild guild = guildController.getGuild();
 
         switch (actionEnum) {
+        case ADD_RANK_TO_RANK:
+            if (isAdmin) {
+                addRankToRank(guild, channel, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case ASSOCIATE:
+            if (isAdmin) {
+                associateRanksAction(guild, channel, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case REMOVE_ASSOCIATED:
+            if (isAdmin) {
+                removeRankLinkAction(guild, channel, args[0]);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
+        case LIST_ASSOCIATED:
+            if (isAdmin || isModo) {
+                listAssociatedRanksAction(guild, channel);
+            } else {
+                messagesService.sendMessageNotEnoughRights(channel);
+            }
+            break;
         case IGNORE:
             if (isAdmin || isModo) {
                 manageAddDynoAction(guild, channel, args[0]);
@@ -615,6 +652,109 @@ public class CommandesServiceImpl implements ICommandesService {
             System.out.println("DeathbotExecution : Commande non prise en charge");
             break;
         }
+    }
+
+    private void addRankToRank(Guild guild, MessageChannel channel, String arg) {
+        String[] args = arg.split(REMINDER_SEPARATOR);
+        List<String> rolesToSearch = Arrays.asList(args[1].trim().split(ROLES_SEPARATOR));
+        String roleToAdd = args[0].trim();
+
+        List<Member> members = new ArrayList<>();
+        for (String roleName : rolesToSearch) {
+            members.addAll(guild.getMembersWithRoles(guild.getRolesByName(roleName, true)));
+        }
+
+        for (Member member : members) {
+            List<Role> roleToAddObj = guild.getRolesByName(roleToAdd, true);
+            if (roleToAddObj.isEmpty()) {
+                messagesService.sendBotMessage(channel, "Le role " + roleToAdd + " n'a pas été trouvé !");
+                return;
+            }
+            guild.getController().addRolesToMember(member, roleToAddObj).complete();
+        }
+
+        messagesService.sendBotMessage(channel, "Traitement d'ajout du rôle " + roleToAdd + " terminé !");
+    }
+
+    private void removeRankLinkAction(Guild guild, MessageChannel channel, String arg) {
+        String rankToRemove = arg.trim();
+
+        Role role = getRoleFromRoleName(guild, channel, rankToRemove);
+        linkedRolesByGuild.get(guild).remove(role);
+
+        globalDao.deleteRankLink(guild, role);
+        StringBuilder sb = new StringBuilder("Le rôle " + role.getName() + " n'est plus lié à aucun autre rôle.");
+        messagesService.sendBotMessage(channel, sb.toString());
+    }
+
+    private void listAssociatedRanksAction(Guild guild, MessageChannel channel) {
+        HashMap<Role, Set<Role>> linkedRanksByRole = getLinkedRanksForGuild(guild.getController());
+
+        if (linkedRanksByRole != null && !linkedRanksByRole.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("__**Liste des rôles liés**__").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
+            for (Role linkedRole : linkedRanksByRole.keySet()) {
+                sb.append("*Au rôle " + linkedRole.getName() + "* => ").append(RETOUR_LIGNE);
+                for (Role role : linkedRanksByRole.get(linkedRole)) {
+                    sb.append("\t- ").append(role.getName()).append(RETOUR_LIGNE);
+                }
+                sb.append(RETOUR_LIGNE);
+            }
+            messagesService.sendBotMessage(channel, sb.toString());
+
+        } else {
+            messagesService.sendBotMessage(channel, "Aucun rôle n'est lié à un autre !");
+        }
+    }
+
+    private void associateRanksAction(Guild guild, MessageChannel channel, String arg) {
+        String[] args = arg.trim().split(PARAMETERS_SEPARATOR, 2);
+        String rank = args[0];
+        Role role = getRoleFromRoleName(guild, channel, rank);
+
+        String concernedRankStr = args[1];
+
+        Set<Role> linkedRoles = createListOfRoleFromStringTable(concernedRankStr.split(ROLES_SEPARATOR), guild.getController(), channel);
+        getLinkedRanksForGuild(guild.getController());
+
+        setLinkedRanksForGuild(guild, role, linkedRoles);
+
+        if (!linkedRoles.isEmpty()) {
+            StringBuilder sb = buildNewLinkedRankMessage(linkedRoles, role);
+            messagesService.sendBotMessage(channel, sb.toString());
+        }
+    }
+
+    private void setLinkedRanksForGuild(Guild guild, Role role, Set<Role> linkedRoles) {
+        if (linkedRolesByGuild == null) {
+            linkedRolesByGuild = new HashMap<>();
+        }
+        HashMap<Role, Set<Role>> linkedRolesForGuild = linkedRolesByGuild.get(guild);
+        linkedRolesForGuild.put(role, linkedRoles);
+        linkedRolesByGuild.put(guild, linkedRolesForGuild);
+        globalDao.createRankLink(guild, role, linkedRoles);
+    }
+
+    private HashMap<Role, Set<Role>> getLinkedRanksForGuild(GuildController guildController) {
+        Guild guild = guildController.getGuild();
+
+        if (linkedRolesByGuild.isEmpty() && !linkedRanksByIdsByGuild.isEmpty()) {
+            linkedRolesByGuild = transformHashRanksIdsToObjects(guildController, linkedRanksByIdsByGuild);
+        }
+
+        return (linkedRolesByGuild != null && !linkedRolesByGuild.isEmpty()) ? linkedRolesByGuild.get(guild) : new HashMap<>();
+    }
+
+    private Role getRoleFromRoleName(Guild guild, MessageChannel channel, String roleName) {
+        Role role = null;
+        List<Role> roles = guild.getRolesByName(roleName, true);
+
+        if (roles != null && !roles.isEmpty()) {
+            role = roles.get(0);
+        } else {
+            messagesService.sendBotMessage(channel, "Aucun rôle trouvé pour le nom : " + roleName);
+        }
+        return role;
     }
 
     private void isMemberActive(MessageChannel channel, GuildController guildController, String arg) {
@@ -1129,13 +1269,23 @@ public class CommandesServiceImpl implements ICommandesService {
         return sb;
     }
 
+    private StringBuilder buildNewLinkedRankMessage(Set<Role> linkedRoles, Role role) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Les rôles suivants seront désormais assignés lorsqu'un membre s'affectera le rôle" + role.getName() + " : " + RETOUR_LIGNE);
+
+        for (Role linkedRole : sortSetOfRolesToList(linkedRoles)) {
+            sb.append(linkedRole.getName()).append(RETOUR_LIGNE);
+        }
+
+        return sb;
+    }
+
     private void setOnJoinRanksForGuild(Guild guild, Set<Role> onJoinRanks) {
         if (onJoinRanksByGuild == null) {
             onJoinRanksByGuild = new HashMap<>();
         }
         onJoinRanksByGuild.put(guild, onJoinRanks);
         globalDao.saveOnJoinRanksForGuild(guild, onJoinRanks);
-        // globalDao.saveAssignableRanksForGuild(guild, onJoinRanks, false);
     }
 
     private Set<Role> getOnJoinRanksForGuild(GuildController guildController) {
@@ -1833,6 +1983,34 @@ public class CommandesServiceImpl implements ICommandesService {
         return resultMap;
     }
 
+    private HashMap<Guild, HashMap<Role, Set<Role>>> transformHashRanksIdsToObjects(GuildController guildController,
+            HashMap<String, HashMap<String, Set<String>>> ranksByIdsByGuild) {
+
+        HashMap<Guild, HashMap<Role, Set<Role>>> resultMap = new HashMap<>();
+
+        for (String guildName : ranksByIdsByGuild.keySet()) {
+            List<Guild> guilds = guildController.getJDA().getGuildsByName(guildName, true);
+            if (!guilds.isEmpty()) {
+                Guild guild = guildController.getJDA().getGuildsByName(guildName, true).get(0);
+
+                HashMap<String, Set<String>> roleNames = ranksByIdsByGuild.get(guildName);
+                HashMap<Role, Set<Role>> linkedRoles = new HashMap<>();
+                for (String roleName : roleNames.keySet()) {
+                    Set<Role> roles = new HashSet<>();
+                    for (String linkedRole : roleNames.get(roleName)) {
+                        Role role = guildController.getGuild().getRolesByName(linkedRole, true).get(0);
+                        roles.add(role);
+                    }
+                    Role role = guildController.getGuild().getRolesByName(roleName, true).get(0);
+                    linkedRoles.put(role, roles);
+                }
+                resultMap.put(guild, linkedRoles);
+            }
+        }
+
+        return resultMap;
+    }
+
     private void addAssignableRanks(User author, MessageChannel channel, GuildController guildController, String commandeComplete, String arg) {
         String[] rolesToAddTable = arg.split(ROLES_SEPARATOR);
         Guild guild = guildController.getGuild();
@@ -2167,22 +2345,54 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private Member removeRankToUser(GuildController guildController, Member member, Role roleToAdd, StringBuilder messageBuilder) {
         guildController.removeSingleRoleFromMember(member, roleToAdd).complete();
+
+        removeLinkedRankToMember(guildController, member, roleToAdd);
+
         member = guildController.getGuild().getMember(member.getUser());
         messageBuilder.append("Vous n'êtes plus **").append(roleToAdd.getName()).append("** !");
         return member;
+    }
+
+    private void removeLinkedRankToMember(GuildController guildController, Member member, Role roleToAdd) {
+        HashMap<Role, Set<Role>> linkedRoles = getLinkedRanksForGuild(guildController);
+        for (Role linkedRole : linkedRoles.keySet()) {
+            for (Role role : linkedRoles.get(linkedRole)) {
+                if (roleToAdd.equals(role)) {
+                    guildController.removeSingleRoleFromMember(member, linkedRole).complete();
+                    break;
+                }
+            }
+        }
     }
 
     private Member addRankToUser(GuildController guildController, Member member, List<Role> userAssignableRoles, Role roleToAdd, StringBuilder messageBuilder, boolean isSingle) {
 
         if (isSingle && getSingleRoleForGuild(guildController.getGuild()) && !userAssignableRoles.isEmpty()) {
             guildController.removeRolesFromMember(member, userAssignableRoles).complete();
+            for (Role roleToRemove : userAssignableRoles) {
+                removeLinkedRankToMember(guildController, member, roleToRemove);
+            }
             member = guildController.getGuild().getMember(member.getUser());
         }
-
         guildController.addSingleRoleToMember(member, roleToAdd).complete();
+
+        addLinkedRankToMember(guildController, member, roleToAdd);
+
         member = guildController.getGuild().getMember(member.getUser());
         messageBuilder.append("Vous êtes passé **").append(roleToAdd.getName()).append("** !");
         return member;
+    }
+
+    private void addLinkedRankToMember(GuildController guildController, Member member, Role roleToAdd) {
+        HashMap<Role, Set<Role>> linkedRoles = getLinkedRanksForGuild(guildController);
+        for (Role linkedRole : linkedRoles.keySet()) {
+            for (Role role : linkedRoles.get(linkedRole)) {
+                if (roleToAdd.equals(role)) {
+                    guildController.addSingleRoleToMember(member, linkedRole).complete();
+                    break;
+                }
+            }
+        }
     }
 
     private void logRolesOfMember(Member member) {

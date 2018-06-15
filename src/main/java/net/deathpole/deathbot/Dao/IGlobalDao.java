@@ -59,4 +59,10 @@ public interface IGlobalDao {
     void saveOnJoinRanksForGuild(Guild guild, Set<Role> onJoinRanks);
 
     void updateExecutedTime(Guild guild, ReminderDTO reminder);
+
+    void createRankLink(Guild guild, Role role, Set<Role> linkedRoles);
+
+    HashMap<String, HashMap<String, Set<String>>> initLinkedRanksbyGuild();
+
+    void deleteRankLink(Guild guild, Role role);
 }
