@@ -10,5 +10,7 @@ public interface IHelperService {
 
     public String formatBigNumbersToEFFormat(BigDecimal value);
 
+    BigDecimal convertEFLettersToNumber(String amountWithLetter);
+
     LocalDateTime generateNextExecutionTime(String cronTab, LocalDateTime nextExecutionTime);
 }

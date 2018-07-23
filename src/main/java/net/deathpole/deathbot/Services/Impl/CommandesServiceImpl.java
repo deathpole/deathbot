@@ -6,6 +6,8 @@ import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -28,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import net.deathpole.deathbot.Bot;
 import net.deathpole.deathbot.CustomReactionDTO;
+import net.deathpole.deathbot.PlayerStatDTO;
 import net.deathpole.deathbot.ReminderDTO;
 import net.deathpole.deathbot.Dao.IGlobalDao;
 import net.deathpole.deathbot.Dao.Impl.GlobalDao;
@@ -346,6 +349,13 @@ public class CommandesServiceImpl implements ICommandesService {
         return botActivationByGuild.get(guild);
     }
 
+    public static String formatDuration(Duration duration) {
+        long seconds = duration.getSeconds();
+        long absSeconds = Math.abs(seconds);
+        String positive = String.format("%d heure(s) et %02d minute(s)", absSeconds / 3600, (absSeconds % 3600) / 60);
+        return seconds < 0 ? "-" + positive : positive;
+    }
+
     private void executeEmbeddedAction(GuildController guildController, Role adminRole, Role modoRole, User author, Member member, MessageChannel channel, String commandeComplete,
             String[] args, String action, String originalMessage, Message message, MessageChannel modChannel) {
 
@@ -648,10 +658,78 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
+        case STAT:
+            calculateStatsForPlayer(channel, author, args[0], guild);
+            break;
         default:
             System.out.println("DeathbotExecution : Commande non prise en charge");
             break;
         }
+    }
+
+    private void calculateStatsForPlayer(MessageChannel channel, User author, String arg, Guild guild) {
+
+        PlayerStatDTO actualStats = globalDao.getStatsForPlayer((int) author.getIdLong());
+
+        String[] params = arg.split(ACTION_ARGS_SEPARATOR);
+
+        if (params.length > 3) {
+
+            PlayerStatDTO newStats = new PlayerStatDTO();
+            newStats.setPlayerId((int) author.getIdLong());
+            newStats.setKl(Integer.valueOf(params[0]));
+            newStats.setMedals(helperService.convertEFLettersToNumber(params[1]));
+            newStats.setSr(helperService.convertEFLettersToNumber(params[2]));
+            newStats.setUpdateDate(LocalDateTime.now());
+
+            if (actualStats != null)
+                compareStats(actualStats, newStats, channel, guild, author);
+            else {
+                messagesService.sendBotMessage(channel,
+                        "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
+            }
+
+            if (params.length == 4) {
+                calculateSrStat(newStats, channel, params[3]);
+            }
+            globalDao.savePlayerStats(newStats);
+        } else {
+            messagesService.sendBotMessage(channel, "Il manque des arguments =/");
+        }
+    }
+
+    private void calculateSrStat(PlayerStatDTO newStats, MessageChannel channel, String srRatio) {
+
+        StringBuilder sb = new StringBuilder("**__Sprit Rest__**").append(RETOUR_LIGNE);
+        BigDecimal fullSR = newStats.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
+        BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(newStats.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
+        sb.append(srPercentage).append("% (").append(helperService.formatBigNumbersToEFFormat(fullSR)).append(")").append(RETOUR_LIGNE);
+
+        sb.append("**__Sprit Rest doublé__**").append(RETOUR_LIGNE);
+        BigDecimal dbFullSR = fullSR.multiply(new BigDecimal(2L));
+        BigDecimal dbSrPercentage = srPercentage.multiply(new BigDecimal(2L));
+        sb.append(dbSrPercentage).append("% (").append(helperService.formatBigNumbersToEFFormat(dbFullSR)).append(")");
+
+        messagesService.sendBotMessage(channel, sb.toString());
+    }
+
+    private void compareStats(PlayerStatDTO actualStats, PlayerStatDTO newStats, MessageChannel channel, Guild guild, User author) {
+        int kl = newStats.getKl() - actualStats.getKl();
+        BigDecimal medals = BigDecimal.ZERO.compareTo(newStats.getMedals().subtract(actualStats.getMedals())) != 0
+                ? (newStats.getMedals().subtract(actualStats.getMedals())).multiply(new BigDecimal(100L)).divide(actualStats.getMedals(), 2, RoundingMode.HALF_DOWN)
+                : BigDecimal.ZERO;
+        BigDecimal sr = BigDecimal.ZERO.compareTo(newStats.getSr().subtract(actualStats.getSr())) != 0
+                ? (newStats.getSr().subtract(actualStats.getSr())).multiply(new BigDecimal(100L)).divide(actualStats.getSr(), 2, RoundingMode.HALF_DOWN)
+                : BigDecimal.ZERO;
+        Duration duration = Duration.between(actualStats.getUpdateDate(), newStats.getUpdateDate()).abs();
+
+        StringBuilder sb = new StringBuilder("Bonjour " + guild.getMember(author).getEffectiveName() + ", en ");
+        sb.append(formatDuration(duration)).append(" vous avez gagné : ").append(RETOUR_LIGNE);
+        sb.append(kl).append(" KL").append(RETOUR_LIGNE);
+        sb.append(medals).append("% de médailles").append(RETOUR_LIGNE);
+        sb.append(sr).append("% de SR").append(RETOUR_LIGNE);
+
+        messagesService.sendBotMessage(channel, sb.toString());
     }
 
     private void addRankToRank(Guild guild, MessageChannel channel, String arg) {

@@ -58,6 +58,7 @@ public enum EnumAction {
     SWM,
     SINGLE,
     SUDO,
+    STAT,
     WITH,
     TIME;
 

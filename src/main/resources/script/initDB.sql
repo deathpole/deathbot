@@ -144,3 +144,25 @@ CREATE TABLE IF NOT EXISTS RANKS_LINK
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS "RANKS_LINK_id_uindex" ON RANKS_LINK (ID);
+
+
+CREATE SEQUENCE IF NOT EXISTS PLAYER_STATS_seq
+  INCREMENT 1
+  MINVALUE 1
+  MAXVALUE 9223372036854775807
+  START 1
+  CACHE 1;
+
+create table PLAYER_STATS
+(
+  id          serial    not null
+    primary key,
+  player_id   integer   not null,
+  kl          integer,
+  medals      numeric   not null,
+  sr          numeric   not null,
+  update_date timestamp not null
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "PLAYER_STATS_id_uindex" ON PLAYER_STATS (ID);
+

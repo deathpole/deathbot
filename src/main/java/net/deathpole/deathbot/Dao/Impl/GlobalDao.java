@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import net.deathpole.deathbot.CustomReactionDTO;
+import net.deathpole.deathbot.PlayerStatDTO;
 import net.deathpole.deathbot.ReminderDTO;
 import net.deathpole.deathbot.Dao.IGlobalDao;
 import net.dv8tion.jda.core.entities.Guild;
@@ -65,8 +66,8 @@ public class GlobalDao implements IGlobalDao {
     }
 
     private static Connection getConnection() throws URISyntaxException, SQLException {
-        String dbUrl = System.getenv("JDBC_DATABASE_URL");
-        // String dbUrl = "jdbc:postgresql://localhost:5432/deathbot?user=postgres&password=postgres";
+        // String dbUrl = System.getenv("JDBC_DATABASE_URL");
+        String dbUrl = "jdbc:postgresql://localhost:5432/deathbot?user=postgres&password=postgres";
         return DriverManager.getConnection(dbUrl);
     }
 
@@ -863,4 +864,69 @@ public class GlobalDao implements IGlobalDao {
             }
         }
     }
+
+    @Override
+    public PlayerStatDTO getStatsForPlayer(int playerId) {
+        Connection conn = getConnectionToDB();
+        PlayerStatDTO playerStatDTO = new PlayerStatDTO();
+
+        try {
+            String sql = "SELECT * FROM PLAYER_STATS WHERE PLAYER_ID = ?";
+            PreparedStatement statement = conn.prepareStatement(sql);
+            statement.setInt(1, playerId);
+            ResultSet rs = statement.executeQuery();
+
+            if (rs.next()) {
+                playerStatDTO.setPlayerId(rs.getInt("PLAYER_ID"));
+                playerStatDTO.setKl(rs.getInt("KL"));
+                playerStatDTO.setMedals(rs.getBigDecimal("MEDALS"));
+                playerStatDTO.setSr(rs.getBigDecimal("SR"));
+                playerStatDTO.setUpdateDate(LocalDateTime.ofInstant(Instant.ofEpochMilli(rs.getTimestamp("UPDATE_DATE").getTime()), ZoneId.of("Europe/Paris")));
+            } else {
+                return null;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return playerStatDTO;
+    }
+
+    @Override
+    public void savePlayerStats(PlayerStatDTO playerStatDTO) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlDelete = "DELETE FROM PLAYER_STATS WHERE PLAYER_ID = ?";
+            PreparedStatement statement = conn.prepareStatement(sqlDelete);
+            statement.setInt(1, playerStatDTO.getPlayerId());
+            statement.executeUpdate();
+            System.out.println("DeathbotExecution : PlayerStats deleted for playerid : " + playerStatDTO.getPlayerId());
+
+            String sqlInsert = "INSERT INTO PLAYER_STATS(PLAYER_ID, KL, MEDALS, SR, UPDATE_DATE) VALUES (?,?,?,?,?)";
+            PreparedStatement stmnt = conn.prepareStatement(sqlInsert);
+            stmnt.setInt(1, playerStatDTO.getPlayerId());
+            stmnt.setInt(2, playerStatDTO.getKl());
+            stmnt.setBigDecimal(3, playerStatDTO.getMedals());
+            stmnt.setBigDecimal(4, playerStatDTO.getSr());
+            stmnt.setTimestamp(5, Timestamp.valueOf(playerStatDTO.getUpdateDate()));
+
+            stmnt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 }

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import net.deathpole.deathbot.CustomReactionDTO;
+import net.deathpole.deathbot.PlayerStatDTO;
 import net.deathpole.deathbot.ReminderDTO;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
@@ -40,6 +41,8 @@ public interface IGlobalDao {
 
     boolean deleteDynoAction(String action, Guild guild);
 
+    PlayerStatDTO getStatsForPlayer(int playerId);
+
     HashMap<String, ReminderDTO> getRemindersForGuild(Guild guild);
 
     boolean deleteRemindersForGuild(Guild guild, String title);
@@ -65,4 +68,6 @@ public interface IGlobalDao {
     HashMap<String, HashMap<String, Set<String>>> initLinkedRanksbyGuild();
 
     void deleteRankLink(Guild guild, Role role);
+
+    void savePlayerStats(PlayerStatDTO playerStatDTO);
 }
