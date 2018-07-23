@@ -153,7 +153,7 @@ CREATE SEQUENCE IF NOT EXISTS PLAYER_STATS_seq
   START 1
   CACHE 1;
 
-create table PLAYER_STATS
+create table IF NOT EXISTS PLAYER_STATS
 (
   id          serial    not null
     primary key,
