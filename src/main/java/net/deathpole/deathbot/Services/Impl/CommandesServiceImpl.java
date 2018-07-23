@@ -673,7 +673,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
         String[] params = arg.split(ACTION_ARGS_SEPARATOR);
 
-        if (params.length > 3) {
+        if (params.length > 2) {
 
             PlayerStatDTO newStats = new PlayerStatDTO();
             newStats.setPlayerId((int) author.getIdLong());
