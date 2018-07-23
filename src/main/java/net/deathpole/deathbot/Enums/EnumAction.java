@@ -59,6 +59,7 @@ public enum EnumAction {
     SINGLE,
     SUDO,
     STAT,
+    STATCANCEL,
     WITH,
     TIME;
 

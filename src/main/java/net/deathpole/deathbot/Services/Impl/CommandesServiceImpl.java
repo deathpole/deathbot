@@ -672,7 +672,6 @@ public class CommandesServiceImpl implements ICommandesService {
         PlayerStatDTO actualStats = globalDao.getStatsForPlayer((int) author.getIdLong());
 
         String[] params = arg.split(ACTION_ARGS_SEPARATOR);
-
         if (params.length > 2) {
 
             PlayerStatDTO newStats = new PlayerStatDTO();
@@ -693,8 +692,13 @@ public class CommandesServiceImpl implements ICommandesService {
                 calculateSrStat(newStats, channel, params[3]);
             }
             globalDao.savePlayerStats(newStats);
-        } else {
-            messagesService.sendBotMessage(channel, "Il manque des arguments =/");
+        } else if (params.length == 1) {
+            if ("graph".equals(params[0])) {
+                messagesService.sendNormalBotMessage(channel, "https://tinyurl.com/SRperKL");
+            } else if ("cancel".equals(params[0])) {
+                globalDao.cancelLastPlayerStats((int) author.getIdLong());
+                messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");
+            }
         }
     }
 

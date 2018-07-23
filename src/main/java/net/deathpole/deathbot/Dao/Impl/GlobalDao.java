@@ -871,7 +871,7 @@ public class GlobalDao implements IGlobalDao {
         PlayerStatDTO playerStatDTO = new PlayerStatDTO();
 
         try {
-            String sql = "SELECT * FROM PLAYER_STATS WHERE PLAYER_ID = ?";
+            String sql = "SELECT * FROM PLAYER_STATS WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE DESC LIMIT 1";
             PreparedStatement statement = conn.prepareStatement(sql);
             statement.setInt(1, playerId);
             ResultSet rs = statement.executeQuery();
@@ -903,12 +903,6 @@ public class GlobalDao implements IGlobalDao {
         Connection conn = getConnectionToDB();
 
         try {
-            String sqlDelete = "DELETE FROM PLAYER_STATS WHERE PLAYER_ID = ?";
-            PreparedStatement statement = conn.prepareStatement(sqlDelete);
-            statement.setInt(1, playerStatDTO.getPlayerId());
-            statement.executeUpdate();
-            System.out.println("DeathbotExecution : PlayerStats deleted for playerid : " + playerStatDTO.getPlayerId());
-
             String sqlInsert = "INSERT INTO PLAYER_STATS(PLAYER_ID, KL, MEDALS, SR, UPDATE_DATE) VALUES (?,?,?,?,?)";
             PreparedStatement stmnt = conn.prepareStatement(sqlInsert);
             stmnt.setInt(1, playerStatDTO.getPlayerId());
@@ -929,4 +923,27 @@ public class GlobalDao implements IGlobalDao {
         }
     }
 
+    @Override
+    public void cancelLastPlayerStats(int playerId) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlDelete = "DELETE FROM PLAYER_STATS WHERE PLAYER_ID = ? AND UPDATE_DATE = ("
+                    + "SELECT UPDATE_DATE FROM PLAYER_STATS WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE DESC LIMIT 1)";
+            PreparedStatement statement = conn.prepareStatement(sqlDelete);
+            statement.setInt(1, playerId);
+            statement.setInt(2, playerId);
+            statement.executeUpdate();
+            System.out.println("DeathbotExecution : PlayerStats deleted for playerid : " + playerId);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

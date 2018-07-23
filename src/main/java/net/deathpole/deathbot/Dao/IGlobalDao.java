@@ -70,4 +70,6 @@ public interface IGlobalDao {
     void deleteRankLink(Guild guild, Role role);
 
     void savePlayerStats(PlayerStatDTO playerStatDTO);
+
+    void cancelLastPlayerStats(int playerId);
 }
