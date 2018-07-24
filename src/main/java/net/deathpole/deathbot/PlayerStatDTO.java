@@ -17,6 +17,8 @@ public class PlayerStatDTO {
     private BigDecimal sr;
 
     private LocalDateTime updateDate;
+    
+    private Integer srMdodifier;
 
     public PlayerStatDTO() {
     }
@@ -27,6 +29,15 @@ public class PlayerStatDTO {
         this.medals = medals;
         this.sr = sr;
         this.updateDate = updateDate;
+    }
+    
+    public PlayerStatDTO(Integer playerId, Integer kl, BigDecimal medals, BigDecimal sr, LocalDateTime updateDate, Integer srMdodifier) {
+        this.playerId = playerId;
+        this.kl = kl;
+        this.medals = medals;
+        this.sr = sr;
+        this.updateDate = updateDate;
+        this.srMdodifier = srMdodifier;
     }
 
     public Integer getPlayerId() {
@@ -67,5 +78,13 @@ public class PlayerStatDTO {
 
     public void setSr(BigDecimal sr) {
         this.sr = sr;
+    }
+    
+    public Integer getSrModifier() {
+        return srMdodifier;
+    }
+
+    public void setSrModifier(Integer kl) {
+        this.srMdodifier = srMdodifier;
     }
 }
