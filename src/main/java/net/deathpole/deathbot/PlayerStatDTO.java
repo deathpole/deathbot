@@ -29,7 +29,7 @@ public class PlayerStatDTO {
         this.medals = medals;
         this.sr = sr;
         this.updateDate = updateDate;
-        this.srMdodifier = 0.9;
+        this.srMdodifier = "0.9";
     }
     
     public PlayerStatDTO(Integer playerId, Integer kl, BigDecimal medals, BigDecimal sr, LocalDateTime updateDate, String srMdodifier) {
