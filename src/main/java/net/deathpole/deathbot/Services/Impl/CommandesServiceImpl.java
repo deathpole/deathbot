@@ -680,17 +680,21 @@ public class CommandesServiceImpl implements ICommandesService {
             newStats.setMedals(helperService.convertEFLettersToNumber(params[1]));
             newStats.setSr(helperService.convertEFLettersToNumber(params[2]));
             newStats.setUpdateDate(LocalDateTime.now());
+            newStats.setSrModifier(actualStats.getSrModifier());
+            if (params.length == 4) {
+                newStats.setSrModifier(params[3]);
+            }
 
-            if (actualStats != null)
+            if (actualStats != null){
                 compareStats(actualStats, newStats, channel, guild, author);
-            else {
+                calculateSrStat(newStats, channel);
+                
+            } else {
                 messagesService.sendBotMessage(channel,
                         "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
             }
 
-            if (params.length == 4) {
-                calculateSrStat(newStats, channel, params[3]);
-            }
+
             globalDao.savePlayerStats(newStats);
         } else if (params.length == 1) {
             if ("graph".equals(params[0])) {
@@ -702,10 +706,10 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void calculateSrStat(PlayerStatDTO newStats, MessageChannel channel, String srRatio) {
+    private void calculateSrStat(PlayerStatDTO newStats, MessageChannel channel) {
 
         StringBuilder sb = new StringBuilder("**__Sprit Rest__**").append(RETOUR_LIGNE);
-        BigDecimal fullSR = newStats.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
+        BigDecimal fullSR = newStats.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(newStats.getSrModifier()));
         BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(newStats.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
         sb.append(srPercentage).append("% (").append(helperService.formatBigNumbersToEFFormat(fullSR)).append(")").append(RETOUR_LIGNE);
 
