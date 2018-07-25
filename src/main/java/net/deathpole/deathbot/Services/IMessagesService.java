@@ -17,6 +17,8 @@ public interface IMessagesService {
 
     void sendNormalBotMessage(MessageChannel channel, String message);
 
+    void sendImage(MessageChannel channel, String url, String title);
+
     void sendMessageNotEnoughRights(MessageChannel channel);
 
     String replaceChannel(String reactionReplaced, Guild guild);

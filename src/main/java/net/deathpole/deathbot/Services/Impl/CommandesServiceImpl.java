@@ -694,7 +694,7 @@ public class CommandesServiceImpl implements ICommandesService {
             globalDao.savePlayerStats(newStats);
         } else if (params.length == 1) {
             if ("graph".equals(params[0])) {
-                messagesService.sendNormalBotMessage(channel, "https://tinyurl.com/SRDeathGraph");
+                messagesService.sendImage(channel, "https://tinyurl.com/SRperKL", "Graphique des stats actuelles (les données sont rafraîchies toutes les heures)");
             } else if ("cancel".equals(params[0])) {
                 globalDao.cancelLastPlayerStats((int) author.getIdLong());
                 messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");

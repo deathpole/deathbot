@@ -1,9 +1,15 @@
 package net.deathpole.deathbot.Services.Impl;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import net.deathpole.deathbot.Services.IMessagesService;
 import net.dv8tion.jda.core.EmbedBuilder;
@@ -11,6 +17,7 @@ import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.IMentionable;
 import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.entities.TextChannel;
@@ -99,6 +106,30 @@ public class MessagesServiceImpl implements IMessagesService {
         MessageBuilder messageBuilder = new MessageBuilder();
         messageBuilder.append(replaceDateAndTime(message));
         channel.sendMessage(messageBuilder.build()).queue();
+    }
+
+    @Override
+    public void sendImage(MessageChannel channel, String urlStr, String title) {
+
+        channel.sendTyping().queue();
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setColor(Color.RED);
+        embedBuilder.setDescription(title);
+
+        MessageBuilder messageBuilder = new MessageBuilder();
+        messageBuilder.setEmbed(embedBuilder.build());
+
+        Message messageStr = messageBuilder.build();
+        try {
+            URL url = new URL(urlStr);
+            BufferedImage img = ImageIO.read(url);
+            File file = new File("downloaded.png");
+            ImageIO.write(img, "png", file);
+            channel.sendFile(file, messageStr).queue();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override public void sendMessageNotEnoughRights(MessageChannel channel) {
