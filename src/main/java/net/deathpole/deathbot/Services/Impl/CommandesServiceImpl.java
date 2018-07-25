@@ -229,7 +229,7 @@ public class CommandesServiceImpl implements ICommandesService {
                                                 if (args.length >= 1) {
                                                     param = args[0];
                                                 }
-                                                executeCustomReaction(member, e.getMessage(), guildController, channel, param, action);
+                                                executeCustomReaction(member, e.getMessage(), guildController, channel, param, action, adminRole, modoRole);
                                             } else {
                                                 List<TextChannel> modChannels = guildController.getGuild().getTextChannelsByName("logs-moderation", true);
                                                 MessageChannel modChannel = modChannels.isEmpty() ? null : modChannels.get(0);
@@ -1692,34 +1692,41 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void executeCustomReaction(Member member, Message message, GuildController guildController, MessageChannel channel, String arg, String action) {
+    private void executeCustomReaction(Member member, Message message, GuildController guildController, MessageChannel channel, String arg, String action, Role adminRole,
+            Role modoRole) {
         Guild guild = guildController.getGuild();
         CustomReactionDTO customReaction = mapCustomReactions.get(guild).get(action);
         String[] params = (arg == null || arg.isEmpty()) ? new String[0] : arg.trim().split(PARAMETERS_SEPARATOR + "+");
 
-        if (params.length != customReaction.getNumberOfParams()) {
-            messagesService.sendBotMessage(channel, "Le nombre d'argument n'est pas le bon ! Try again !");
-        } else {
-            if ("princesse".equals(action)) {
-                List<Role> rolesPrincesse = guild.getRolesByName("princesse", true);
-                if (rolesPrincesse.isEmpty()) {
-                    messagesService.sendBotMessage(channel, "Le rôle de princesse n'existe pas ici, dommage =(");
-                    return;
-                } else {
-                    Role rolePrincesse = rolesPrincesse.get(0);
-                    if (guild.getMembersWithRoles(rolesPrincesse).contains(member)) {
-                        sendFormattedCustomReactionAndDeleteCommand(message, guildController, channel, customReaction, params);
+        boolean isAdmin = member.getRoles().contains(adminRole);
+        boolean isModo = member.getRoles().contains(modoRole);
+        boolean isCmds = "cmds".equals(channel.getName());
+
+        if (isCmds || isAdmin || isModo) {
+            if (params.length != customReaction.getNumberOfParams()) {
+                messagesService.sendBotMessage(channel, "Le nombre d'argument n'est pas le bon ! Try again !");
+            } else {
+                if ("princesse".equals(action)) {
+                    List<Role> rolesPrincesse = guild.getRolesByName("princesse", true);
+                    if (rolesPrincesse.isEmpty()) {
+                        messagesService.sendBotMessage(channel, "Le rôle de princesse n'existe pas ici, dommage =(");
                         return;
                     } else {
-                        messagesService.sendBotMessage(channel, "Non, toi t'es pas une princesse. Au boulot ! Va farmer tes médailles !");
-                        return;
+                        Role rolePrincesse = rolesPrincesse.get(0);
+                        if (guild.getMembersWithRoles(rolesPrincesse).contains(member)) {
+                            sendFormattedCustomReactionAndDeleteCommand(message, guildController, channel, customReaction, params);
+                            return;
+                        } else {
+                            messagesService.sendBotMessage(channel, "Non, toi t'es pas une princesse. Au boulot ! Va farmer tes médailles !");
+                            return;
+                        }
                     }
                 }
-            }
-            if ("aide".equals(action) || "mod".equals(action) || "admin".equals(action)) {
-                sendFormattedCustomReaction(message, guildController, channel, customReaction, params);
-            } else {
-                sendFormattedCustomReactionAndDeleteCommand(message, guildController, channel, customReaction, params);
+                if ("aide".equals(action) || "mod".equals(action) || "admin".equals(action)) {
+                    sendFormattedCustomReaction(message, guildController, channel, customReaction, params);
+                } else {
+                    sendFormattedCustomReactionAndDeleteCommand(message, guildController, channel, customReaction, params);
+                }
             }
         }
     }
