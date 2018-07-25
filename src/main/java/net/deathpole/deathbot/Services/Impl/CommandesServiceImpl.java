@@ -67,6 +67,8 @@ public class CommandesServiceImpl implements ICommandesService {
     private static final String REMINDER_SEPARATOR = ";";
     private static final String RETOUR_LIGNE = "\r\n";
     private static final int DEFAULT_INACTIVITY_LIMIT = 7;
+    private static final String BALISE_BLOCK_CODE = "```";
+    private static final String BALISE_CODE = "`";
     private IGlobalDao globalDao;
     private IMessagesService messagesService = new MessagesServiceImpl();
     private IHelperService helperService = new HelperServiceImpl();
@@ -362,6 +364,8 @@ public class CommandesServiceImpl implements ICommandesService {
         EnumAction actionEnum = EnumAction.fromValue(action);
         boolean isAdmin = member.getRoles().contains(adminRole);
         boolean isModo = member.getRoles().contains(modoRole);
+        boolean isCmds = "cmds".equals(channel.getName());
+        boolean isStatsCmds = "stats-cmds".equals(channel.getName());
         Guild guild = guildController.getGuild();
 
         switch (actionEnum) {
@@ -446,29 +450,21 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case WITHOUT:
-            // if (isAdmin || isModo) {
+            if (isCmds) {
                 searchUsersWithoutRole(guildController, channel, args[0]);
-            // } else {
-            // messagesService.sendMessageNotEnoughRights(channel);
-            // }
+            } else if (isStatsCmds) {
+                messagesService.sendBotMessage(channel,
+                        "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
+            }
             break;
         case WITH:
-            // if (isAdmin || isModo) {
+            if (isCmds) {
                 searchUsersWithRole(guildController, channel, args[0]);
-            // } else {
-            // messagesService.sendMessageNotEnoughRights(channel);
-            // }
+            } else if (isStatsCmds) {
+                messagesService.sendBotMessage(channel,
+                        "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
+            }
             break;
-        // case CADAVRE:
-        // if (isAdmin) {
-        // manageCadavreExquis(guildController, channel, args[0]);
-        // } else {
-        // messagesService.sendMessageNotEnoughRights(channel);
-        // }
-        // break;
-        // case AIDE:
-        // channel.sendMessage(buildHelpMessage(guild)).queue();
-        // break;
         case CHANGE:
             if (isAdmin) {
                 changePrefixe(author, channel, commandeComplete, args[0], guild);
@@ -491,7 +487,9 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case LCR:
-            listCustomReactionsForGuild(guild, channel);
+            if (isModo || isAdmin) {
+                listCustomReactionsForGuild(guild, channel);
+            }
             break;
         case SINGLE:
             if (isAdmin) {
@@ -501,16 +499,13 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case LIST:
-            listAssignableRanks(guildController, author, channel, commandeComplete);
+            if (isCmds) {
+                listAssignableRanks(guildController, author, channel, commandeComplete);
+            } else if (isStatsCmds) {
+                messagesService.sendBotMessage(channel,
+                        "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
+            }
             break;
-        // case LIST_ONJOIN_RANKS:
-        // case LOJR:
-        // if (isModo || isAdmin) {
-        // listOnJoinRanks(guildController, author, channel, commandeComplete);
-        // } else {
-        // messagesService.sendMessageNotEnoughRights(channel);
-        // }
-        // break;
         case ADD_RANK:
         case AR:
             if (isAdmin || isModo) {
@@ -527,14 +522,6 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-        // case ADD_ONJOIN_RANK:
-        // case AOJR:
-        // if (isAdmin || isModo) {
-        // addOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
-        // } else {
-        // messagesService.sendMessageNotEnoughRights(channel);
-        // }
-        // break;
         case ADD_GLOBAL_RANK:
         case AGR:
             if (isAdmin) {
@@ -551,22 +538,6 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-        // case ADD_REMINDER:
-        // case AREM:
-        // if (isAdmin) {
-        // addReminder(channel, guildController, args);
-        // } else {
-        // messagesService.sendMessageNotEnoughRights(channel);
-        // }
-        // break;
-        // case REMOVE_REMINDER:
-        // case RREM:
-        // if (isAdmin) {
-        // removeReminder(channel, guildController, args[0]);
-        // } else {
-        // messagesService.sendMessageNotEnoughRights(channel);
-        // }
-        // break;
         case TIME:
             if (isAdmin || isModo) {
                 LocalDateTime now = LocalDateTime.now();
@@ -580,14 +551,6 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-        // case LIST_REMINDERS:
-        // case LREM:
-        // if (isAdmin) {
-        // listReminders(channel, guildController);
-        // } else {
-        // messagesService.sendMessageNotEnoughRights(channel);
-        // }
-        // break;
         case ADD_VOICE_ROLE:
         case AVR:
             if (isAdmin) {
@@ -619,30 +582,48 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendMessageNotEnoughRights(channel);
             }
             break;
-        // case REMOVE_ONJOIN_RANK:
-        // case ROJR:
-        // if (isAdmin) {
-        // removeOnJoinRank(author, channel, guildController, commandeComplete, args[0]);
-        // } else {
-        // messagesService.sendMessageNotEnoughRights(channel);
-        // }
-        // break;
         case CHEVALIER:
-            messagesService.sendBotMessage(channel, "La commande correcte est ?rank Chevalier XXX. Comme je suis sympa je l'ai corrigée pour vous !");
-            String[] temp = {"Chevalier", args[0]};
-            args = temp;
+            if (isCmds) {
+                messagesService.sendBotMessage(channel, "La commande correcte est ?rank Chevalier XXX. Comme je suis sympa je l'ai corrigée pour vous !");
+                String[] temp = (args.length >= 1) ? new String[] {"Chevalier", args[0]} : new String[] {};
+                args = temp;
+            } else if (isStatsCmds) {
+                messagesService.sendBotMessage(channel,
+                        "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
+                break;
+            }
         case RANK:
-            String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
-            manageRankCmd(author, channel, guildController, roleStr, member);
+            if (isCmds) {
+                String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
+                manageRankCmd(author, channel, guildController, roleStr, member);
+            } else if (isStatsCmds) {
+                messagesService.sendBotMessage(channel,
+                        "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
+            }
             break;
         case MAKE:
-            makeMeASandwich(channel, args[0]);
+            if (isCmds) {
+                makeMeASandwich(channel, args[0]);
+            } else if (isStatsCmds) {
+                messagesService.sendBotMessage(channel,
+                        "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
+            }
             break;
         case SUDO:
-            sudoMakeMeASandwich(isAdmin, channel, args[0]);
+            if (isCmds) {
+                sudoMakeMeASandwich(isAdmin, channel, args[0]);
+            } else if (isStatsCmds) {
+                messagesService.sendBotMessage(channel,
+                        "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
+            }
             break;
         case REVIVE:
-            calculateSRandMedals(channel, args);
+            if (isCmds) {
+                calculateSRandMedals(channel, args);
+            } else if (isStatsCmds) {
+                messagesService.sendBotMessage(channel,
+                        "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
+            }
             break;
         case INACTIVITY:
             if (isAdmin || isModo) {
@@ -659,7 +640,16 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case STAT:
-            calculateStatsForPlayer(channel, author, args[0], guild);
+            if (isStatsCmds) {
+                calculateStatsForPlayer(channel, author, args, guild);
+            } else if (isCmds) {
+                List<TextChannel> statCmdsChannels = guild.getTextChannelsByName("stats-cmds", true);
+                if (!statCmdsChannels.isEmpty()) {
+                    messagesService.sendBotMessage(channel, "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + statCmdsChannels.get(0).getAsMention());
+                } else {
+                    calculateStatsForPlayer(channel, author, args, guild);
+                }
+            }
             break;
         default:
             System.out.println("DeathbotExecution : Commande non prise en charge");
@@ -667,11 +657,18 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void calculateStatsForPlayer(MessageChannel channel, User author, String arg, Guild guild) {
+    private void calculateStatsForPlayer(MessageChannel channel, User author, String[] arg, Guild guild) {
 
         PlayerStatDTO actualStats = globalDao.getStatsForPlayer((int) author.getIdLong());
 
-        String[] params = arg.split(ACTION_ARGS_SEPARATOR);
+        if (arg.length < 1 || (arg.length == 1 && "help".equals(arg[0]))) {
+            String message = buildStatCommandHelp();
+            messagesService.sendBotMessage(channel, message);
+            return;
+        }
+
+        String[] params = arg[0].split(ACTION_ARGS_SEPARATOR);
+
         if (params.length > 2) {
 
             PlayerStatDTO newStats = new PlayerStatDTO();
@@ -700,6 +697,24 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");
             }
         }
+    }
+
+    private String buildStatCommandHelp() {
+        StringBuilder sb = new StringBuilder("**__Aide de la commande ?stat : __**" + RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat <VOTRE_KL> <VOS_MÉDAILLES_AU_FORMAT_EF> <VOTRE_SR_AU_FORMAT_EF> [<VOTRE_RATIO_DE_SR>]" + BALISE_CODE).append(RETOUR_LIGNE);
+        sb.append("\t- Si le ratio de SR N'EST PAS renseigné : Enregistre vos statistiques actuelles et les compare à vos dernières données enregistrées.").append(RETOUR_LIGNE);
+        sb.append(
+                "\t- Si le ratio de SR EST renseigné : Affichera en plus la valeur d'un SR complet (et celui d'un SR doublé) en pourcentage de votre total de médailles (et en médailles)").append(
+                        RETOUR_LIGNE).append(RETOUR_LIGNE);
+        sb.append("*__Exemples__* : " + RETOUR_LIGNE + BALISE_CODE + "?stat 239 10.1g 1.44f 0.987" + RETOUR_LIGNE + "?stat 303 198.1h 11.7g" + BALISE_CODE).append(
+                RETOUR_LIGNE).append(RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat cancel" + BALISE_CODE
+                + " : Permet d'annuler votre dernière statistique enregistrée. Utile en cas d'erreur lors de la saisie précédente").append(RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat graph" + BALISE_CODE
+                + " : Permet d'afficher la courbe actuelle des valeurs de SR (en pourcentage du total de médailles) en fonction du KL. __NB__ : Les données sont actualisées toutes les heures !").append(
+                        RETOUR_LIGNE);
+
+        return sb.toString();
     }
 
     private void calculateSrStat(PlayerStatDTO newStats, MessageChannel channel, String srRatio) {
@@ -1419,11 +1434,11 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void calculateSRandMedals(MessageChannel channel, String[] args) {
 
-        if (args.length < 1) {
-            StringBuilder sb = new StringBuilder("Aide de la commande ?revive : " + RETOUR_LIGNE);
-            sb.append("```?revive <STAGE_ATTEINT> <BONUS_DE_MEDAILLES> (<TEMPS_DE_RUN_EN_MIN>) :").append(RETOUR_LIGNE);
+        if (args.length < 1 || (args.length == 1 && "help".equals(args[0]))) {
+            StringBuilder sb = new StringBuilder("**__Aide de la commande ?revive : __**" + RETOUR_LIGNE);
+            sb.append(BALISE_BLOCK_CODE + "?revive <STAGE_ATTEINT> <BONUS_DE_MEDAILLES> (<TEMPS_DE_RUN_EN_MIN>) :").append(RETOUR_LIGNE);
             sb.append("\t- Si le temps de run N'EST PAS renseigné : Permet de connaître le nombre de médailles gagnées lors de la résurrection.").append(RETOUR_LIGNE);
-            sb.append("\t- Si le temps EST renseigné : Permet de connaître les médailles par minute que génère ce run.```");
+            sb.append("\t- Si le temps EST renseigné : Permet de connaître les médailles par minute que génère ce run." + BALISE_BLOCK_CODE);
 
             messagesService.sendNormalBotMessage(channel, sb.toString());
             return;
@@ -2175,7 +2190,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private StringBuilder buildHelpAddReminder() {
         StringBuilder sb = new StringBuilder("*** Syntaxe de la commande add_reminder : ***").append(RETOUR_LIGNE);
-        sb.append("```?add_reminder <NOM_DU_REMINDER_A_CREER>;<SALON_DE_DESTINATION>;<TEXTE_A_AFFICHER>;<CRONTAB>```").append(RETOUR_LIGNE);
+        sb.append(BALISE_BLOCK_CODE + "?add_reminder <NOM_DU_REMINDER_A_CREER>;<SALON_DE_DESTINATION>;<TEXTE_A_AFFICHER>;<CRONTAB>```").append(RETOUR_LIGNE);
         sb.append(RETOUR_LIGNE);
         sb.append("**__Détails des paramètres__: **").append(RETOUR_LIGNE);
         sb.append(RETOUR_LIGNE);
@@ -2204,7 +2219,7 @@ public class CommandesServiceImpl implements ICommandesService {
         } else {
             if ("help".equals(reminderParams[0])) {
                 StringBuilder sb = new StringBuilder("*** Syntaxe de la commande remove_reminder : ***").append(RETOUR_LIGNE);
-                sb.append("```?remove_reminder <NOM_DU_REMINDER_A_SUPPRIMER>```").append(RETOUR_LIGNE);
+                sb.append(BALISE_BLOCK_CODE + "?remove_reminder <NOM_DU_REMINDER_A_SUPPRIMER>```").append(RETOUR_LIGNE);
                 sb.append("*NB : Les noms peuvent être retrouvés grâce à la commande ?list_reminders*");
 
                 messagesService.sendNormalBotMessage(channel, sb.toString());
@@ -2371,12 +2386,11 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void manageRankCmd(User author, MessageChannel channel, GuildController guildController, String rankToAdd, Member member) {
-        List<Role> userRoles = member.getRoles();
-        List<Role> userAssignableRoles = findAssignableRole(userRoles, guildController);
-
-        if ("".equals(rankToAdd)) {
+        if ("".equals(rankToAdd) || "help".equals(rankToAdd)) {
             listRanksOfUser(channel, member);
         } else {
+            List<Role> userRoles = member.getRoles();
+            List<Role> userAssignableRoles = findAssignableRole(userRoles, guildController);
             addOrRemoveRankToUser(author, channel, guildController, rankToAdd, member, userRoles, userAssignableRoles);
         }
     }
@@ -2501,6 +2515,8 @@ public class CommandesServiceImpl implements ICommandesService {
         for (Role role : member.getRoles()) {
             sb.append(role.getName()).append(RETOUR_LIGNE);
         }
+
+        sb.append(RETOUR_LIGNE).append("Afin de connaître la liste des rôles assignables, vous pouvez taper la commande ?list.");
         messagesService.sendBotMessage(channel, sb.toString());
     }
 
