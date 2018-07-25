@@ -452,7 +452,7 @@ public class CommandesServiceImpl implements ICommandesService {
         case WITHOUT:
             if (isCmds) {
                 searchUsersWithoutRole(guildController, channel, args[0]);
-            } else if (isStatsCmds) {
+            } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
                         "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
             }
@@ -460,7 +460,7 @@ public class CommandesServiceImpl implements ICommandesService {
         case WITH:
             if (isCmds) {
                 searchUsersWithRole(guildController, channel, args[0]);
-            } else if (isStatsCmds) {
+            } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
                         "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
             }
@@ -501,7 +501,7 @@ public class CommandesServiceImpl implements ICommandesService {
         case LIST:
             if (isCmds) {
                 listAssignableRanks(guildController, author, channel, commandeComplete);
-            } else if (isStatsCmds) {
+            } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
                         "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
             }
@@ -587,7 +587,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendBotMessage(channel, "La commande correcte est ?rank Chevalier XXX. Comme je suis sympa je l'ai corrigée pour vous !");
                 String[] temp = (args.length >= 1) ? new String[] {"Chevalier", args[0]} : new String[] {};
                 args = temp;
-            } else if (isStatsCmds) {
+            } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
                         "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
                 break;
@@ -596,7 +596,7 @@ public class CommandesServiceImpl implements ICommandesService {
             if (isCmds) {
                 String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
                 manageRankCmd(author, channel, guildController, roleStr, member);
-            } else if (isStatsCmds) {
+            } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
                         "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
             }
@@ -604,7 +604,7 @@ public class CommandesServiceImpl implements ICommandesService {
         case MAKE:
             if (isCmds) {
                 makeMeASandwich(channel, args[0]);
-            } else if (isStatsCmds) {
+            } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
                         "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
             }
@@ -612,7 +612,7 @@ public class CommandesServiceImpl implements ICommandesService {
         case SUDO:
             if (isCmds) {
                 sudoMakeMeASandwich(isAdmin, channel, args[0]);
-            } else if (isStatsCmds) {
+            } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
                         "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
             }
@@ -620,7 +620,7 @@ public class CommandesServiceImpl implements ICommandesService {
         case REVIVE:
             if (isCmds) {
                 calculateSRandMedals(channel, args);
-            } else if (isStatsCmds) {
+            } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
                         "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
             }
@@ -640,7 +640,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case STAT:
-            if (isStatsCmds) {
+            if (isStatsCmds || isAdmin || isModo) {
                 calculateStatsForPlayer(channel, author, args, guild);
             } else if (isCmds) {
                 List<TextChannel> statCmdsChannels = guild.getTextChannelsByName("stats-cmds", true);
