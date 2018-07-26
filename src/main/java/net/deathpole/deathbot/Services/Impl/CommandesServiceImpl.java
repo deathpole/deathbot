@@ -61,7 +61,8 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private static final int NB_REMINDER_PARAMS = 4;
     private static final String PREFIX_TAG = "@";
-    private static final String ACTION_ARGS_SEPARATOR = " ";
+    private static final String ACTION_ARGS_SEPARATOR = "\\s+";
+    private static final String SINGLE_SPACE = " ";
     private static final String ROLES_SEPARATOR = ",";
     private static final String PARAMETERS_SEPARATOR = ";;";
     private static final String REMINDER_SEPARATOR = ";";
@@ -1681,8 +1682,8 @@ public class CommandesServiceImpl implements ICommandesService {
         if (!listCadavreSujet.isEmpty() && !listCadavreAction.isEmpty() && !listCadavreComplement.isEmpty() && !listCadavreAdjectif.isEmpty()) {
             Member cadavre = listCadavreSujet.get(new Random().nextInt(listCadavreSujet.size()));
 
-            String sb = ACTION_ARGS_SEPARATOR + listCadavreAction.get(new Random().nextInt(listCadavreAction.size())) + ACTION_ARGS_SEPARATOR
-                    + listCadavreComplement.get(new Random().nextInt(listCadavreComplement.size())) + ACTION_ARGS_SEPARATOR
+            String sb = SINGLE_SPACE + listCadavreAction.get(new Random().nextInt(listCadavreAction.size())) + SINGLE_SPACE
+                    + listCadavreComplement.get(new Random().nextInt(listCadavreComplement.size())) + SINGLE_SPACE
                     + listCadavreAdjectif.get(new Random().nextInt(listCadavreAdjectif.size()));
 
             messagesService.sendBotMessageWithMention(channel, sb, cadavre);
