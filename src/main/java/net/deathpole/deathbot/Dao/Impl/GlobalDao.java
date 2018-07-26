@@ -882,6 +882,7 @@ public class GlobalDao implements IGlobalDao {
                 playerStatDTO.setMedals(rs.getBigDecimal("MEDALS"));
                 playerStatDTO.setSr(rs.getBigDecimal("SR"));
                 playerStatDTO.setUpdateDate(LocalDateTime.ofInstant(Instant.ofEpochMilli(rs.getTimestamp("UPDATE_DATE").getTime()), ZoneId.of("Europe/Paris")));
+                playerStatDTO.setSrRatio(rs.getFloat("SR_RATIO"));
             } else {
                 return null;
             }
@@ -903,13 +904,15 @@ public class GlobalDao implements IGlobalDao {
         Connection conn = getConnectionToDB();
 
         try {
-            String sqlInsert = "INSERT INTO PLAYER_STATS(PLAYER_ID, KL, MEDALS, SR, UPDATE_DATE) VALUES (?,?,?,?,?)";
+            String sqlInsert = "INSERT INTO PLAYER_STATS(PLAYER_ID, KL, MEDALS, SR, UPDATE_DATE, PLAYER_INSTANT_NAME, SR_RATIO) VALUES (?,?,?,?,?,?,?)";
             PreparedStatement stmnt = conn.prepareStatement(sqlInsert);
             stmnt.setInt(1, playerStatDTO.getPlayerId());
             stmnt.setInt(2, playerStatDTO.getKl());
             stmnt.setBigDecimal(3, playerStatDTO.getMedals());
             stmnt.setBigDecimal(4, playerStatDTO.getSr());
             stmnt.setTimestamp(5, Timestamp.valueOf(playerStatDTO.getUpdateDate()));
+            stmnt.setString(6, playerStatDTO.getPlayerInstantName());
+            stmnt.setFloat(7, playerStatDTO.getSrRatio());
 
             stmnt.executeUpdate();
         } catch (SQLException e) {

@@ -677,17 +677,34 @@ public class CommandesServiceImpl implements ICommandesService {
             newStats.setMedals(helperService.convertEFLettersToNumber(params[1]));
             newStats.setSr(helperService.convertEFLettersToNumber(params[2]));
             newStats.setUpdateDate(LocalDateTime.now());
+            newStats.setPlayerInstantName(guild.getMember(author).getEffectiveName());
 
-            if (actualStats != null)
+            boolean isRatioProvided = false;
+            boolean isPreviousRatioPresent = false;
+
+            String srRatio = "0.9";
+            if (params.length == 4) {
+                isRatioProvided = true;
+                srRatio = params[3];
+                newStats.setSrRatio(Float.parseFloat(srRatio));
+            } else if (actualStats != null && actualStats.getSrRatio() != 0) {
+                isPreviousRatioPresent = true;
+                srRatio = String.format(java.util.Locale.US, "%.2f", actualStats.getSrRatio());
+                newStats.setSrRatio(Float.parseFloat(srRatio));
+            } else {
+                newStats.setSrRatio(Float.parseFloat("0"));
+            }
+
+            if (actualStats != null) {
                 compareStats(actualStats, newStats, channel, guild, author);
+            }
             else {
                 messagesService.sendBotMessage(channel,
                         "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
             }
 
-            if (params.length == 4) {
-                calculateSrStat(newStats, channel, params[3]);
-            }
+            calculateSrStat(newStats, channel, srRatio, isRatioProvided, isPreviousRatioPresent);
+
             globalDao.savePlayerStats(newStats);
         } else if (params.length == 1) {
             if ("graph".equals(params[0])) {
@@ -717,9 +734,21 @@ public class CommandesServiceImpl implements ICommandesService {
         return sb.toString();
     }
 
-    private void calculateSrStat(PlayerStatDTO newStats, MessageChannel channel, String srRatio) {
+    private void calculateSrStat(PlayerStatDTO newStats, MessageChannel channel, String srRatio, boolean isRatioProvided, boolean isPreviousRatioPresent) {
 
-        StringBuilder sb = new StringBuilder("**__Sprit Rest__**").append(RETOUR_LIGNE);
+        StringBuilder sb = new StringBuilder();
+
+        if (!isRatioProvided) {
+            sb.append("Vous n'avez renseigné aucun ratio de SR ! ");
+            if (isPreviousRatioPresent) {
+                sb.append("Le ratio utilisé sera votre dernier ratio enregistré : ").append(srRatio).append(RETOUR_LIGNE);
+            } else {
+                sb.append("Le ratio utilisé sera le ratio par défaut : ").append(srRatio).append(RETOUR_LIGNE);
+            }
+            sb.append("Pour plus de précision dans les calculs, merci de renseigner un ratio la prochaine fois ;)").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
+        }
+
+        sb.append("**__Sprit Rest__**").append(RETOUR_LIGNE);
         BigDecimal fullSR = newStats.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
         BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(newStats.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
         sb.append(srPercentage).append("% (").append(helperService.formatBigNumbersToEFFormat(fullSR)).append(")").append(RETOUR_LIGNE);

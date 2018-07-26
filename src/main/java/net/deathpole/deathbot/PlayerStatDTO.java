@@ -18,15 +18,37 @@ public class PlayerStatDTO {
 
     private LocalDateTime updateDate;
 
+    private String playerInstantName;
+
+    private float srRatio;
+
     public PlayerStatDTO() {
     }
 
-    public PlayerStatDTO(Integer playerId, Integer kl, BigDecimal medals, BigDecimal sr, LocalDateTime updateDate) {
+    public PlayerStatDTO(Integer playerId, Integer kl, BigDecimal medals, BigDecimal sr, LocalDateTime updateDate, String playerInstantName, float srRatio) {
         this.playerId = playerId;
         this.kl = kl;
         this.medals = medals;
         this.sr = sr;
         this.updateDate = updateDate;
+        this.playerInstantName = playerInstantName;
+        this.srRatio = srRatio;
+    }
+
+    public String getPlayerInstantName() {
+        return playerInstantName;
+    }
+
+    public void setPlayerInstantName(String playerInstantName) {
+        this.playerInstantName = playerInstantName;
+    }
+
+    public float getSrRatio() {
+        return srRatio;
+    }
+
+    public void setSrRatio(float srRatio) {
+        this.srRatio = srRatio;
     }
 
     public Integer getPlayerId() {

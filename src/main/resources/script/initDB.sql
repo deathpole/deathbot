@@ -161,7 +161,9 @@ create table IF NOT EXISTS PLAYER_STATS
   kl          integer,
   medals      numeric   not null,
   sr          numeric   not null,
-  update_date timestamp not null
+  update_date timestamp not null,
+  player_instant_name varchar(256),
+  sr_ratio float not null default 0
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS "PLAYER_STATS_id_uindex" ON PLAYER_STATS (ID);
