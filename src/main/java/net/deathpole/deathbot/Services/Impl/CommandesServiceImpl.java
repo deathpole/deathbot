@@ -451,7 +451,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case WITHOUT:
-            if (isCmds) {
+            if (isCmds || isAdmin || isModo) {
                 searchUsersWithoutRole(guildController, channel, args[0]);
             } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
@@ -459,7 +459,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case WITH:
-            if (isCmds) {
+            if (isCmds || isAdmin || isModo) {
                 searchUsersWithRole(guildController, channel, args[0]);
             } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
@@ -500,7 +500,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case LIST:
-            if (isCmds) {
+            if (isCmds || isAdmin || isModo) {
                 listAssignableRanks(guildController, author, channel, commandeComplete);
             } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
@@ -584,7 +584,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case CHEVALIER:
-            if (isCmds) {
+            if (isCmds || isAdmin || isModo) {
                 messagesService.sendBotMessage(channel, "La commande correcte est ?rank Chevalier XXX. Comme je suis sympa je l'ai corrigée pour vous !");
                 String[] temp = (args.length >= 1) ? new String[] {"Chevalier", args[0]} : new String[] {};
                 args = temp;
@@ -594,7 +594,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 break;
             }
         case RANK:
-            if (isCmds) {
+            if (isCmds || isAdmin || isModo) {
                 String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
                 manageRankCmd(author, channel, guildController, roleStr, member);
             } else if (isStatsCmds || isModo || isAdmin) {
@@ -603,7 +603,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case MAKE:
-            if (isCmds) {
+            if (isCmds || isAdmin || isModo) {
                 makeMeASandwich(channel, args[0]);
             } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
@@ -611,7 +611,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case SUDO:
-            if (isCmds) {
+            if (isCmds || isAdmin || isModo) {
                 sudoMakeMeASandwich(isAdmin, channel, args[0]);
             } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
@@ -619,7 +619,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case REVIVE:
-            if (isCmds) {
+            if (isCmds || isAdmin || isModo) {
                 calculateSRandMedals(channel, args);
             } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
