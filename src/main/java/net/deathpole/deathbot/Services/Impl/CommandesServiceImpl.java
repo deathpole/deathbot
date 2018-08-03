@@ -798,7 +798,7 @@ public class CommandesServiceImpl implements ICommandesService {
         chart.getStyler().setXAxisDecimalPattern("#");
 
         createSRSerie(playersStats, chart);
-        createAverageSRSerie(playersStats, chart);
+        // createAverageSRSerie(playersStats, chart);
 
         return BitmapEncoder.getBufferedImage(chart);
     }
@@ -833,7 +833,8 @@ public class CommandesServiceImpl implements ICommandesService {
         XYSeries serie = chart.addSeries("Moyenne des SR", KLsforAverage, averageSR);
         serie.setXYSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
         serie.setMarker(SeriesMarkers.CIRCLE);
-        serie.setLineColor(Color.red);
+        serie.setLineColor(Color.blue);
+        // serie.setLineStyle(BasicStroke.JOIN_ROUND);
 
         return serie;
     }
