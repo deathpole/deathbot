@@ -743,7 +743,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");
                 break;
             case "kl":
-                HashMap<Integer, LocalDateTime> playerKLStats = getKLStatsForPlayer(author.getIdLong());
+                HashMap<LocalDateTime, Integer> playerKLStats = getKLStatsForPlayer(author.getIdLong());
                 if (playerKLStats != null && !playerKLStats.isEmpty()) {
                     image = drawKLChart(playerKLStats);
                     messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
@@ -817,12 +817,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
         List<LocalDateTime> orderedDates = new ArrayList<>(playerSRStats.keySet());
 
-        Collections.sort(orderedDates, new Comparator<LocalDateTime>() {
-
-            public int compare(LocalDateTime o1, LocalDateTime o2) {
-                return o1.compareTo(o2);
-            }
-        });
+        Collections.sort(orderedDates);
 
         for (LocalDateTime date : orderedDates) {
             srs.add(playerSRStats.get(date));
@@ -847,6 +842,7 @@ public class CommandesServiceImpl implements ICommandesService {
         chart.getStyler().setChartTitlePadding(10);
         series.setMarker(SeriesMarkers.CIRCLE);
         chart.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
+        chart.getStyler().setMarkerSize(5);
     }
 
     private HashMap<LocalDateTime, BigDecimal> getSRStatsForPlayer(long idLong) {
@@ -873,15 +869,18 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private BufferedImage drawKLChart(HashMap<Integer, LocalDateTime> playerKLStats) {
+    private BufferedImage drawKLChart(HashMap<LocalDateTime, Integer> playerKLStats) {
         // Create Chart
-        List<Number> kls = new ArrayList<>();
+        List<Integer> kls = new ArrayList<>();
         List<Date> dates = new ArrayList<>();
 
-        for (Integer key : playerKLStats.keySet()) {
-            kls.add(key);
-            Date out = Date.from(playerKLStats.get(key).atZone(ZoneId.systemDefault()).toInstant());
-            dates.add(out);
+        List<LocalDateTime> orderedDates = new ArrayList<>(playerKLStats.keySet());
+
+        Collections.sort(orderedDates);
+
+        for (LocalDateTime date : orderedDates) {
+            kls.add(playerKLStats.get(date));
+            dates.add(Date.from(date.atZone(ZoneId.systemDefault()).toInstant()));
         }
 
         XYChart chart = new XYChart(1000, 800);
@@ -896,14 +895,14 @@ public class CommandesServiceImpl implements ICommandesService {
         return BitmapEncoder.getBufferedImage(chart);
     }
 
-    private HashMap<Integer, LocalDateTime> getKLStatsForPlayer(long idLong) {
+    private HashMap<LocalDateTime, Integer> getKLStatsForPlayer(long idLong) {
         List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
 
         if (!playerStats.isEmpty()) {
-            HashMap<Integer, LocalDateTime> results = new HashMap<>();
+            HashMap<LocalDateTime, Integer> results = new HashMap<>();
 
             for (PlayerStatDTO playerStat : playerStats) {
-                results.put(playerStat.getKl(), playerStat.getUpdateDate());
+                results.put(playerStat.getUpdateDate(), playerStat.getKl());
             }
 
             return results;
