@@ -1,5 +1,7 @@
 package net.deathpole.deathbot.Services;
 
+import java.awt.image.BufferedImage;
+
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.IMentionable;
 import net.dv8tion.jda.core.entities.MessageChannel;
@@ -17,7 +19,9 @@ public interface IMessagesService {
 
     void sendNormalBotMessage(MessageChannel channel, String message);
 
-    void sendImage(MessageChannel channel, String url, String title);
+    void sendImageByURL(MessageChannel channel, String url, String title, String fileName);
+
+    void sendBufferedImage(MessageChannel channel, BufferedImage image, String title, String fileName);
 
     void sendMessageNotEnoughRights(MessageChannel channel);
 

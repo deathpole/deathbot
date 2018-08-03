@@ -109,7 +109,7 @@ public class MessagesServiceImpl implements IMessagesService {
     }
 
     @Override
-    public void sendImage(MessageChannel channel, String urlStr, String title) {
+    public void sendImageByURL(MessageChannel channel, String urlStr, String title, String fileName) {
 
         channel.sendTyping().queue();
 
@@ -124,9 +124,31 @@ public class MessagesServiceImpl implements IMessagesService {
         try {
             URL url = new URL(urlStr);
             BufferedImage img = ImageIO.read(url);
-            File file = new File("downloaded.png");
+            File file = new File(fileName);
             ImageIO.write(img, "png", file);
             channel.sendFile(file, messageStr).queue();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void sendBufferedImage(MessageChannel channel, BufferedImage image, String title, String fileName) {
+
+        channel.sendTyping().queue();
+        MessageBuilder messageBuilder = new MessageBuilder();
+
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setColor(Color.RED);
+        embedBuilder.setDescription(title);
+
+        messageBuilder.setEmbed(embedBuilder.build());
+
+        Message messageStr = messageBuilder.build();
+        try {
+            File outPuteFile = new File(fileName);
+            ImageIO.write(image, "png", outPuteFile);
+            channel.sendFile(outPuteFile, messageStr).queue();
         } catch (IOException e) {
             e.printStackTrace();
         }

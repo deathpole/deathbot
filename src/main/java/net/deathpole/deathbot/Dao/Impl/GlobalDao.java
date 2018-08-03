@@ -866,27 +866,21 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
-    public PlayerStatDTO getStatsForPlayer(int playerId) {
+    public List<PlayerStatDTO> getStatsForPlayer(int playerId, boolean lastStatOnly) {
         Connection conn = getConnectionToDB();
-        PlayerStatDTO playerStatDTO = new PlayerStatDTO();
+        List<PlayerStatDTO> results = new ArrayList<>();
 
         try {
-            String sql = "SELECT * FROM PLAYER_STATS WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE DESC LIMIT 1";
+            String sql = "SELECT * FROM PLAYER_STATS WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE";
+            if (lastStatOnly) {
+                sql += " DESC LIMIT 1";
+            } else {
+                sql += " ASC";
+            }
             PreparedStatement statement = conn.prepareStatement(sql);
             statement.setInt(1, playerId);
             ResultSet rs = statement.executeQuery();
-
-            if (rs.next()) {
-                playerStatDTO.setPlayerId(rs.getInt("PLAYER_ID"));
-                playerStatDTO.setKl(rs.getInt("KL"));
-                playerStatDTO.setMedals(rs.getBigDecimal("MEDALS"));
-                playerStatDTO.setSr(rs.getBigDecimal("SR"));
-                playerStatDTO.setUpdateDate(LocalDateTime.ofInstant(Instant.ofEpochMilli(rs.getTimestamp("UPDATE_DATE").getTime()), ZoneId.of("Europe/Paris")));
-                playerStatDTO.setSrRatio(rs.getFloat("SR_RATIO"));
-            } else {
-                return null;
-            }
-
+            results = extractPlayersStatsDTOFromResultSet(rs);
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
@@ -896,7 +890,7 @@ public class GlobalDao implements IGlobalDao {
                 e.printStackTrace();
             }
         }
-        return playerStatDTO;
+        return results;
     }
 
     @Override
@@ -948,5 +942,47 @@ public class GlobalDao implements IGlobalDao {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public List<PlayerStatDTO> getAllStats() {
+        Connection conn = getConnectionToDB();
+        List<PlayerStatDTO> results = new ArrayList<>();
+
+        try {
+            String sql = "SELECT * FROM PLAYER_STATS ORDER BY KL ASC";
+
+            PreparedStatement statement = conn.prepareStatement(sql);
+            ResultSet rs = statement.executeQuery();
+
+            results = extractPlayersStatsDTOFromResultSet(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return results;
+    }
+
+    private List<PlayerStatDTO> extractPlayersStatsDTOFromResultSet(ResultSet rs) throws SQLException {
+        List<PlayerStatDTO> results = new ArrayList<>();
+
+        while (rs.next()) {
+            PlayerStatDTO playerStatDTO = new PlayerStatDTO();
+            playerStatDTO.setPlayerId(rs.getInt("PLAYER_ID"));
+            playerStatDTO.setKl(rs.getInt("KL"));
+            playerStatDTO.setMedals(rs.getBigDecimal("MEDALS"));
+            playerStatDTO.setSr(rs.getBigDecimal("SR"));
+            playerStatDTO.setUpdateDate(LocalDateTime.ofInstant(Instant.ofEpochMilli(rs.getTimestamp("UPDATE_DATE").getTime()), ZoneId.of("Europe/Paris")));
+            playerStatDTO.setSrRatio(rs.getFloat("SR_RATIO"));
+
+            results.add(playerStatDTO);
+        }
+
+        return results;
     }
 }

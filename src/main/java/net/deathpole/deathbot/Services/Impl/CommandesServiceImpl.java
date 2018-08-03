@@ -5,6 +5,8 @@ import static net.dv8tion.jda.core.MessageBuilder.Formatting.BOLD;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -16,7 +18,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +31,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.knowm.xchart.BitmapEncoder;
+import org.knowm.xchart.XYChart;
+import org.knowm.xchart.XYSeries;
+import org.knowm.xchart.style.Styler;
+import org.knowm.xchart.style.markers.SeriesMarkers;
 
 import net.deathpole.deathbot.Bot;
 import net.deathpole.deathbot.CustomReactionDTO;
@@ -660,7 +669,12 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void calculateStatsForPlayer(MessageChannel channel, User author, String[] arg, Guild guild) {
 
-        PlayerStatDTO actualStats = globalDao.getStatsForPlayer((int) author.getIdLong());
+        List<PlayerStatDTO> playerStatsResult = globalDao.getStatsForPlayer((int) author.getIdLong(), true);
+
+        PlayerStatDTO actualStats = null;
+        if (!playerStatsResult.isEmpty()) {
+            actualStats = playerStatsResult.get(0);
+        }
 
         if (arg.length < 1 || (arg.length == 1 && "help".equals(arg[0]))) {
             String message = buildStatCommandHelp();
@@ -708,12 +722,193 @@ public class CommandesServiceImpl implements ICommandesService {
 
             globalDao.savePlayerStats(newStats);
         } else if (params.length == 1) {
-            if ("graph".equals(params[0])) {
-                messagesService.sendImage(channel, "https://tinyurl.com/SRperKL", "Graphique des stats actuelles (les données sont rafraîchies toutes les heures)");
-            } else if ("cancel".equals(params[0])) {
+            String keyWord = params[0];
+            BufferedImage image;
+            switch (keyWord) {
+            case "graph":
+                List<PlayerStatDTO> playersSRStats = getSRStatsForAllPlayersByKL();
+                // messagesService.sendImageByURL(channel, "https://tinyurl.com/SRperKL", "Graphique des stats
+                // actuelles (les données sont rafraîchies toutes les heures)",
+                // "graph.png");
+                if (playersSRStats != null && !playersSRStats.isEmpty()) {
+                    image = drawAllPlayersSRChart(playersSRStats);
+                    messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
+                } else {
+                    messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+                }
+
+                break;
+            case "cancel":
                 globalDao.cancelLastPlayerStats((int) author.getIdLong());
                 messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");
+                break;
+            case "kl":
+                HashMap<Integer, LocalDateTime> playerKLStats = getKLStatsForPlayer(author.getIdLong());
+                if (playerKLStats != null && !playerKLStats.isEmpty()) {
+                    image = drawKLChart(playerKLStats);
+                    messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
+                } else {
+                    messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+                }
+                break;
+            case "sr":
+                HashMap<LocalDateTime, BigDecimal> playerSRStats = getSRStatsForPlayer(author.getIdLong());
+                if (playerSRStats != null && !playerSRStats.isEmpty()) {
+                    image = drawSRChart(playerSRStats);
+                    messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
+                } else {
+                    messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+                }
+                break;
+            default:
+                String message = buildStatCommandHelp();
+                messagesService.sendBotMessage(channel, message);
+                break;
             }
+        }
+    }
+
+    private List<PlayerStatDTO> getSRStatsForAllPlayersByKL() {
+        List<PlayerStatDTO> playerStats = globalDao.getAllStats();
+
+        for (PlayerStatDTO playerStat : playerStats) {
+
+            float srRatio = (float) 0.9;
+            if (playerStat.getSrRatio() != 0) {
+                srRatio = playerStat.getSrRatio();
+            }
+
+            BigDecimal fullSR = playerStat.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
+            BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(playerStat.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
+
+            playerStat.setSrPercentage(srPercentage);
+        }
+
+        return playerStats;
+    }
+
+    private BufferedImage drawAllPlayersSRChart(List<PlayerStatDTO> playersStats) {
+        // Create Chart
+        List<Number> srs = new ArrayList<>();
+        List<Number> kls = new ArrayList<>();
+
+        for (PlayerStatDTO playerStatDTO : playersStats) {
+            srs.add(playerStatDTO.getSrPercentage());
+            kls.add(playerStatDTO.getKl());
+        }
+
+        XYChart chart = new XYChart(1000, 800);
+        chart.getStyler().setDefaultSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Scatter);
+        chart.setTitle("Courbes des SR en fonction du KL");
+        chart.setXAxisTitle("KL");
+        chart.setYAxisTitle("SR(% du total de médailles)");
+        chart.getStyler().setYAxisDecimalPattern("#0.0'%'");
+        chart.getStyler().setXAxisDecimalPattern("#");
+        XYSeries series = chart.addSeries("SR", kls, srs);
+        generateCommonChartProperties(chart, series);
+
+        return BitmapEncoder.getBufferedImage(chart);
+    }
+
+    private BufferedImage drawSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats) {
+        // Create Chart
+        List<Number> srs = new ArrayList<>();
+        List<Date> dates = new ArrayList<>();
+
+        List<LocalDateTime> orderedDates = new ArrayList<>(playerSRStats.keySet());
+
+        Collections.sort(orderedDates, new Comparator<LocalDateTime>() {
+
+            public int compare(LocalDateTime o1, LocalDateTime o2) {
+                return o1.compareTo(o2);
+            }
+        });
+
+        for (LocalDateTime date : orderedDates) {
+            srs.add(playerSRStats.get(date));
+            Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
+            dates.add(out);
+        }
+
+        XYChart chart = new XYChart(1000, 800);
+        chart.setTitle("Evolution du SR dans le temps");
+        chart.setXAxisTitle("Dates");
+        chart.setYAxisTitle("SR(% du total de médailles)");
+        chart.getStyler().setDatePattern("dd/MM");
+        chart.getStyler().setDecimalPattern("#0.00'%'");
+        XYSeries series = chart.addSeries("SR", dates, srs);
+        generateCommonChartProperties(chart, series);
+
+        return BitmapEncoder.getBufferedImage(chart);
+    }
+
+    private void generateCommonChartProperties(XYChart chart, XYSeries series) {
+        chart.getStyler().setChartBackgroundColor(Color.WHITE);
+        chart.getStyler().setChartTitlePadding(10);
+        series.setMarker(SeriesMarkers.CIRCLE);
+        chart.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
+    }
+
+    private HashMap<LocalDateTime, BigDecimal> getSRStatsForPlayer(long idLong) {
+        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
+        if (!playerStats.isEmpty()) {
+            HashMap<LocalDateTime, BigDecimal> results = new HashMap<>();
+
+            for (PlayerStatDTO playerStat : playerStats) {
+
+                float srRatio = (float) 0.9;
+                if (playerStat.getSrRatio() != 0) {
+                    srRatio = playerStat.getSrRatio();
+                }
+
+                BigDecimal fullSR = playerStat.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
+                BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(playerStat.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
+
+                results.put(playerStat.getUpdateDate(), srPercentage);
+            }
+
+            return results;
+        } else {
+            return null;
+        }
+    }
+
+    private BufferedImage drawKLChart(HashMap<Integer, LocalDateTime> playerKLStats) {
+        // Create Chart
+        List<Number> kls = new ArrayList<>();
+        List<Date> dates = new ArrayList<>();
+
+        for (Integer key : playerKLStats.keySet()) {
+            kls.add(key);
+            Date out = Date.from(playerKLStats.get(key).atZone(ZoneId.systemDefault()).toInstant());
+            dates.add(out);
+        }
+
+        XYChart chart = new XYChart(1000, 800);
+        chart.setTitle("Evolution du KL dans le temps");
+        chart.setXAxisTitle("Dates");
+        chart.setXAxisTitle("KL");
+        XYSeries series = chart.addSeries("KL", dates, kls);
+        chart.getStyler().setDecimalPattern("#");
+        chart.getStyler().setDatePattern("dd/MM");
+        generateCommonChartProperties(chart, series);
+
+        return BitmapEncoder.getBufferedImage(chart);
+    }
+
+    private HashMap<Integer, LocalDateTime> getKLStatsForPlayer(long idLong) {
+        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
+
+        if (!playerStats.isEmpty()) {
+            HashMap<Integer, LocalDateTime> results = new HashMap<>();
+
+            for (PlayerStatDTO playerStat : playerStats) {
+                results.put(playerStat.getKl(), playerStat.getUpdateDate());
+            }
+
+            return results;
+        } else {
+            return null;
         }
     }
 

@@ -22,6 +22,8 @@ public class PlayerStatDTO {
 
     private float srRatio;
 
+    private BigDecimal srPercentage;
+
     public PlayerStatDTO() {
     }
 
@@ -89,5 +91,13 @@ public class PlayerStatDTO {
 
     public void setSr(BigDecimal sr) {
         this.sr = sr;
+    }
+
+    public BigDecimal getSrPercentage() {
+        return srPercentage;
+    }
+
+    public void setSrPercentage(BigDecimal srPercentage) {
+        this.srPercentage = srPercentage;
     }
 }
