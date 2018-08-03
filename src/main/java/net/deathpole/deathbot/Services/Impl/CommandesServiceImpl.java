@@ -789,14 +789,6 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private BufferedImage drawAllPlayersSRChart(List<PlayerStatDTO> playersStats) {
         // Create Chart
-        List<Number> srs = new ArrayList<>();
-        List<Number> kls = new ArrayList<>();
-
-        for (PlayerStatDTO playerStatDTO : playersStats) {
-            srs.add(playerStatDTO.getSrPercentage());
-            kls.add(playerStatDTO.getKl());
-        }
-
         XYChart chart = new XYChart(1000, 800);
         chart.getStyler().setDefaultSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Scatter);
         chart.setTitle("Courbes des SR en fonction du KL");
@@ -804,10 +796,70 @@ public class CommandesServiceImpl implements ICommandesService {
         chart.setYAxisTitle("SR(% du total de médailles)");
         chart.getStyler().setYAxisDecimalPattern("#0.0'%'");
         chart.getStyler().setXAxisDecimalPattern("#");
-        XYSeries series = chart.addSeries("SR", kls, srs);
-        generateCommonChartProperties(chart, series);
+
+        createSRSerie(playersStats, chart);
+        createAverageSRSerie(playersStats, chart);
 
         return BitmapEncoder.getBufferedImage(chart);
+    }
+
+    private XYSeries createAverageSRSerie(List<PlayerStatDTO> playersStats, XYChart chart) {
+        HashMap<Integer, List<BigDecimal>> fullDataMap = new HashMap<>();
+
+        Collections.sort(playersStats, Comparator.comparing(PlayerStatDTO::getKl));
+
+        for (PlayerStatDTO playerStat : playersStats) {
+            List<BigDecimal> playersSRForKL = fullDataMap.get(playerStat.getKl());
+            if (playersSRForKL == null) {
+                playersSRForKL = new ArrayList<>();
+            }
+            playersSRForKL.add(playerStat.getSrPercentage());
+            fullDataMap.put(playerStat.getKl(), playersSRForKL);
+        }
+
+        List<Integer> KLsforAverage = new ArrayList<>();
+        List<BigDecimal> averageSR = new ArrayList<>();
+
+        Set<Integer> KLset = fullDataMap.keySet();
+        List<Integer> KLlist = new ArrayList<>();
+        KLlist.addAll(KLset);
+        Collections.sort(KLlist);
+
+        for (Integer KL : KLlist) {
+            KLsforAverage.add(KL);
+            averageSR.add(calculateAverage(fullDataMap.get(KL)));
+        }
+
+        XYSeries serie = chart.addSeries("Moyenne des SR", KLsforAverage, averageSR);
+        serie.setXYSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
+        serie.setMarker(SeriesMarkers.CIRCLE);
+        serie.setLineColor(Color.red);
+
+        return serie;
+    }
+
+    private BigDecimal calculateAverage(List<BigDecimal> dataList) {
+        BigDecimal sum = BigDecimal.ZERO;
+        if (!dataList.isEmpty()) {
+            for (BigDecimal data : dataList) {
+                sum = sum.add(data);
+            }
+            return sum.divide(new BigDecimal(dataList.size()), 2, RoundingMode.HALF_DOWN);
+        }
+        return sum;
+    }
+
+    private XYSeries createSRSerie(List<PlayerStatDTO> playersStats, XYChart chart) {
+        List<Number> srs = new ArrayList<>();
+        List<Number> kls = new ArrayList<>();
+
+        for (PlayerStatDTO playerStatDTO : playersStats) {
+            srs.add(playerStatDTO.getSrPercentage());
+            kls.add(playerStatDTO.getKl());
+        }
+        XYSeries rawSerie = chart.addSeries("SR", kls, srs);
+        generateCommonChartProperties(chart, rawSerie);
+        return rawSerie;
     }
 
     private BufferedImage drawSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats) {
