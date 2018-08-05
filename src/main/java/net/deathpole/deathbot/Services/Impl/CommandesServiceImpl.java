@@ -1027,8 +1027,17 @@ public class CommandesServiceImpl implements ICommandesService {
         sb.append(BALISE_CODE + "?stat cancel" + BALISE_CODE
                 + " : Permet d'annuler votre dernière statistique enregistrée. Utile en cas d'erreur lors de la saisie précédente").append(RETOUR_LIGNE);
         sb.append(BALISE_CODE + "?stat graph" + BALISE_CODE
-                + " : Permet d'afficher la courbe actuelle des valeurs de SR (en pourcentage du total de médailles) en fonction du KL. __NB__ : Les données sont actualisées toutes les heures !").append(
+                + " : Permet d'afficher la courbe actuelle des valeurs de SR (en pourcentage du total de médailles) en fonction du KL.").append(
                         RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat kl" + BALISE_CODE
+                + " : Permet d'afficher la courbe d'évolution de votre KL dans le temps").append(
+                RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat sr" + BALISE_CODE
+                + " : Permet d'afficher la courbe d'évolution de votre SR dans le temps").append(
+                RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat medals" + BALISE_CODE
+                + " : Permet d'affiche la courbe d'évolution de votre total de médailles dans le temps").append(
+                RETOUR_LIGNE);
 
         return sb.toString();
     }
