@@ -16,16 +16,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -760,6 +752,15 @@ public class CommandesServiceImpl implements ICommandesService {
                     messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
                 }
                 break;
+                case "med":
+                    HashMap<LocalDateTime, BigDecimal> playerMedStats = getMedStatsForPlayer(author.getIdLong());
+                    if (playerMedStats != null && !playerMedStats.isEmpty()) {
+                        image = drawMedChart(playerMedStats);
+                        messagesService.sendBufferedImage(channel, image, author.getAsMention(), "Med.png");
+                    } else {
+                        messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+                    }
+                    break;
             default:
                 String message = buildStatCommandHelp();
                 messagesService.sendBotMessage(channel, message);
@@ -890,6 +891,38 @@ public class CommandesServiceImpl implements ICommandesService {
         return BitmapEncoder.getBufferedImage(chart);
     }
 
+    private BufferedImage drawMedChart(HashMap<LocalDateTime, BigDecimal> playerMedStats) {
+        // Create Chart
+        List<Number> medals = new ArrayList<>();
+        List<Date> dates = new ArrayList<>();
+
+        List<LocalDateTime> orderedDates = new ArrayList<>(playerMedStats.keySet());
+
+        Collections.sort(orderedDates);
+
+
+        Map<Double, Object> yMarkMap = new TreeMap<Double, Object>();
+
+        for (LocalDateTime date : orderedDates) {
+            medals.add(playerMedStats.get(date));
+            yMarkMap.put(playerMedStats.get(date).doubleValue(), helperService.formatBigNumbersToEFFormat(playerMedStats.get(date)));
+            Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
+            dates.add(out);
+        }
+
+        XYChart chart = new XYChart(1000, 800);
+        chart.setTitle("Evolution du total de médailles dans le temps");
+        chart.setXAxisTitle("Dates");
+        chart.setYAxisTitle("Nombre total de médailles");
+        chart.setYAxisLabelOverrideMap(yMarkMap);
+        chart.getStyler().setDatePattern("dd/MM");
+        chart.getStyler().setDecimalPattern("#0.00'%'");
+        XYSeries series = chart.addSeries("Médailles", dates, medals);
+        generateCommonChartProperties(chart, series);
+
+        return BitmapEncoder.getBufferedImage(chart);
+    }
+
     private void generateCommonChartProperties(XYChart chart, XYSeries series) {
         chart.getStyler().setChartBackgroundColor(Color.WHITE);
         chart.getStyler().setChartTitlePadding(10);
@@ -914,6 +947,21 @@ public class CommandesServiceImpl implements ICommandesService {
                 BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(playerStat.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
 
                 results.put(playerStat.getUpdateDate(), srPercentage);
+            }
+
+            return results;
+        } else {
+            return null;
+        }
+    }
+
+    private HashMap<LocalDateTime, BigDecimal> getMedStatsForPlayer(long idLong) {
+        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
+        if (!playerStats.isEmpty()) {
+            HashMap<LocalDateTime, BigDecimal> results = new HashMap<>();
+
+            for (PlayerStatDTO playerStat : playerStats) {
+                results.put(playerStat.getUpdateDate(), playerStat.getMedals());
             }
 
             return results;
