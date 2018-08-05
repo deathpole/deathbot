@@ -904,8 +904,10 @@ public class CommandesServiceImpl implements ICommandesService {
         Map<Double, Object> yMarkMap = new TreeMap<Double, Object>();
 
         for (LocalDateTime date : orderedDates) {
-            medals.add(playerMedStats.get(date));
-            yMarkMap.put(playerMedStats.get(date).doubleValue(), helperService.formatBigNumbersToEFFormat(playerMedStats.get(date)));
+            BigDecimal rawMedals = playerMedStats.get(date);
+            double medalNumber =  Math.log(rawMedals.doubleValue());
+            medals.add(medalNumber);
+            yMarkMap.put(medalNumber, helperService.formatBigNumbersToEFFormat(rawMedals));
             Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
             dates.add(out);
         }

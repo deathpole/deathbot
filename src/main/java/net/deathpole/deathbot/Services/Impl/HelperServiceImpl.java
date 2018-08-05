@@ -58,6 +58,12 @@ public class HelperServiceImpl implements IHelperService {
             result = decimalFormat.format(
                     value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
                             BigDecimal.ROUND_HALF_DOWN));
+        }else if (value.compareTo(
+                medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##j", symbols);
+            result = decimalFormat.format(
+                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
+                            BigDecimal.ROUND_HALF_DOWN));
         }
 
         return result;
@@ -76,29 +82,31 @@ public class HelperServiceImpl implements IHelperService {
 
         if (Character.isLetter(letter.charAt(0))) {
             switch (letter) {
-            case "j":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "i":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "h":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "g":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "f":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "e":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "d":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "c":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "b":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "a":
-                amount = amount.multiply(new BigDecimal(1000L));
-                break;
-            default:
-                return BigDecimal.ZERO;
+                case "k":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "j":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "i":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "h":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "g":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "f":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "e":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "d":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "c":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "b":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "a":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                    break;
+                default:
+                    return BigDecimal.ZERO;
             }
         }
         return amount;
