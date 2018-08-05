@@ -752,7 +752,7 @@ public class CommandesServiceImpl implements ICommandesService {
                     messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
                 }
                 break;
-                case "med":
+                case "medals":
                     HashMap<LocalDateTime, BigDecimal> playerMedStats = getMedStatsForPlayer(author.getIdLong());
                     if (playerMedStats != null && !playerMedStats.isEmpty()) {
                         image = drawMedChart(playerMedStats);
