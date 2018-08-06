@@ -16,13 +16,24 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import org.knowm.xchart.BitmapEncoder;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYSeries;
@@ -54,6 +65,7 @@ import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.managers.GuildController;
+
 
 /**
  *
@@ -597,7 +609,7 @@ public class CommandesServiceImpl implements ICommandesService {
         case RANK:
             if (isCmds || isAdmin || isModo) {
                 String roleStr = StringUtils.join(new ArrayList<>(Arrays.asList(args)), " ");
-                manageRankCmd(author, channel, guildController, roleStr, member);
+                manageRankCmd(author, channel, guildController, roleStr, member, true);
             } else if (isStatsCmds || isModo || isAdmin) {
                 messagesService.sendBotMessage(channel,
                         "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + guild.getTextChannelsByName("cmds", true).get(0).getAsMention());
@@ -710,6 +722,8 @@ public class CommandesServiceImpl implements ICommandesService {
                         "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
             }
 
+            manageRankCmd(author, channel, guild.getController(), "Chevalier " + params[0], guild.getMember(author), false);
+
             calculateSrStat(newStats, channel, srRatio, isRatioProvided, isPreviousRatioPresent);
 
             globalDao.savePlayerStats(newStats);
@@ -719,9 +733,6 @@ public class CommandesServiceImpl implements ICommandesService {
             switch (keyWord) {
             case "graph":
                 List<PlayerStatDTO> playersSRStats = getSRStatsForAllPlayersByKL();
-                // messagesService.sendImageByURL(channel, "https://tinyurl.com/SRperKL", "Graphique des stats
-                // actuelles (les données sont rafraîchies toutes les heures)",
-                // "graph.png");
                 if (playersSRStats != null && !playersSRStats.isEmpty()) {
                     image = drawAllPlayersSRChart(playersSRStats);
                     messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
@@ -800,69 +811,31 @@ public class CommandesServiceImpl implements ICommandesService {
         chart.getStyler().setXAxisDecimalPattern("#");
 
         createSRSerie(playersStats, chart);
-        // createAverageSRSerie(playersStats, chart);
 
         return BitmapEncoder.getBufferedImage(chart);
     }
 
-    private XYSeries createAverageSRSerie(List<PlayerStatDTO> playersStats, XYChart chart) {
-        HashMap<Integer, List<BigDecimal>> fullDataMap = new HashMap<>();
 
-        Collections.sort(playersStats, Comparator.comparing(PlayerStatDTO::getKl));
-
-        for (PlayerStatDTO playerStat : playersStats) {
-            List<BigDecimal> playersSRForKL = fullDataMap.get(playerStat.getKl());
-            if (playersSRForKL == null) {
-                playersSRForKL = new ArrayList<>();
-            }
-            playersSRForKL.add(playerStat.getSrPercentage());
-            fullDataMap.put(playerStat.getKl(), playersSRForKL);
-        }
-
-        List<Integer> KLsforAverage = new ArrayList<>();
-        List<BigDecimal> averageSR = new ArrayList<>();
-
-        Set<Integer> KLset = fullDataMap.keySet();
-        List<Integer> KLlist = new ArrayList<>();
-        KLlist.addAll(KLset);
-        Collections.sort(KLlist);
-
-        for (Integer KL : KLlist) {
-            KLsforAverage.add(KL);
-            averageSR.add(calculateAverage(fullDataMap.get(KL)));
-        }
-
-        XYSeries serie = chart.addSeries("Moyenne des SR", KLsforAverage, averageSR);
-        serie.setXYSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
-        serie.setMarker(SeriesMarkers.CIRCLE);
-        serie.setLineColor(Color.blue);
-        // serie.setLineStyle(BasicStroke.JOIN_ROUND);
-
-        return serie;
-    }
-
-    private BigDecimal calculateAverage(List<BigDecimal> dataList) {
-        BigDecimal sum = BigDecimal.ZERO;
-        if (!dataList.isEmpty()) {
-            for (BigDecimal data : dataList) {
-                sum = sum.add(data);
-            }
-            return sum.divide(new BigDecimal(dataList.size()), 2, RoundingMode.HALF_DOWN);
-        }
-        return sum;
-    }
-
-    private XYSeries createSRSerie(List<PlayerStatDTO> playersStats, XYChart chart) {
+    private void createSRSerie(List<PlayerStatDTO> playersStats, XYChart chart) {
         List<Number> srs = new ArrayList<>();
         List<Number> kls = new ArrayList<>();
+        final WeightedObservedPoints obs = new WeightedObservedPoints();
 
         for (PlayerStatDTO playerStatDTO : playersStats) {
             srs.add(playerStatDTO.getSrPercentage());
             kls.add(playerStatDTO.getKl());
+            obs.add(playerStatDTO.getKl(), playerStatDTO.getSrPercentage().doubleValue());
         }
+
         XYSeries rawSerie = chart.addSeries("SR", kls, srs);
         generateCommonChartProperties(chart, rawSerie);
-        return rawSerie;
+
+        // final PolynomialCurveFitter fitter = PolynomialCurveFitter.create(2);
+        // double[] fit = fitter.fit(obs.toList());
+        // XYSeries polynomialSerie = chart.addSeries("Courbe des SR", fit);
+        // polynomialSerie.setXYSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
+        // polynomialSerie.setMarker(SeriesMarkers.NONE);
+        // polynomialSerie.setLineColor(Color.blue);
     }
 
     private BufferedImage drawSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats) {
@@ -1036,7 +1009,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 + " : Permet d'afficher la courbe d'évolution de votre SR dans le temps").append(
                 RETOUR_LIGNE);
         sb.append(BALISE_CODE + "?stat medals" + BALISE_CODE
-                + " : Permet d'affiche la courbe d'évolution de votre total de médailles dans le temps").append(
+                + " : Permet d'afficher la courbe d'évolution de votre total de médailles dans le temps").append(
                 RETOUR_LIGNE);
 
         return sb.toString();
@@ -2729,18 +2702,18 @@ public class CommandesServiceImpl implements ICommandesService {
         singleRoleByGuild.put(guild, singleRole);
     }
 
-    private void manageRankCmd(User author, MessageChannel channel, GuildController guildController, String rankToAdd, Member member) {
+    private void manageRankCmd(User author, MessageChannel channel, GuildController guildController, String rankToAdd, Member member, boolean removePreviousRank) {
         if ("".equals(rankToAdd) || "help".equals(rankToAdd)) {
             listRanksOfUser(channel, member);
         } else {
             List<Role> userRoles = member.getRoles();
             List<Role> userAssignableRoles = findAssignableRole(userRoles, guildController);
-            addOrRemoveRankToUser(author, channel, guildController, rankToAdd, member, userRoles, userAssignableRoles);
+            addOrRemoveRankToUser(author, channel, guildController, rankToAdd, member, userRoles, userAssignableRoles, removePreviousRank);
         }
     }
 
     private void addOrRemoveRankToUser(User author, MessageChannel channel, GuildController guildController, String rankToAdd, Member member, List<Role> userRoles,
-            List<Role> userAssignableRoles) {
+            List<Role> userAssignableRoles, boolean removePreviousRank) {
         List<Role> potentialRolesToAdd = guildController.getGuild().getRolesByName(rankToAdd, true);
         if (!potentialRolesToAdd.isEmpty()) {
             Role roleToAdd = potentialRolesToAdd.get(0);
@@ -2753,14 +2726,13 @@ public class CommandesServiceImpl implements ICommandesService {
 
             if (isSingle || isNotSingle) {
                 StringBuilder messageBuilder = new StringBuilder();
-                if (!userRoles.contains(roleToAdd)) {
-                    member = addRankToUser(guildController, member, userAssignableRoles, roleToAdd, messageBuilder, isSingle);
+                if (!userRoles.contains(roleToAdd) || !removePreviousRank) {
+                    member = addRankToUser(guildController, member, userAssignableRoles, roleToAdd, messageBuilder, isSingle, removePreviousRank, userRoles, channel, author);
                 } else {
                     member = removeRankToUser(guildController, member, roleToAdd, messageBuilder);
+                    messagesService.sendBotMessageWithMention(channel, messageBuilder.toString(), author);
                 }
-                messagesService.sendBotMessageWithMention(channel, messageBuilder.toString(), author);
 
-                // listRanksOfUser(channel, member);
                 logRolesOfMember(member);
 
             } else {
@@ -2777,9 +2749,13 @@ public class CommandesServiceImpl implements ICommandesService {
                 } else {
                     rankToAdd = chevalier + " 1";
                 }
-                messagesService.sendBotMessage(channel, "Les rôles 'Chevalier' vont de 10 en 10 !" + RETOUR_LIGNE + "Comme je suis sympa, j'ai corrigé votre commande par `?rank "
-                        + rankToAdd + "`." + RETOUR_LIGNE + "La prochaine fois, pensez à arrondir à la dizaine inférieure ;) ");
-                addOrRemoveRankToUser(author, channel, guildController, rankToAdd, member, userRoles, userAssignableRoles);
+
+                if (removePreviousRank) {
+                    messagesService.sendBotMessage(channel,
+                            "Les rôles 'Chevalier' vont de 10 en 10 !" + RETOUR_LIGNE + "Comme je suis sympa, j'ai corrigé votre commande par `?rank " + rankToAdd + "`."
+                                    + RETOUR_LIGNE + "La prochaine fois, pensez à arrondir à la dizaine inférieure ;) ");
+                }
+                addOrRemoveRankToUser(author, channel, guildController, rankToAdd, member, userRoles, userAssignableRoles, removePreviousRank);
             } else {
                 messagesService.sendBotMessage(channel, "Le rôle **" + rankToAdd + "** n'existe pas.");
             }
@@ -2809,7 +2785,8 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private Member addRankToUser(GuildController guildController, Member member, List<Role> userAssignableRoles, Role roleToAdd, StringBuilder messageBuilder, boolean isSingle) {
+    private Member addRankToUser(GuildController guildController, Member member, List<Role> userAssignableRoles, Role roleToAdd, StringBuilder messageBuilder, boolean isSingle,
+            boolean removePreviousRank, List<Role> userRoles, MessageChannel channel, User author) {
 
         if (isSingle && getSingleRoleForGuild(guildController.getGuild()) && !userAssignableRoles.isEmpty()) {
 
@@ -2818,17 +2795,28 @@ public class CommandesServiceImpl implements ICommandesService {
             }
 
             guildController.removeRolesFromMember(member, userAssignableRoles).complete();
+
             for (Role roleToRemove : userAssignableRoles) {
                 removeLinkedRankToMember(guildController, member, roleToRemove);
             }
             member = guildController.getGuild().getMember(member.getUser());
         }
+
+        if (removePreviousRank || !userRoles.contains(roleToAdd)) {
+            messageBuilder.append("Vous êtes passé **").append(roleToAdd.getName()).append("** !");
+            if (removePreviousRank) {
+                messagesService.sendBotMessageWithMention(channel, messageBuilder.toString(), author);
+            } else {
+                messagesService.sendBotMessage(channel, messageBuilder.toString());
+            }
+        }
+
         guildController.addSingleRoleToMember(member, roleToAdd).complete();
 
         addLinkedRankToMember(guildController, member, roleToAdd);
 
         member = guildController.getGuild().getMember(member.getUser());
-        messageBuilder.append("Vous êtes passé **").append(roleToAdd.getName()).append("** !");
+
         return member;
     }
 
