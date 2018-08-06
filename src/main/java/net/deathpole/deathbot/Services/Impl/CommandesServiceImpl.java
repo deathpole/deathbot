@@ -9,6 +9,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -33,7 +35,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import org.knowm.xchart.BitmapEncoder;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYSeries;
@@ -65,7 +66,6 @@ import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.managers.GuildController;
-
 
 /**
  *
@@ -819,38 +819,36 @@ public class CommandesServiceImpl implements ICommandesService {
     private void createSRSerie(List<PlayerStatDTO> playersStats, XYChart chart) {
         List<Number> srs = new ArrayList<>();
         List<Number> kls = new ArrayList<>();
-        final WeightedObservedPoints obs = new WeightedObservedPoints();
 
         for (PlayerStatDTO playerStatDTO : playersStats) {
             srs.add(playerStatDTO.getSrPercentage());
             kls.add(playerStatDTO.getKl());
-            obs.add(playerStatDTO.getKl(), playerStatDTO.getSrPercentage().doubleValue());
         }
 
         XYSeries rawSerie = chart.addSeries("SR", kls, srs);
         generateCommonChartProperties(chart, rawSerie);
-
-        // final PolynomialCurveFitter fitter = PolynomialCurveFitter.create(2);
-        // double[] fit = fitter.fit(obs.toList());
-        // XYSeries polynomialSerie = chart.addSeries("Courbe des SR", fit);
-        // polynomialSerie.setXYSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
-        // polynomialSerie.setMarker(SeriesMarkers.NONE);
-        // polynomialSerie.setLineColor(Color.blue);
     }
 
     private BufferedImage drawSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats) {
         // Create Chart
         List<Number> srs = new ArrayList<>();
         List<Date> dates = new ArrayList<>();
+        DecimalFormat dc = new DecimalFormat("#0.00'%'");
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM");
 
         List<LocalDateTime> orderedDates = new ArrayList<>(playerSRStats.keySet());
 
         Collections.sort(orderedDates);
 
+        Map<Double, Object> yMarkMap = new TreeMap<>();
+        Map<Double, Object> xMarkMap = new TreeMap<>();
+
         for (LocalDateTime date : orderedDates) {
             srs.add(playerSRStats.get(date));
+            yMarkMap.put(playerSRStats.get(date).doubleValue(), dc.format(playerSRStats.get(date)));
             Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
             dates.add(out);
+            xMarkMap.put(Double.valueOf(out.getTime()), sdf.format(out));
         }
 
         XYChart chart = new XYChart(1000, 800);
@@ -859,6 +857,8 @@ public class CommandesServiceImpl implements ICommandesService {
         chart.setYAxisTitle("SR(% du total de médailles)");
         chart.getStyler().setDatePattern("dd/MM");
         chart.getStyler().setDecimalPattern("#0.00'%'");
+        chart.setYAxisLabelOverrideMap(yMarkMap);
+        chart.setXAxisLabelOverrideMap(xMarkMap);
         XYSeries series = chart.addSeries("SR", dates, srs);
         generateCommonChartProperties(chart, series);
 
@@ -870,12 +870,15 @@ public class CommandesServiceImpl implements ICommandesService {
         List<Number> medals = new ArrayList<>();
         List<Date> dates = new ArrayList<>();
 
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM");
+
         List<LocalDateTime> orderedDates = new ArrayList<>(playerMedStats.keySet());
 
         Collections.sort(orderedDates);
 
 
-        Map<Double, Object> yMarkMap = new TreeMap<Double, Object>();
+        Map<Double, Object> yMarkMap = new TreeMap<>();
+        Map<Double, Object> xMarkMap = new TreeMap<>();
 
         for (LocalDateTime date : orderedDates) {
             BigDecimal rawMedals = playerMedStats.get(date);
@@ -884,6 +887,7 @@ public class CommandesServiceImpl implements ICommandesService {
             yMarkMap.put(medalNumber, helperService.formatBigNumbersToEFFormat(rawMedals));
             Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
             dates.add(out);
+            xMarkMap.put(Double.valueOf(out.getTime()), sdf.format(out));
         }
 
         XYChart chart = new XYChart(1000, 800);
@@ -891,6 +895,7 @@ public class CommandesServiceImpl implements ICommandesService {
         chart.setXAxisTitle("Dates");
         chart.setYAxisTitle("Nombre total de médailles");
         chart.setYAxisLabelOverrideMap(yMarkMap);
+        chart.setXAxisLabelOverrideMap(xMarkMap);
         chart.getStyler().setDatePattern("dd/MM");
         chart.getStyler().setDecimalPattern("#0.00'%'");
         XYSeries series = chart.addSeries("Médailles", dates, medals);
@@ -950,14 +955,19 @@ public class CommandesServiceImpl implements ICommandesService {
         // Create Chart
         List<Integer> kls = new ArrayList<>();
         List<Date> dates = new ArrayList<>();
-
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM");
         List<LocalDateTime> orderedDates = new ArrayList<>(playerKLStats.keySet());
 
         Collections.sort(orderedDates);
+        Map<Double, Object> yMarkMap = new TreeMap<>();
+        Map<Double, Object> xMarkMap = new TreeMap<>();
 
         for (LocalDateTime date : orderedDates) {
             kls.add(playerKLStats.get(date));
-            dates.add(Date.from(date.atZone(ZoneId.systemDefault()).toInstant()));
+            yMarkMap.put(Double.valueOf(playerKLStats.get(date)), playerKLStats.get(date));
+            Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
+            dates.add(out);
+            xMarkMap.put(Double.valueOf(out.getTime()), sdf.format(out));
         }
 
         XYChart chart = new XYChart(1000, 800);
@@ -965,6 +975,8 @@ public class CommandesServiceImpl implements ICommandesService {
         chart.setXAxisTitle("Dates");
         chart.setXAxisTitle("KL");
         XYSeries series = chart.addSeries("KL", dates, kls);
+        chart.setYAxisLabelOverrideMap(yMarkMap);
+        chart.setXAxisLabelOverrideMap(xMarkMap);
         chart.getStyler().setDecimalPattern("#");
         chart.getStyler().setDatePattern("dd/MM");
         generateCommonChartProperties(chart, series);
