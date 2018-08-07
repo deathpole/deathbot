@@ -913,13 +913,21 @@ public class CommandesServiceImpl implements ICommandesService {
 
         if (playerMedStats != null && !playerMedStats.isEmpty()) {
             List<LocalDateTime> orderedDates = new ArrayList<>(playerMedStats.keySet());
-
             Collections.sort(orderedDates);
 
-
             XYChart chart = new XYChart(1000, 800);
+            chart.setTitle("Comparaison du total de médailles (log) de " + author.getName() + " avec les autres joueurs du même niveau");
+            chart.setXAxisTitle("Dates");
+            chart.getStyler().setYAxisTicksVisible(false);
+            chart.setYAxisTitle("Nombre total de médailles");
+            chart.getStyler().setDatePattern("dd/MM");
 
             fillSerieMedalsByDateDataAndLabels(playerMedStats, medals, dates, orderedDates, null, true);
+            XYSeries series = chart.addSeries("Médailles de " + author.getName(), dates, medals);
+            generateCommonChartProperties(chart, series);
+            series.setMarker(SeriesMarkers.NONE);
+            series.setLineColor(Color.BLUE);
+            series.setMarkerColor(Color.BLUE);
 
             HashMap<Member, List<Date>> datesForComparedMembers = new HashMap<>();
             HashMap<Member, List<Number>> medalsForComparedMembers = new HashMap<>();
@@ -944,23 +952,19 @@ public class CommandesServiceImpl implements ICommandesService {
                 XYSeries comparisonSeries = chart.addSeries("Médailles de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
                         medalsForComparedMembers.get(memberToCompare));
                 setRandomColor(comparisonSeries);
+                comparisonSeries.setMarker(SeriesMarkers.NONE);
+                makeSeriesDashed(comparisonSeries);
             }
-
-            XYSeries series = chart.addSeries("Médailles de " + author.getName(), dates, medals);
-            series.setLineColor(Color.BLUE);
-            series.setMarkerColor(Color.BLUE);
-
-            chart.setTitle("Comparaison du total de médailles (log) de " + author.getName() + " avec les autres joueurs du même niveau");
-            chart.setXAxisTitle("Dates");
-            chart.getStyler().setYAxisTicksVisible(false);
-            chart.setYAxisTitle("Nombre total de médailles");
-            chart.getStyler().setDatePattern("dd/MM");
-
-            generateCommonChartProperties(chart, series);
 
             return BitmapEncoder.getBufferedImage(chart);
         }
         return null;
+    }
+
+    private void makeSeriesDashed(XYSeries comparisonSeries) {
+        final float dash1[] = {10.0f};
+        final BasicStroke dashed = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash1, 0.0f);
+        comparisonSeries.setLineStyle(dashed);
     }
 
     private BufferedImage drawComparisonSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats, List<Member> compareToMembers, User author) {
@@ -971,13 +975,21 @@ public class CommandesServiceImpl implements ICommandesService {
 
         if (playerSRStats != null && !playerSRStats.isEmpty()) {
             List<LocalDateTime> orderedDates = new ArrayList<>(playerSRStats.keySet());
-
             Collections.sort(orderedDates);
 
             XYChart chart = new XYChart(1000, 800);
+            chart.setTitle("Comparaison du SR de " + author.getName() + " avec les autres joueurs du même niveau");
+            chart.setXAxisTitle("Dates");
+            chart.setYAxisTitle("SR(% du total de médailles)");
+            chart.getStyler().setDatePattern("dd/MM");
+            chart.getStyler().setDecimalPattern("#0.00'%'");
 
             fillSerieSRsDataAndLabelsByDate(srs, dates, dc, null, playerSRStats, orderedDates);
             XYSeries series = chart.addSeries("SR de " + author.getName(), dates, srs);
+            generateCommonChartProperties(chart, series);
+            series.setMarker(SeriesMarkers.NONE);
+            series.setLineColor(Color.BLUE);
+            series.setMarkerColor(Color.BLUE);
 
             HashMap<Member, List<Date>> datesForComparedMembers = new HashMap<>();
             HashMap<Member, List<Number>> SRsForComparedMembers = new HashMap<>();
@@ -1002,14 +1014,9 @@ public class CommandesServiceImpl implements ICommandesService {
                         SRsForComparedMembers.get(memberToCompare));
                 generateCommonChartProperties(chart, comparisonSeries);
                 setRandomColor(comparisonSeries);
+                makeSeriesDashed(comparisonSeries);
+                comparisonSeries.setMarker(SeriesMarkers.NONE);
             }
-
-            chart.setTitle("Comparaison du SR de " + author.getName() + " avec les autres joueurs du même niveau");
-            chart.setXAxisTitle("Dates");
-            chart.setYAxisTitle("SR(% du total de médailles)");
-            chart.getStyler().setDatePattern("dd/MM");
-            chart.getStyler().setDecimalPattern("#0.00'%'");
-            generateCommonChartProperties(chart, series);
 
             return BitmapEncoder.getBufferedImage(chart);
         }
@@ -1046,12 +1053,21 @@ public class CommandesServiceImpl implements ICommandesService {
         List<Date> dates = new ArrayList<>();
 
         if (playerKLStats != null && !playerKLStats.isEmpty()) {
-            XYChart chart = new XYChart(1000, 800);
-
             List<LocalDateTime> orderedDates = new ArrayList<>(playerKLStats.keySet());
             Collections.sort(orderedDates);
+
+            XYChart chart = new XYChart(1000, 800);
+            chart.setTitle("Comparaison du KL de " + author.getName() + " avec les autres joueurs du même niveau");
+            chart.setXAxisTitle("Dates");
+            chart.setYAxisTitle("KL");
+            chart.getStyler().setDatePattern("dd/MM");
+
             fillSerieKLsDataAndLabelsByDate(playerKLStats, kls, dates, orderedDates, null);
             XYSeries series = chart.addSeries("KL de " + author.getName(), dates, kls);
+            generateCommonChartProperties(chart, series);
+            series.setMarker(SeriesMarkers.NONE);
+            series.setLineColor(Color.BLUE);
+            series.setMarkerColor(Color.BLUE);
 
             HashMap<Member, List<Date>> datesForComparedMembers = new HashMap<>();
             HashMap<Member, List<Number>> KLsForComparedMembers = new HashMap<>();
@@ -1075,13 +1091,10 @@ public class CommandesServiceImpl implements ICommandesService {
                         KLsForComparedMembers.get(memberToCompare));
                 generateCommonChartProperties(chart, comparisonSeries);
                 setRandomColor(comparisonSeries);
+                comparisonSeries.setMarker(SeriesMarkers.NONE);
+                makeSeriesDashed(comparisonSeries);
             }
 
-            chart.setTitle("Comparaison du KL de " + author.getName() + " avec les autres joueurs du même niveau");
-            chart.setXAxisTitle("Dates");
-            chart.setYAxisTitle("KL");
-            chart.getStyler().setDatePattern("dd/MM");
-            generateCommonChartProperties(chart, series);
 
             return BitmapEncoder.getBufferedImage(chart);
         }
