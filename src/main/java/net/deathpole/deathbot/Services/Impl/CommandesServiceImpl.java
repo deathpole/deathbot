@@ -943,7 +943,7 @@ public class CommandesServiceImpl implements ICommandesService {
             fillSerieMedalsByDateDataAndLabels(playerMedStats, medals, dates, orderedDates, yMarksMap, true);
             XYSeries series = chart.addSeries("Médailles de " + author.getName(), dates, medals);
             generateCommonChartProperties(chart, series);
-            series.setMarker(SeriesMarkers.NONE);
+            series.setMarker(SeriesMarkers.CIRCLE);
             series.setLineColor(Color.BLUE);
             series.setMarkerColor(Color.BLUE);
             chart.setYAxisLabelOverrideMap(yMarksMap);
@@ -1006,7 +1006,7 @@ public class CommandesServiceImpl implements ICommandesService {
             fillSerieSRsDataAndLabelsByDate(srs, dates, dc, null, playerSRStats, orderedDates);
             XYSeries series = chart.addSeries("SR de " + author.getName(), dates, srs);
             generateCommonChartProperties(chart, series);
-            series.setMarker(SeriesMarkers.NONE);
+            series.setMarker(SeriesMarkers.CIRCLE);
             series.setLineColor(Color.BLUE);
             series.setMarkerColor(Color.BLUE);
 
@@ -1087,7 +1087,7 @@ public class CommandesServiceImpl implements ICommandesService {
             fillSerieKLsDataAndLabelsByDate(playerKLStats, kls, dates, orderedDates, null);
             XYSeries series = chart.addSeries("KL de " + author.getName(), dates, kls);
             generateCommonChartProperties(chart, series);
-            series.setMarker(SeriesMarkers.NONE);
+            series.setMarker(SeriesMarkers.CIRCLE);
             series.setLineColor(Color.BLUE);
             series.setMarkerColor(Color.BLUE);
 
