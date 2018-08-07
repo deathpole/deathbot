@@ -916,7 +916,7 @@ public class CommandesServiceImpl implements ICommandesService {
             Collections.sort(orderedDates);
 
             XYChart chart = new XYChart(1000, 800);
-            chart.setTitle("Comparaison du total de médailles (log) de " + author.getName() + " avec les autres joueurs du même niveau");
+            chart.setTitle("Comparaison des médailles de " + author.getName() + " avec les autres joueurs du même niveau");
             chart.setXAxisTitle("Dates");
             chart.getStyler().setYAxisTicksVisible(false);
             chart.setYAxisTitle("Nombre total de médailles");
@@ -963,7 +963,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void makeSeriesDashed(XYSeries comparisonSeries) {
         final float dash1[] = {10.0f};
-        final BasicStroke dashed = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash1, 0.0f);
+        final BasicStroke dashed = new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10.0f, dash1, 0.0f);
         comparisonSeries.setLineStyle(dashed);
     }
 
@@ -1031,6 +1031,9 @@ public class CommandesServiceImpl implements ICommandesService {
         float b = rand.nextFloat();
 
         Color color = new Color(r, g, b);
+        color.darker();
+        color.darker();
+        color.darker();
         series.setMarkerColor(color);
         series.setLineColor(color);
     }
