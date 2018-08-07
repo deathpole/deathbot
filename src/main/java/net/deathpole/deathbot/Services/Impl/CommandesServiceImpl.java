@@ -1286,6 +1286,7 @@ public class CommandesServiceImpl implements ICommandesService {
         sb.append(BALISE_CODE + "?stat medals" + BALISE_CODE
                 + " : Permet d'afficher la courbe d'évolution de votre total de médailles dans le temps").append(
                 RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat compare" + BALISE_CODE + " : Permet d'afficher 3 graphiques de comparaison avec les autres joueurs de votre niveau").append(RETOUR_LIGNE);
 
         return sb.toString();
     }
