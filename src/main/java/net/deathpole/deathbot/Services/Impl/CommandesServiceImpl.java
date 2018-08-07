@@ -811,13 +811,30 @@ public class CommandesServiceImpl implements ICommandesService {
         BufferedImage medChartImage = drawComparisonMedChart(authorMedStats, compareToMembers, author);
         BufferedImage SRChartImage = drawComparisonSRChart(authorSRStats, compareToMembers, author);
         BufferedImage KLChartImage = drawComparisonKLChart(authorKLStats, compareToMembers, author);
+
         if (medChartImage != null && SRChartImage != null && KLChartImage != null) {
+
+            // BufferedImage combined = combineChartsImages(medChartImage, SRChartImage, KLChartImage);
+            // messagesService.sendBufferedImage(channel, combined, author.getAsMention(), "Comparison.png");
+
             messagesService.sendBufferedImage(channel, medChartImage, author.getAsMention(), "Med.png");
             messagesService.sendBufferedImage(channel, KLChartImage, "", "KL.png");
             messagesService.sendBufferedImage(channel, SRChartImage, "", "SR.png");
         } else {
             messagesService.sendBotMessage(channel, "Vous n'avez aucune statistique enregistrée ! Pour savoir comment enregistrer vos données, tapez ?stat");
         }
+    }
+
+    private BufferedImage combineChartsImages(BufferedImage medChartImage, BufferedImage SRChartImage, BufferedImage KLChartImage) {
+        int w = medChartImage.getWidth() * 2 + 10;
+        int h = Math.max(medChartImage.getHeight(), SRChartImage.getHeight()) + KLChartImage.getHeight() + 10;
+        BufferedImage combined = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics g = combined.getGraphics();
+        g.drawImage(medChartImage, 0, 0, Color.WHITE, null);
+        g.drawImage(SRChartImage, medChartImage.getWidth() + 2, 0, Color.WHITE, null);
+        g.drawImage(KLChartImage, ((w / 2) - (KLChartImage.getWidth() / 2)) + 2, Math.max(medChartImage.getHeight(), SRChartImage.getHeight()) + 2, Color.WHITE, null);
+        return combined;
     }
 
     private List<PlayerStatDTO> getSRStatsForAllPlayersByKL() {
@@ -916,18 +933,20 @@ public class CommandesServiceImpl implements ICommandesService {
             Collections.sort(orderedDates);
 
             XYChart chart = new XYChart(1000, 800);
-            chart.setTitle("Comparaison des médailles de " + author.getName() + " avec les autres joueurs du même niveau");
+            chart.setTitle("Comparaison des médailles");
             chart.setXAxisTitle("Dates");
-            chart.getStyler().setYAxisTicksVisible(false);
             chart.setYAxisTitle("Nombre total de médailles");
             chart.getStyler().setDatePattern("dd/MM");
 
-            fillSerieMedalsByDateDataAndLabels(playerMedStats, medals, dates, orderedDates, null, true);
+            HashMap<Double, Object> yMarksMap = new HashMap<>();
+
+            fillSerieMedalsByDateDataAndLabels(playerMedStats, medals, dates, orderedDates, yMarksMap, true);
             XYSeries series = chart.addSeries("Médailles de " + author.getName(), dates, medals);
             generateCommonChartProperties(chart, series);
             series.setMarker(SeriesMarkers.NONE);
             series.setLineColor(Color.BLUE);
             series.setMarkerColor(Color.BLUE);
+            chart.setYAxisLabelOverrideMap(yMarksMap);
 
             HashMap<Member, List<Date>> datesForComparedMembers = new HashMap<>();
             HashMap<Member, List<Number>> medalsForComparedMembers = new HashMap<>();
@@ -978,7 +997,7 @@ public class CommandesServiceImpl implements ICommandesService {
             Collections.sort(orderedDates);
 
             XYChart chart = new XYChart(1000, 800);
-            chart.setTitle("Comparaison du SR de " + author.getName() + " avec les autres joueurs du même niveau");
+            chart.setTitle("Comparaison du SR");
             chart.setXAxisTitle("Dates");
             chart.setYAxisTitle("SR(% du total de médailles)");
             chart.getStyler().setDatePattern("dd/MM");
@@ -1060,7 +1079,7 @@ public class CommandesServiceImpl implements ICommandesService {
             Collections.sort(orderedDates);
 
             XYChart chart = new XYChart(1000, 800);
-            chart.setTitle("Comparaison du KL de " + author.getName() + " avec les autres joueurs du même niveau");
+            chart.setTitle("Comparaison du KL");
             chart.setXAxisTitle("Dates");
             chart.setYAxisTitle("KL");
             chart.getStyler().setDatePattern("dd/MM");
