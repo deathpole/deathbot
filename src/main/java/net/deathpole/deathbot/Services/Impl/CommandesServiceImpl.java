@@ -1071,7 +1071,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
 
             for (Member memberToCompare : KLsForComparedMembers.keySet()) {
-                XYSeries comparisonSeries = chart.addSeries("SR de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
+                XYSeries comparisonSeries = chart.addSeries("KL de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
                         KLsForComparedMembers.get(memberToCompare));
                 generateCommonChartProperties(chart, comparisonSeries);
                 setRandomColor(comparisonSeries);
