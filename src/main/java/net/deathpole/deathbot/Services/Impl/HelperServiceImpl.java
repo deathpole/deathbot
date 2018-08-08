@@ -28,42 +28,43 @@ public class HelperServiceImpl implements IHelperService {
 
         if (value.compareTo(medalsBase) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##a", symbols);
-            result = decimalFormat.format(value.divide(factor, BigDecimal.ROUND_HALF_DOWN));
+            result = decimalFormat.format(value.divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor)) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##b", symbols);
-            result = decimalFormat.format(value.divide(factor).divide(factor, BigDecimal.ROUND_HALF_DOWN));
+            result = decimalFormat.format(value.divide(factor).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor)) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##c", symbols);
-            result = decimalFormat.format(value.divide(factor.multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
+            result = decimalFormat.format(value.divide(factor.multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor)) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##d", symbols);
-            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
+            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##e", symbols);
-            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
+            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##f", symbols);
-            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
+            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##g", symbols);
             result = decimalFormat.format(
-                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, BigDecimal.ROUND_HALF_DOWN));
+                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##h", symbols);
             result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
-                    BigDecimal.ROUND_HALF_DOWN));
+                    1, BigDecimal.ROUND_HALF_DOWN));
         } else if (value.compareTo(
                 medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##i", symbols);
             result = decimalFormat.format(
-                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
+                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, 1,
                             BigDecimal.ROUND_HALF_DOWN));
         }else if (value.compareTo(
                 medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##j", symbols);
             result = decimalFormat.format(
-                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
-                            BigDecimal.ROUND_HALF_DOWN));
+                    value.divide(
+                            factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(
+                                    factor, 1, BigDecimal.ROUND_HALF_DOWN));
         }
 
         return result;

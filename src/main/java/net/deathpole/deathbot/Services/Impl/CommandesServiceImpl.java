@@ -5,12 +5,9 @@ import static net.dv8tion.jda.core.MessageBuilder.Formatting.BOLD;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
 import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -20,26 +17,17 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.knowm.xchart.BitmapEncoder;
-import org.knowm.xchart.XYChart;
-import org.knowm.xchart.XYSeries;
-import org.knowm.xchart.style.Styler;
-import org.knowm.xchart.style.markers.SeriesMarkers;
 
 import net.deathpole.deathbot.Bot;
 import net.deathpole.deathbot.CustomReactionDTO;
@@ -50,6 +38,7 @@ import net.deathpole.deathbot.Dao.Impl.GlobalDao;
 import net.deathpole.deathbot.Enums.EnumAction;
 import net.deathpole.deathbot.Enums.EnumCadavreExquisParams;
 import net.deathpole.deathbot.Enums.EnumDynoAction;
+import net.deathpole.deathbot.Services.IChartService;
 import net.deathpole.deathbot.Services.ICommandesService;
 import net.deathpole.deathbot.Services.IHelperService;
 import net.deathpole.deathbot.Services.IMessagesService;
@@ -83,9 +72,12 @@ public class CommandesServiceImpl implements ICommandesService {
     private static final int DEFAULT_INACTIVITY_LIMIT = 7;
     private static final String BALISE_BLOCK_CODE = "```";
     private static final String BALISE_CODE = "`";
+    private static final String TAB = "\t";
+    private static final String SPACE = " ";
     private IGlobalDao globalDao;
     private IMessagesService messagesService = new MessagesServiceImpl();
     private IHelperService helperService = new HelperServiceImpl();
+    private IChartService chartService;
     private List<String> dynoActions = initDynoActions();
 
     // Maps used after load
@@ -109,6 +101,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private HashMap<String, HashMap<String, Set<String>>> initLinkedRanksByGuild() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
+            if (chartService == null) {
+                chartService = new ChartServiceImpl(this.globalDao);
+            }
         }
         return globalDao.initLinkedRanksbyGuild();
     }
@@ -136,6 +131,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private HashMap<String, Set<String>> initAssignableRanksbyGuild() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
+            if (chartService == null) {
+                chartService = new ChartServiceImpl(this.globalDao);
+            }
         }
         return globalDao.initAssignableRanksbyGuild(true);
     }
@@ -143,6 +141,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private HashMap<String, Set<String>> initNotSingleAssignableRanksbyGuild() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
+            if (chartService == null) {
+                chartService = new ChartServiceImpl(this.globalDao);
+            }
         }
         return globalDao.initAssignableRanksbyGuild(false);
     }
@@ -150,6 +151,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private HashMap<String, Set<String>> initOnJoinRanksbyGuild() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
+            if (chartService == null) {
+                chartService = new ChartServiceImpl(this.globalDao);
+            }
         }
         return globalDao.initOnJoinRanksbyGuild();
     }
@@ -157,6 +161,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private HashMap<String, HashMap<String, CustomReactionDTO>> initMapCustomReactions() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
+            if (chartService == null) {
+                chartService = new ChartServiceImpl(this.globalDao);
+            }
         }
         return globalDao.initMapCustomReactions();
     }
@@ -164,6 +171,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private HashMap<String, List<String>> initMapDynoActions() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
+            if (chartService == null) {
+                chartService = new ChartServiceImpl(this.globalDao);
+            }
         }
         return globalDao.initMapDynoActions();
     }
@@ -171,6 +181,9 @@ public class CommandesServiceImpl implements ICommandesService {
     private HashMap<String, HashMap<String, String>> initMapVoiceRoles() {
         if (globalDao == null) {
             globalDao = new GlobalDao();
+            if (chartService == null) {
+                chartService = new ChartServiceImpl(this.globalDao);
+            }
         }
         return globalDao.initMapVoiceRoles();
     }
@@ -655,13 +668,13 @@ public class CommandesServiceImpl implements ICommandesService {
                 break;
             case STAT:
                 if (isStatsCmds || isAdmin || isModo) {
-                    calculateStatsForPlayer(channel, author, args, guild, member);
+                calculateStatsForPlayer(channel, author, args, guild, member, isAdmin || isModo);
                 } else if (isCmds) {
                     List<TextChannel> statCmdsChannels = guild.getTextChannelsByName("stats-cmds", true);
                     if (!statCmdsChannels.isEmpty()) {
                         messagesService.sendBotMessage(channel, "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + statCmdsChannels.get(0).getAsMention());
                     } else {
-                        calculateStatsForPlayer(channel, author, args, guild, member);
+                    calculateStatsForPlayer(channel, author, args, guild, member, isAdmin || isModo);
                     }
                 }
                 break;
@@ -671,7 +684,7 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void calculateStatsForPlayer(MessageChannel channel, User author, String[] arg, Guild guild, Member member) {
+    private void calculateStatsForPlayer(MessageChannel channel, User author, String[] arg, Guild guild, Member member, boolean isSuperUser) {
 
 
         List<PlayerStatDTO> playerStatsResult = globalDao.getStatsForPlayer((int) author.getIdLong(), true);
@@ -689,8 +702,25 @@ public class CommandesServiceImpl implements ICommandesService {
 
         String[] params = arg[0].split(ACTION_ARGS_SEPARATOR);
 
-        if (params.length > 2) {
-
+        if (params.length <= 2) {
+            if (params.length == 1) {
+                String keyWord = params[0];
+                manageStatSingleCommands(channel, author, guild, member, keyWord);
+            } else if (params.length == 2) {
+                String keyWord = params[0];
+                if ("cancel".equals(keyWord)) {
+                    String idStr = params[1];
+                    Integer id = Integer.valueOf(idStr);
+                    PlayerStatDTO statById = globalDao.getStatById(id);
+                    if (statById.getPlayerId() == (int) author.getIdLong() || isSuperUser) {
+                        deleteStatById(channel, id, statById);
+                    } else {
+                        messagesService.sendBotMessage(channel,
+                                "Cette statistiques n'est pas à vous, vous ne pouvez donc pas la supprimer ! Pour savoir quelles sont vos statistiques, tapez ?stat history");
+                    }
+                }
+            }
+        } else {
             PlayerStatDTO newStats = new PlayerStatDTO();
             newStats.setPlayerId((int) author.getIdLong());
             newStats.setKl(Integer.valueOf(params[0]));
@@ -727,553 +757,136 @@ public class CommandesServiceImpl implements ICommandesService {
             calculateSrStat(newStats, channel, srRatio, isRatioProvided, isPreviousRatioPresent);
 
             globalDao.savePlayerStats(newStats);
-        } else if (params.length == 1) {
-            String keyWord = params[0];
-            BufferedImage image;
-            switch (keyWord) {
-                case "graph":
-                    List<PlayerStatDTO> playersSRStats = getSRStatsForAllPlayersByKL();
-                    if (playersSRStats != null && !playersSRStats.isEmpty()) {
-                        image = drawAllPlayersSRChart(playersSRStats);
-                        messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
-                    } else {
-                        messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
-                    }
-                    break;
-                case "cancel":
-                    globalDao.cancelLastPlayerStats((int) author.getIdLong());
-                    messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");
-                    break;
-                case "kl":
-                    HashMap<LocalDateTime, Integer> playerKLStats = getKLStatsForPlayer(author.getIdLong());
-                    if (playerKLStats != null && !playerKLStats.isEmpty()) {
-                        image = drawKLChart(playerKLStats);
-                        messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
-                    } else {
-                        messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
-                    }
-                    break;
-                case "sr":
-                    HashMap<LocalDateTime, BigDecimal> playerSRStats = getSRStatsForPlayer(author.getIdLong());
-                    if (playerSRStats != null && !playerSRStats.isEmpty()) {
-                        image = drawSRChart(playerSRStats);
-                        messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
-                    } else {
-                        messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
-                    }
-                    break;
-                case "med":
-                case "medals":
-                    HashMap<LocalDateTime, BigDecimal> playerMedStats = getMedStatsForPlayer(author.getIdLong());
-                    if (playerMedStats != null && !playerMedStats.isEmpty()) {
-                        image = drawMedChart(playerMedStats);
-                        messagesService.sendBufferedImage(channel, image, author.getAsMention(), "Med.png");
-                    } else {
-                        messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
-                    }
-                    break;
-                case "compare":
-                    List<Role> roles = member.getRoles();
-                    List<Role> usefulRoles = new ArrayList<>();
-                    boolean found = false;
-                    for (Role role : roles) {
-                        if (role.getName().startsWith("Chevalier")) {
-                            usefulRoles.add(role);
-                            found = true;
-                        }
-                    }
-                    if (found) {
-                        List<Member> compareToMembers = guild.getMembersWithRoles(usefulRoles);
-                        compareToMembers.remove(member);
-                        if (!compareToMembers.isEmpty()) {
-                        drawMultipleComparisons(channel, author, compareToMembers);
-                        } else {
-                        messagesService.sendBotMessage(channel, "Aucun joueur trouvé correspondant à votre niveau, désolé =(");
-                        }
+        }
+    }
+
+    private void deleteStatById(MessageChannel channel, Integer id, PlayerStatDTO statById) {
+        int deleted = globalDao.cancelStatById(statById.getId());
+        if (deleted != 0) {
+            messagesService.sendBotMessage(channel, "La statistique ayant pour id : " + id + " a bien été supprimée !");
+        } else {
+            messagesService.sendBotMessage(channel, "La statistique avec l'id " + id + " n'a pas pu être supprimée. Veuillez contacter un administrateur.");
+        }
+    }
+
+    private void manageStatSingleCommands(MessageChannel channel, User author, Guild guild, Member member, String keyWord) {
+        BufferedImage image;
+        switch (keyWord) {
+        case "graph":
+            List<PlayerStatDTO> playersSRStats = chartService.getSRStatsForAllPlayersByKL();
+            if (playersSRStats != null && !playersSRStats.isEmpty()) {
+                image = chartService.drawAllPlayersSRChart(playersSRStats, this);
+                messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+            }
+            break;
+        case "cancel":
+            globalDao.cancelLastPlayerStats((int) author.getIdLong());
+            messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");
+            break;
+        case "history":
+            sendStatsHistoryForPlayer(channel, author);
+            break;
+        case "kl":
+            HashMap<LocalDateTime, Integer> playerKLStats = chartService.getKLStatsForPlayer(author.getIdLong());
+            if (playerKLStats != null && !playerKLStats.isEmpty()) {
+                image = chartService.drawKLChart(playerKLStats);
+                messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+            }
+            break;
+        case "sr":
+            HashMap<LocalDateTime, BigDecimal> playerSRStats = chartService.getSRStatsForPlayer(author.getIdLong());
+            if (playerSRStats != null && !playerSRStats.isEmpty()) {
+                image = chartService.drawSRChart(playerSRStats);
+                messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+            }
+            break;
+        case "med":
+        case "medals":
+            HashMap<LocalDateTime, BigDecimal> playerMedStats = chartService.getMedStatsForPlayer(author.getIdLong());
+            if (playerMedStats != null && !playerMedStats.isEmpty()) {
+                image = chartService.drawMedChart(playerMedStats);
+                messagesService.sendBufferedImage(channel, image, author.getAsMention(), "Med.png");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+            }
+            break;
+        case "compare":
+            List<Role> roles = member.getRoles();
+            List<Role> usefulRoles = new ArrayList<>();
+            boolean found = false;
+            for (Role role : roles) {
+                if (role.getName().startsWith("Chevalier")) {
+                    usefulRoles.add(role);
+                    found = true;
+                }
+            }
+            if (found) {
+                List<Member> compareToMembers = guild.getMembersWithRoles(usefulRoles);
+                compareToMembers.remove(member);
+                if (!compareToMembers.isEmpty()) {
+                    chartService.drawMultipleComparisons(channel, author, compareToMembers);
                 } else {
-                    messagesService.sendBotMessage(channel, "Vous n'avez aucun rôle de Chevalier, comparaison impossible ='(");
-                    }
-                    break;
-                default:
-                    String message = buildStatCommandHelp();
-                    messagesService.sendBotMessage(channel, message);
-                    break;
-
-            }
-        }
-    }
-
-    private void drawMultipleComparisons(MessageChannel channel, User author, List<Member> compareToMembers) {
-        HashMap<LocalDateTime, BigDecimal> authorMedStats = getMedStatsForPlayer(author.getIdLong());
-        HashMap<LocalDateTime, BigDecimal> authorSRStats = getSRStatsForPlayer(author.getIdLong());
-        HashMap<LocalDateTime, Integer> authorKLStats = getKLStatsForPlayer(author.getIdLong());
-
-        BufferedImage medChartImage = drawComparisonMedChart(authorMedStats, compareToMembers, author);
-        BufferedImage SRChartImage = drawComparisonSRChart(authorSRStats, compareToMembers, author);
-        BufferedImage KLChartImage = drawComparisonKLChart(authorKLStats, compareToMembers, author);
-
-        if (medChartImage != null && SRChartImage != null && KLChartImage != null) {
-
-            // BufferedImage combined = combineChartsImages(medChartImage, SRChartImage, KLChartImage);
-            // messagesService.sendBufferedImage(channel, combined, author.getAsMention(), "Comparison.png");
-
-            messagesService.sendBufferedImage(channel, medChartImage, author.getAsMention(), "Med.png");
-            messagesService.sendBufferedImage(channel, KLChartImage, "", "KL.png");
-            messagesService.sendBufferedImage(channel, SRChartImage, "", "SR.png");
-        } else {
-            messagesService.sendBotMessage(channel, "Vous n'avez aucune statistique enregistrée ! Pour savoir comment enregistrer vos données, tapez ?stat");
-        }
-    }
-
-    private BufferedImage combineChartsImages(BufferedImage medChartImage, BufferedImage SRChartImage, BufferedImage KLChartImage) {
-        int w = medChartImage.getWidth() * 2 + 10;
-        int h = Math.max(medChartImage.getHeight(), SRChartImage.getHeight()) + KLChartImage.getHeight() + 10;
-        BufferedImage combined = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-
-        Graphics g = combined.getGraphics();
-        g.drawImage(medChartImage, 0, 0, Color.WHITE, null);
-        g.drawImage(SRChartImage, medChartImage.getWidth() + 2, 0, Color.WHITE, null);
-        g.drawImage(KLChartImage, ((w / 2) - (KLChartImage.getWidth() / 2)) + 2, Math.max(medChartImage.getHeight(), SRChartImage.getHeight()) + 2, Color.WHITE, null);
-        return combined;
-    }
-
-    private List<PlayerStatDTO> getSRStatsForAllPlayersByKL() {
-        List<PlayerStatDTO> playerStats = globalDao.getAllStats();
-
-        for (PlayerStatDTO playerStat : playerStats) {
-
-            float srRatio = (float) 0.9;
-            if (playerStat.getSrRatio() != 0) {
-                srRatio = playerStat.getSrRatio();
-            }
-
-            BigDecimal fullSR = playerStat.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
-            BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(playerStat.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
-
-            playerStat.setSrPercentage(srPercentage);
-        }
-
-        return playerStats;
-    }
-
-    private BufferedImage drawAllPlayersSRChart(List<PlayerStatDTO> playersStats) {
-        // Create Chart
-        XYChart chart = new XYChart(1000, 800);
-        chart.getStyler().setDefaultSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Scatter);
-        chart.setTitle("Courbes des SR en fonction du KL");
-        chart.setXAxisTitle("KL");
-        chart.setYAxisTitle("SR(% du total de médailles)");
-        chart.getStyler().setYAxisDecimalPattern("#0.0'%'");
-        chart.getStyler().setXAxisDecimalPattern("#");
-
-        createSRSerie(playersStats, chart);
-
-        return BitmapEncoder.getBufferedImage(chart);
-    }
-
-
-    private void createSRSerie(List<PlayerStatDTO> playersStats, XYChart chart) {
-        List<Number> srs = new ArrayList<>();
-        List<Number> kls = new ArrayList<>();
-
-        for (PlayerStatDTO playerStatDTO : playersStats) {
-            srs.add(playerStatDTO.getSrPercentage());
-            kls.add(playerStatDTO.getKl());
-        }
-
-        XYSeries rawSerie = chart.addSeries("SR", kls, srs);
-        generateCommonChartProperties(chart, rawSerie);
-    }
-
-    private BufferedImage drawSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats) {
-        // Create Chart
-        List<Number> srs = new ArrayList<>();
-        List<Date> dates = new ArrayList<>();
-        DecimalFormat dc = new DecimalFormat("#0.00'%'");
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM");
-
-        List<LocalDateTime> orderedDates = new ArrayList<>(playerSRStats.keySet());
-
-        Collections.sort(orderedDates);
-
-        Map<Double, Object> yMarkMap = new TreeMap<>();
-        Map<Double, Object> xMarkMap = new TreeMap<>();
-
-        for (LocalDateTime date : orderedDates) {
-            srs.add(playerSRStats.get(date));
-            yMarkMap.put(playerSRStats.get(date).doubleValue(), dc.format(playerSRStats.get(date)));
-            Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
-            dates.add(out);
-            xMarkMap.put(Double.valueOf(out.getTime()), sdf.format(out));
-        }
-
-        XYChart chart = new XYChart(1000, 800);
-        chart.setTitle("Evolution du SR dans le temps");
-        chart.setXAxisTitle("Dates");
-        chart.setYAxisTitle("SR(% du total de médailles)");
-        chart.getStyler().setDatePattern("dd/MM");
-        chart.getStyler().setDecimalPattern("#0.00'%'");
-        chart.setYAxisLabelOverrideMap(yMarkMap);
-        chart.setXAxisLabelOverrideMap(xMarkMap);
-        XYSeries series = chart.addSeries("SR", dates, srs);
-        generateCommonChartProperties(chart, series);
-
-        return BitmapEncoder.getBufferedImage(chart);
-    }
-
-    private BufferedImage drawComparisonMedChart(HashMap<LocalDateTime, BigDecimal> playerMedStats, List<Member> compareToMembers, User author) {
-        // Create Chart
-        List<Number> medals = new ArrayList<>();
-
-        List<Date> dates = new ArrayList<>();
-
-
-        if (playerMedStats != null && !playerMedStats.isEmpty()) {
-            List<LocalDateTime> orderedDates = new ArrayList<>(playerMedStats.keySet());
-            Collections.sort(orderedDates);
-
-            XYChart chart = new XYChart(1000, 800);
-            chart.setTitle("Comparaison des médailles");
-            chart.setXAxisTitle("Dates");
-            chart.setYAxisTitle("Nombre total de médailles");
-            chart.getStyler().setDatePattern("dd/MM");
-
-            HashMap<Double, Object> yMarksMap = new HashMap<>();
-
-            fillSerieMedalsByDateDataAndLabels(playerMedStats, medals, dates, orderedDates, yMarksMap, true);
-            XYSeries series = chart.addSeries("Médailles de " + author.getName(), dates, medals);
-            generateCommonChartProperties(chart, series);
-            series.setMarker(SeriesMarkers.CIRCLE);
-            series.setLineColor(Color.BLUE);
-            series.setMarkerColor(Color.BLUE);
-            chart.setYAxisLabelOverrideMap(yMarksMap);
-
-            HashMap<Member, List<Date>> datesForComparedMembers = new HashMap<>();
-            HashMap<Member, List<Number>> medalsForComparedMembers = new HashMap<>();
-
-            for (Member memberToCompare : compareToMembers) {
-
-                HashMap<LocalDateTime, BigDecimal> memberMedStats = getMedStatsForPlayer(memberToCompare.getUser().getIdLong());
-                if (memberMedStats != null && !memberMedStats.isEmpty()) {
-
-                    List<Date> datesCompare = new ArrayList<>();
-                    List<Number> medalsCompare = new ArrayList<>();
-                    List<LocalDateTime> orderedDatesComparison = new ArrayList<>(memberMedStats.keySet());
-                    Collections.sort(orderedDatesComparison);
-
-                    fillSerieMedalsByDateDataAndLabels(memberMedStats, medalsCompare, datesCompare, orderedDatesComparison, null, true);
-                    datesForComparedMembers.put(memberToCompare, datesCompare);
-                    medalsForComparedMembers.put(memberToCompare, medalsCompare);
+                    messagesService.sendBotMessage(channel, "Aucun joueur trouvé correspondant à votre niveau, désolé =(");
                 }
+            } else {
+                messagesService.sendBotMessage(channel, "Vous n'avez aucun rôle de Chevalier, comparaison impossible ='(");
             }
-
-            for (Member memberToCompare : medalsForComparedMembers.keySet()) {
-                XYSeries comparisonSeries = chart.addSeries("Médailles de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
-                        medalsForComparedMembers.get(memberToCompare));
-                setRandomColor(comparisonSeries);
-                comparisonSeries.setMarker(SeriesMarkers.NONE);
-                makeSeriesDashed(comparisonSeries);
-            }
-
-            return BitmapEncoder.getBufferedImage(chart);
-        }
-        return null;
-    }
-
-    private void makeSeriesDashed(XYSeries comparisonSeries) {
-        final float dash1[] = {10.0f};
-        final BasicStroke dashed = new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10.0f, dash1, 0.0f);
-        comparisonSeries.setLineStyle(dashed);
-    }
-
-    private BufferedImage drawComparisonSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats, List<Member> compareToMembers, User author) {
-        // Create Chart
-        List<Number> srs = new ArrayList<>();
-        List<Date> dates = new ArrayList<>();
-        DecimalFormat dc = new DecimalFormat("#0.00'%'");
-
-        if (playerSRStats != null && !playerSRStats.isEmpty()) {
-            List<LocalDateTime> orderedDates = new ArrayList<>(playerSRStats.keySet());
-            Collections.sort(orderedDates);
-
-            XYChart chart = new XYChart(1000, 800);
-            chart.setTitle("Comparaison du SR");
-            chart.setXAxisTitle("Dates");
-            chart.setYAxisTitle("SR(% du total de médailles)");
-            chart.getStyler().setDatePattern("dd/MM");
-            chart.getStyler().setDecimalPattern("#0.00'%'");
-
-            fillSerieSRsDataAndLabelsByDate(srs, dates, dc, null, playerSRStats, orderedDates);
-            XYSeries series = chart.addSeries("SR de " + author.getName(), dates, srs);
-            generateCommonChartProperties(chart, series);
-            series.setMarker(SeriesMarkers.CIRCLE);
-            series.setLineColor(Color.BLUE);
-            series.setMarkerColor(Color.BLUE);
-
-            HashMap<Member, List<Date>> datesForComparedMembers = new HashMap<>();
-            HashMap<Member, List<Number>> SRsForComparedMembers = new HashMap<>();
-
-            for (Member memberToCompare : compareToMembers) {
-
-                HashMap<LocalDateTime, BigDecimal> memberSRStats = getSRStatsForPlayer(memberToCompare.getUser().getIdLong());
-                if (memberSRStats != null && !memberSRStats.isEmpty()) {
-                    List<Number> srsCompare = new ArrayList<>();
-                    List<Date> datesCompare = new ArrayList<>();
-                    List<LocalDateTime> orderedDatesComparison = new ArrayList<>(memberSRStats.keySet());
-                    Collections.sort(orderedDatesComparison);
-
-                    fillSerieSRsDataAndLabelsByDate(srsCompare, datesCompare, dc, null, memberSRStats, orderedDatesComparison);
-                    datesForComparedMembers.put(memberToCompare, datesCompare);
-                    SRsForComparedMembers.put(memberToCompare, srsCompare);
-                }
-            }
-
-            for (Member memberToCompare : SRsForComparedMembers.keySet()) {
-                XYSeries comparisonSeries = chart.addSeries("SR de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
-                        SRsForComparedMembers.get(memberToCompare));
-                generateCommonChartProperties(chart, comparisonSeries);
-                setRandomColor(comparisonSeries);
-                makeSeriesDashed(comparisonSeries);
-                comparisonSeries.setMarker(SeriesMarkers.NONE);
-            }
-
-            return BitmapEncoder.getBufferedImage(chart);
-        }
-        return null;
-    }
-
-    private void setRandomColor(XYSeries series) {
-        Random rand = new Random();
-
-        float r = rand.nextFloat();
-        float g = rand.nextFloat();
-        float b = rand.nextFloat();
-
-        Color color = new Color(r, g, b);
-        color.darker();
-        color.darker();
-        color.darker();
-        series.setMarkerColor(color);
-        series.setLineColor(color);
-    }
-
-    private void fillSerieSRsDataAndLabelsByDate(List<Number> srsCompare, List<Date> datesCompare, DecimalFormat dc, Map<Double, Object> yMarkMap,
-            HashMap<LocalDateTime, BigDecimal> memberMedStats, List<LocalDateTime> orderedDatesComparison) {
-        for (LocalDateTime date : orderedDatesComparison) {
-            srsCompare.add(memberMedStats.get(date));
-            if (yMarkMap != null) {
-                yMarkMap.put(memberMedStats.get(date).doubleValue(), dc.format(memberMedStats.get(date)));
-            }
-            Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
-            datesCompare.add(out);
+            break;
+        default:
+            String message = buildStatCommandHelp();
+            messagesService.sendBotMessage(channel, message);
+            break;
         }
     }
 
-    private BufferedImage drawComparisonKLChart(HashMap<LocalDateTime, Integer> playerKLStats, List<Member> compareToMembers, User author) {
-        // Create Chart
-        List<Number> kls = new ArrayList<>();
-        List<Date> dates = new ArrayList<>();
-
-        if (playerKLStats != null && !playerKLStats.isEmpty()) {
-            List<LocalDateTime> orderedDates = new ArrayList<>(playerKLStats.keySet());
-            Collections.sort(orderedDates);
-
-            XYChart chart = new XYChart(1000, 800);
-            chart.setTitle("Comparaison du KL");
-            chart.setXAxisTitle("Dates");
-            chart.setYAxisTitle("KL");
-            chart.getStyler().setDatePattern("dd/MM");
-
-            fillSerieKLsDataAndLabelsByDate(playerKLStats, kls, dates, orderedDates, null);
-            XYSeries series = chart.addSeries("KL de " + author.getName(), dates, kls);
-            generateCommonChartProperties(chart, series);
-            series.setMarker(SeriesMarkers.CIRCLE);
-            series.setLineColor(Color.BLUE);
-            series.setMarkerColor(Color.BLUE);
-
-            HashMap<Member, List<Date>> datesForComparedMembers = new HashMap<>();
-            HashMap<Member, List<Number>> KLsForComparedMembers = new HashMap<>();
-
-            for (Member memberToCompare : compareToMembers) {
-                HashMap<LocalDateTime, Integer> memberKLStats = getKLStatsForPlayer(memberToCompare.getUser().getIdLong());
-                if (memberKLStats != null && !memberKLStats.isEmpty()) {
-                    List<Number> klsCompare = new ArrayList<>();
-                    List<Date> datesCompare = new ArrayList<>();
-                    List<LocalDateTime> orderedDatesComparison = new ArrayList<>(memberKLStats.keySet());
-                    Collections.sort(orderedDatesComparison);
-
-                    fillSerieKLsDataAndLabelsByDate(memberKLStats, klsCompare, datesCompare, orderedDatesComparison, null);
-                    datesForComparedMembers.put(memberToCompare, datesCompare);
-                    KLsForComparedMembers.put(memberToCompare, klsCompare);
-                }
-            }
-
-            for (Member memberToCompare : KLsForComparedMembers.keySet()) {
-                XYSeries comparisonSeries = chart.addSeries("KL de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
-                        KLsForComparedMembers.get(memberToCompare));
-                generateCommonChartProperties(chart, comparisonSeries);
-                setRandomColor(comparisonSeries);
-                comparisonSeries.setMarker(SeriesMarkers.NONE);
-                makeSeriesDashed(comparisonSeries);
-            }
-
-
-            return BitmapEncoder.getBufferedImage(chart);
-        }
-        return null;
-    }
-
-    private void fillSerieKLsDataAndLabelsByDate(HashMap<LocalDateTime, Integer> playerKLStats, List<Number> kls, List<Date> dates, List<LocalDateTime> orderedDates,
-            Map<Double, Object> yMarkMap) {
-        for (LocalDateTime date : orderedDates) {
-            kls.add(playerKLStats.get(date));
-            Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
-            if (yMarkMap != null) {
-                yMarkMap.put(Double.valueOf(playerKLStats.get(date)), playerKLStats.get(date));
-            }
-            dates.add(out);
-        }
-    }
-
-    private void fillSerieMedalsByDateDataAndLabels(HashMap<LocalDateTime, BigDecimal> medStats, List<Number> medalsData, List<Date> datesData,
-            List<LocalDateTime> orderedDatesComparison, Map<Double, Object> yMarkMap, boolean logarithmic) {
-        for (LocalDateTime date : orderedDatesComparison) {
-            BigDecimal rawMedals = medStats.get(date);
-            double medalNumber = logarithmic ? Math.log(rawMedals.doubleValue()) : rawMedals.doubleValue();
-            medalsData.add(medalNumber);
-            if (yMarkMap != null) {
-                yMarkMap.put(medalNumber, helperService.formatBigNumbersToEFFormat(rawMedals));
-            }
-            Date out = Date.from(date.atZone(ZoneId.systemDefault()).toInstant());
-            datesData.add(out);
-        }
-    }
-
-    private BufferedImage drawMedChart(HashMap<LocalDateTime, BigDecimal> playerMedStats) {
-        // Create Chart
-        List<Number> medals = new ArrayList<>();
-        List<Date> dates = new ArrayList<>();
-
-        List<LocalDateTime> orderedDates = new ArrayList<>(playerMedStats.keySet());
-
-        Collections.sort(orderedDates);
-
-
-        Map<Double, Object> yMarkMap = new TreeMap<Double, Object>();
-
-        fillSerieMedalsByDateDataAndLabels(playerMedStats, medals, dates, orderedDates, yMarkMap, true);
-
-        XYChart chart = new XYChart(1000, 800);
-        chart.setTitle("Evolution du total de médailles dans le temps");
-        chart.setXAxisTitle("Dates");
-        chart.setYAxisTitle("Nombre total de médailles");
-        chart.setYAxisLabelOverrideMap(yMarkMap);
-        chart.getStyler().setDatePattern("dd/MM");
-        chart.getStyler().setDecimalPattern("#0.00'%'");
-        XYSeries series = chart.addSeries("Médailles", dates, medals);
-        generateCommonChartProperties(chart, series);
-
-        return BitmapEncoder.getBufferedImage(chart);
-    }
-
-    private void generateCommonChartProperties(XYChart chart, XYSeries series) {
-        chart.getStyler().setChartBackgroundColor(Color.WHITE);
-        chart.getStyler().setChartTitlePadding(10);
-        series.setMarker(SeriesMarkers.CIRCLE);
-        chart.getStyler().setLegendPosition(Styler.LegendPosition.OutsideE);
-        chart.getStyler().setMarkerSize(5);
-    }
-
-    private HashMap<LocalDateTime, BigDecimal> getSRStatsForPlayer(long idLong) {
-        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
+    private void sendStatsHistoryForPlayer(MessageChannel channel, User author) {
+        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) author.getIdLong(), false);
         if (!playerStats.isEmpty()) {
-            HashMap<LocalDateTime, BigDecimal> results = new HashMap<>();
-
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            StringBuilder sb = new StringBuilder("__Vous avez enregistrer les statistiques suivantes : __").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
             for (PlayerStatDTO playerStat : playerStats) {
-
-                float srRatio = (float) 0.9;
-                if (playerStat.getSrRatio() != 0) {
-                    srRatio = playerStat.getSrRatio();
-                }
-
-                BigDecimal fullSR = playerStat.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
-                BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(playerStat.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
-
-                results.put(playerStat.getUpdateDate(), srPercentage);
+                sb.append(TAB).append("-Id: ").append(playerStat.getId()).append(ROLES_SEPARATOR);
+                sb.append("KL : ").append(playerStat.getKl()).append(ROLES_SEPARATOR);
+                sb.append("Médailles : ").append(helperService.formatBigNumbersToEFFormat(playerStat.getMedals())).append(ROLES_SEPARATOR).append(SPACE);
+                sb.append("SR : ").append(helperService.formatBigNumbersToEFFormat(playerStat.getSr())).append(ROLES_SEPARATOR).append(SPACE);
+                sb.append("Ratio : ").append(processRealSRRatio(playerStat.getSrRatio())).append(ROLES_SEPARATOR).append(SPACE);
+                sb.append("Date de maj : ").append(dtf.format(playerStat.getUpdateDate())).append(RETOUR_LIGNE).append(SPACE);
             }
-
-            return results;
+            messagesService.sendNormalBotMessage(channel, sb.toString());
         } else {
-            return null;
+            messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
         }
     }
 
-    private HashMap<LocalDateTime, BigDecimal> getMedStatsForPlayer(long idLong) {
-        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
-        if (!playerStats.isEmpty()) {
-            HashMap<LocalDateTime, BigDecimal> results = new HashMap<>();
-
-            for (PlayerStatDTO playerStat : playerStats) {
-                results.put(playerStat.getUpdateDate(), playerStat.getMedals());
-            }
-
-            return results;
-        } else {
-            return null;
+    private float processRealSRRatio(float srRatio) {
+        if (srRatio == 0.0) {
+            return 0.9f;
         }
-    }
-
-    private BufferedImage drawKLChart(HashMap<LocalDateTime, Integer> playerKLStats) {
-        // Create Chart
-        List<Number> kls = new ArrayList<>();
-        List<Date> dates = new ArrayList<>();
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM");
-        List<LocalDateTime> orderedDates = new ArrayList<>(playerKLStats.keySet());
-
-        Collections.sort(orderedDates);
-        Map<Double, Object> yMarkMap = new TreeMap<>();
-
-        fillSerieKLsDataAndLabelsByDate(playerKLStats, kls, dates, orderedDates, yMarkMap);
-
-        XYChart chart = new XYChart(1000, 800);
-        chart.setTitle("Evolution du KL dans le temps");
-        chart.setXAxisTitle("Dates");
-        chart.setXAxisTitle("KL");
-        XYSeries series = chart.addSeries("KL", dates, kls);
-        chart.setYAxisLabelOverrideMap(yMarkMap);
-        chart.getStyler().setDecimalPattern("#");
-        chart.getStyler().setDatePattern("dd/MM");
-        generateCommonChartProperties(chart, series);
-
-        return BitmapEncoder.getBufferedImage(chart);
-    }
-
-    private HashMap<LocalDateTime, Integer> getKLStatsForPlayer(long idLong) {
-        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
-
-        if (!playerStats.isEmpty()) {
-            HashMap<LocalDateTime, Integer> results = new HashMap<>();
-
-            for (PlayerStatDTO playerStat : playerStats) {
-                results.put(playerStat.getUpdateDate(), playerStat.getKl());
-            }
-            return results;
-        } else {
-            return null;
-        }
+        return srRatio;
     }
 
     private String buildStatCommandHelp() {
         StringBuilder sb = new StringBuilder("**__Aide de la commande ?stat : __**" + RETOUR_LIGNE);
         sb.append(BALISE_CODE + "?stat <VOTRE_KL> <VOS_MÉDAILLES_AU_FORMAT_EF> <VOTRE_SR_AU_FORMAT_EF> [<VOTRE_RATIO_DE_SR>]" + BALISE_CODE).append(RETOUR_LIGNE);
-        sb.append("\t- Si le ratio de SR N'EST PAS renseigné : Enregistre vos statistiques actuelles et les compare à vos dernières données enregistrées.").append(RETOUR_LIGNE);
-        sb.append(
-                "\t- Si le ratio de SR EST renseigné : Affichera en plus la valeur d'un SR complet (et celui d'un SR doublé) en pourcentage de votre total de médailles (et en médailles)").append(
+        sb.append(TAB + "- Si le ratio de SR N'EST PAS renseigné : Enregistre vos statistiques actuelles et les compare à vos dernières données enregistrées.").append(
+                RETOUR_LIGNE);
+        sb.append(TAB
+                + "- Si le ratio de SR EST renseigné : Affichera en plus la valeur d'un SR complet (et celui d'un SR doublé) en pourcentage de votre total de médailles (et en médailles)").append(
                 RETOUR_LIGNE).append(RETOUR_LIGNE);
         sb.append("*__Exemples__* : " + RETOUR_LIGNE + BALISE_CODE + "?stat 239 10.1g 1.44f 0.987" + RETOUR_LIGNE + "?stat 303 198.1h 11.7g" + BALISE_CODE).append(
                 RETOUR_LIGNE).append(RETOUR_LIGNE);
         sb.append(BALISE_CODE + "?stat cancel" + BALISE_CODE
                 + " : Permet d'annuler votre dernière statistique enregistrée. Utile en cas d'erreur lors de la saisie précédente").append(RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat cancel <ID>" + BALISE_CODE + " : Permet d'annuler la statistique dont l'id est renseigné. Cet id est récupérable via la commande "
+                + BALISE_CODE + "?stat history" + BALISE_CODE).append(RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat history" + BALISE_CODE + " : Permet de consulter toutes vos statistiques enregistrées.").append(RETOUR_LIGNE);
+        sb.append(RETOUR_LIGNE);
         sb.append(BALISE_CODE + "?stat graph" + BALISE_CODE
                 + " : Permet d'afficher la courbe actuelle des valeurs de SR (en pourcentage du total de médailles) en fonction du KL.").append(
                 RETOUR_LIGNE);
@@ -1286,6 +899,7 @@ public class CommandesServiceImpl implements ICommandesService {
         sb.append(BALISE_CODE + "?stat medals" + BALISE_CODE
                 + " : Permet d'afficher la courbe d'évolution de votre total de médailles dans le temps").append(
                 RETOUR_LIGNE);
+        sb.append(RETOUR_LIGNE);
         sb.append(BALISE_CODE + "?stat compare" + BALISE_CODE + " : Permet d'afficher 3 graphiques de comparaison avec les autres joueurs de votre niveau").append(RETOUR_LIGNE);
 
         return sb.toString();
@@ -1379,7 +993,7 @@ public class CommandesServiceImpl implements ICommandesService {
             for (Role linkedRole : linkedRanksByRole.keySet()) {
                 sb.append("*Au rôle " + linkedRole.getName() + "* => ").append(RETOUR_LIGNE);
                 for (Role role : linkedRanksByRole.get(linkedRole)) {
-                    sb.append("\t- ").append(role.getName()).append(RETOUR_LIGNE);
+                    sb.append(TAB + "- ").append(role.getName()).append(RETOUR_LIGNE);
                 }
                 sb.append(RETOUR_LIGNE);
             }
@@ -2023,8 +1637,8 @@ public class CommandesServiceImpl implements ICommandesService {
         if (args.length < 1 || (args.length == 1 && "help".equals(args[0]))) {
             StringBuilder sb = new StringBuilder("**__Aide de la commande ?revive : __**" + RETOUR_LIGNE);
             sb.append(BALISE_BLOCK_CODE + "?revive <STAGE_ATTEINT> <BONUS_DE_MEDAILLES> (<TEMPS_DE_RUN_EN_MIN>) :").append(RETOUR_LIGNE);
-            sb.append("\t- Si le temps de run N'EST PAS renseigné : Permet de connaître le nombre de médailles gagnées lors de la résurrection.").append(RETOUR_LIGNE);
-            sb.append("\t- Si le temps EST renseigné : Permet de connaître les médailles par minute que génère ce run." + BALISE_BLOCK_CODE);
+            sb.append(TAB + "- Si le temps de run N'EST PAS renseigné : Permet de connaître le nombre de médailles gagnées lors de la résurrection.").append(RETOUR_LIGNE);
+            sb.append(TAB + "- Si le temps EST renseigné : Permet de connaître les médailles par minute que génère ce run." + BALISE_BLOCK_CODE);
 
             messagesService.sendNormalBotMessage(channel, sb.toString());
             return;
@@ -2854,7 +2468,7 @@ public class CommandesServiceImpl implements ICommandesService {
             StringBuilder sb = new StringBuilder();
             sb.append("Les reminders suivants sont actuellement actifs : ").append(RETOUR_LIGNE);
             for (ReminderDTO reminder : reminders.values()) {
-                sb.append("\t - Nom : ").append(reminder.getTitle()).append(", Salon : ").append(reminder.getChan()).append(", Expression Cron : ").append(
+                sb.append(TAB + " - Nom : ").append(reminder.getTitle()).append(", Salon : ").append(reminder.getChan()).append(", Expression Cron : ").append(
                         reminder.getCronTab()).append(RETOUR_LIGNE);
             }
 

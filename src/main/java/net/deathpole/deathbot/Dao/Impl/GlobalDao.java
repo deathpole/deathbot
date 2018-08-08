@@ -894,6 +894,29 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
+    public PlayerStatDTO getStatById(Integer id) {
+        Connection conn = getConnectionToDB();
+        List<PlayerStatDTO> results = new ArrayList<>();
+
+        try {
+            String sql = "SELECT * FROM PLAYER_STATS WHERE ID = ?";
+            PreparedStatement statement = conn.prepareStatement(sql);
+            statement.setInt(1, id);
+            ResultSet rs = statement.executeQuery();
+            results = extractPlayersStatsDTOFromResultSet(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    @Override
     public void savePlayerStats(PlayerStatDTO playerStatDTO) {
         Connection conn = getConnectionToDB();
 
@@ -945,6 +968,27 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
+    public int cancelStatById(Integer statId) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlDelete = "DELETE FROM PLAYER_STATS WHERE ID = ?";
+            PreparedStatement statement = conn.prepareStatement(sqlDelete);
+            statement.setInt(1, statId);
+            return statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return 0;
+    }
+
+    @Override
     public List<PlayerStatDTO> getAllStats() {
         Connection conn = getConnectionToDB();
         List<PlayerStatDTO> results = new ArrayList<>();
@@ -973,6 +1017,7 @@ public class GlobalDao implements IGlobalDao {
 
         while (rs.next()) {
             PlayerStatDTO playerStatDTO = new PlayerStatDTO();
+            playerStatDTO.setId(rs.getInt("ID"));
             playerStatDTO.setPlayerId(rs.getInt("PLAYER_ID"));
             playerStatDTO.setKl(rs.getInt("KL"));
             playerStatDTO.setMedals(rs.getBigDecimal("MEDALS"));

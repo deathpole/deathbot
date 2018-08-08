@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
  */
 public class PlayerStatDTO {
 
+    private Integer id;
+
     private Integer playerId;
 
     private Integer kl;
@@ -27,7 +29,9 @@ public class PlayerStatDTO {
     public PlayerStatDTO() {
     }
 
-    public PlayerStatDTO(Integer playerId, Integer kl, BigDecimal medals, BigDecimal sr, LocalDateTime updateDate, String playerInstantName, float srRatio) {
+    public PlayerStatDTO(Integer id, Integer playerId, Integer kl, BigDecimal medals, BigDecimal sr, LocalDateTime updateDate, String playerInstantName, float srRatio,
+            BigDecimal srPercentage) {
+        this.id = id;
         this.playerId = playerId;
         this.kl = kl;
         this.medals = medals;
@@ -35,6 +39,15 @@ public class PlayerStatDTO {
         this.updateDate = updateDate;
         this.playerInstantName = playerInstantName;
         this.srRatio = srRatio;
+        this.srPercentage = srPercentage;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getPlayerInstantName() {
