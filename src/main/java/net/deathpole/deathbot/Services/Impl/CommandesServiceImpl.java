@@ -849,7 +849,7 @@ public class CommandesServiceImpl implements ICommandesService {
         List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) author.getIdLong(), false);
         if (!playerStats.isEmpty()) {
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-            StringBuilder sb = new StringBuilder("__Vous avez enregistrer les statistiques suivantes : __").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
+            StringBuilder sb = new StringBuilder("__Vous avez enregistré les statistiques suivantes : __").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
             for (PlayerStatDTO playerStat : playerStats) {
                 sb.append(TAB).append("-Id: ").append(playerStat.getId()).append(ROLES_SEPARATOR);
                 sb.append("KL : ").append(playerStat.getKl()).append(ROLES_SEPARATOR);
@@ -872,7 +872,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private String buildStatCommandHelp() {
-        StringBuilder sb = new StringBuilder("**__Aide de la commande ?stat : __**" + RETOUR_LIGNE);
+        StringBuilder sb = new StringBuilder("**__Aide de la commande ?stat : __**" + RETOUR_LIGNE).append(RETOUR_LIGNE);
         sb.append(BALISE_CODE + "?stat <VOTRE_KL> <VOS_MÉDAILLES_AU_FORMAT_EF> <VOTRE_SR_AU_FORMAT_EF> [<VOTRE_RATIO_DE_SR>]" + BALISE_CODE).append(RETOUR_LIGNE);
         sb.append(TAB + "- Si le ratio de SR N'EST PAS renseigné : Enregistre vos statistiques actuelles et les compare à vos dernières données enregistrées.").append(
                 RETOUR_LIGNE);
