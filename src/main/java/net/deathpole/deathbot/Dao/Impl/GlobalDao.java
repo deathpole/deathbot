@@ -866,7 +866,7 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
-    public List<PlayerStatDTO> getStatsForPlayer(int playerId, boolean lastStatOnly) {
+    public List<PlayerStatDTO> getStatsForPlayer(int playerId, boolean lastStatOnly, Integer limit) {
         Connection conn = getConnectionToDB();
         List<PlayerStatDTO> results = new ArrayList<>();
 
@@ -875,7 +875,11 @@ public class GlobalDao implements IGlobalDao {
             if (lastStatOnly) {
                 sql += " DESC LIMIT 1";
             } else {
-                sql += " ASC";
+                if (limit != null) {
+                    sql += " DESC LIMIT " + limit;
+                } else {
+                    sql += " ASC";
+                }
             }
             PreparedStatement statement = conn.prepareStatement(sql);
             statement.setInt(1, playerId);

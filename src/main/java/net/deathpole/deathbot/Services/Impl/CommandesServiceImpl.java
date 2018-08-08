@@ -687,7 +687,7 @@ public class CommandesServiceImpl implements ICommandesService {
     private void calculateStatsForPlayer(MessageChannel channel, User author, String[] arg, Guild guild, Member member, boolean isSuperUser) {
 
 
-        List<PlayerStatDTO> playerStatsResult = globalDao.getStatsForPlayer((int) author.getIdLong(), true);
+        List<PlayerStatDTO> playerStatsResult = globalDao.getStatsForPlayer((int) author.getIdLong(), true, 1);
 
         PlayerStatDTO actualStats = null;
         if (!playerStatsResult.isEmpty()) {
@@ -846,7 +846,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void sendStatsHistoryForPlayer(MessageChannel channel, User author) {
-        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) author.getIdLong(), false);
+        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) author.getIdLong(), false, 19);
         if (!playerStats.isEmpty()) {
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
             StringBuilder sb = new StringBuilder("__Vous avez enregistré les statistiques suivantes : __").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
@@ -885,7 +885,8 @@ public class CommandesServiceImpl implements ICommandesService {
                 + " : Permet d'annuler votre dernière statistique enregistrée. Utile en cas d'erreur lors de la saisie précédente").append(RETOUR_LIGNE);
         sb.append(BALISE_CODE + "?stat cancel <ID>" + BALISE_CODE + " : Permet d'annuler la statistique dont l'id est renseigné. Cet id est récupérable via la commande "
                 + BALISE_CODE + "?stat history" + BALISE_CODE).append(RETOUR_LIGNE);
-        sb.append(BALISE_CODE + "?stat history" + BALISE_CODE + " : Permet de consulter toutes vos statistiques enregistrées.").append(RETOUR_LIGNE);
+        sb.append(BALISE_CODE + "?stat history" + BALISE_CODE + " : Permet de consulter vos 19 (merci Discord pour la limite...) dernières statistiques enregistrées.").append(
+                RETOUR_LIGNE);
         sb.append(RETOUR_LIGNE);
         sb.append(BALISE_CODE + "?stat graph" + BALISE_CODE
                 + " : Permet d'afficher la courbe actuelle des valeurs de SR (en pourcentage du total de médailles) en fonction du KL.").append(

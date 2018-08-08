@@ -376,7 +376,7 @@ public class ChartServiceImpl implements IChartService {
 
     @Override
     public HashMap<LocalDateTime, BigDecimal> getSRStatsForPlayer(long idLong) {
-        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
+        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false, null);
         if (!playerStats.isEmpty()) {
             HashMap<LocalDateTime, BigDecimal> results = new HashMap<>();
 
@@ -401,7 +401,7 @@ public class ChartServiceImpl implements IChartService {
 
     @Override
     public HashMap<LocalDateTime, BigDecimal> getMedStatsForPlayer(long idLong) {
-        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
+        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false, null);
         if (!playerStats.isEmpty()) {
             HashMap<LocalDateTime, BigDecimal> results = new HashMap<>();
 
@@ -443,7 +443,7 @@ public class ChartServiceImpl implements IChartService {
 
     @Override
     public HashMap<LocalDateTime, Integer> getKLStatsForPlayer(long idLong) {
-        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false);
+        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false, null);
 
         if (!playerStats.isEmpty()) {
             HashMap<LocalDateTime, Integer> results = new HashMap<>();

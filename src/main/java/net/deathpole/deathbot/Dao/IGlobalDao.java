@@ -41,7 +41,7 @@ public interface IGlobalDao {
 
     boolean deleteDynoAction(String action, Guild guild);
 
-    List<PlayerStatDTO> getStatsForPlayer(int playerId, boolean lastStatOnly);
+    List<PlayerStatDTO> getStatsForPlayer(int playerId, boolean lastStatOnly, Integer limit);
 
     HashMap<String, ReminderDTO> getRemindersForGuild(Guild guild);
 
