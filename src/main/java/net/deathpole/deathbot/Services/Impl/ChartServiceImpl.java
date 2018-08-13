@@ -111,7 +111,7 @@ public class ChartServiceImpl implements IChartService {
     }
 
     @Override
-    public BufferedImage drawComparisonMedChart(HashMap<LocalDateTime, BigDecimal> playerMedStats, List<Member> compareToMembers, User author) {
+    public BufferedImage drawComparisonMedChart(HashMap<LocalDateTime, BigDecimal> playerMedStats, List<Member> compareToMembers, User author, HashMap<Member, Color> colorMap) {
         // Create Chart
         List<Number> medals = new ArrayList<>();
 
@@ -159,7 +159,7 @@ public class ChartServiceImpl implements IChartService {
             for (Member memberToCompare : medalsForComparedMembers.keySet()) {
                 XYSeries comparisonSeries = chart.addSeries("Médailles de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
                         medalsForComparedMembers.get(memberToCompare));
-                setRandomColor(comparisonSeries);
+                setRandomColor(comparisonSeries, colorMap.get(memberToCompare));
                 comparisonSeries.setMarker(SeriesMarkers.NONE);
                 makeSeriesDashed(comparisonSeries);
             }
@@ -176,7 +176,7 @@ public class ChartServiceImpl implements IChartService {
     }
 
     @Override
-    public BufferedImage drawComparisonSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats, List<Member> compareToMembers, User author) {
+    public BufferedImage drawComparisonSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats, List<Member> compareToMembers, User author, HashMap<Member, Color> colorMap) {
         // Create Chart
         List<Number> srs = new ArrayList<>();
         List<Date> dates = new ArrayList<>();
@@ -222,7 +222,7 @@ public class ChartServiceImpl implements IChartService {
                 XYSeries comparisonSeries = chart.addSeries("SR de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
                         SRsForComparedMembers.get(memberToCompare));
                 generateCommonChartProperties(chart, comparisonSeries);
-                setRandomColor(comparisonSeries);
+                setRandomColor(comparisonSeries, colorMap.get(memberToCompare));
                 makeSeriesDashed(comparisonSeries);
                 comparisonSeries.setMarker(SeriesMarkers.NONE);
             }
@@ -232,17 +232,7 @@ public class ChartServiceImpl implements IChartService {
         return null;
     }
 
-    private void setRandomColor(XYSeries series) {
-        Random rand = new Random();
-
-        float r = rand.nextFloat();
-        float g = rand.nextFloat();
-        float b = rand.nextFloat();
-
-        Color color = new Color(r, g, b);
-        color.darker();
-        color.darker();
-        color.darker();
+    private void setRandomColor(XYSeries series, Color color) {
         series.setMarkerColor(color);
         series.setLineColor(color);
     }
@@ -260,7 +250,7 @@ public class ChartServiceImpl implements IChartService {
     }
 
     @Override
-    public BufferedImage drawComparisonKLChart(HashMap<LocalDateTime, Integer> playerKLStats, List<Member> compareToMembers, User author) {
+    public BufferedImage drawComparisonKLChart(HashMap<LocalDateTime, Integer> playerKLStats, List<Member> compareToMembers, User author, HashMap<Member, Color> colorMap) {
         // Create Chart
         List<Number> kls = new ArrayList<>();
         List<Date> dates = new ArrayList<>();
@@ -303,7 +293,7 @@ public class ChartServiceImpl implements IChartService {
                 XYSeries comparisonSeries = chart.addSeries("KL de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
                         KLsForComparedMembers.get(memberToCompare));
                 generateCommonChartProperties(chart, comparisonSeries);
-                setRandomColor(comparisonSeries);
+                setRandomColor(comparisonSeries, colorMap.get(memberToCompare));
                 comparisonSeries.setMarker(SeriesMarkers.NONE);
                 makeSeriesDashed(comparisonSeries);
             }
@@ -483,9 +473,11 @@ public class ChartServiceImpl implements IChartService {
         HashMap<LocalDateTime, BigDecimal> authorSRStats = getSRStatsForPlayer(author.getIdLong());
         HashMap<LocalDateTime, Integer> authorKLStats = getKLStatsForPlayer(author.getIdLong());
 
-        BufferedImage medChartImage = drawComparisonMedChart(authorMedStats, compareToMembers, author);
-        BufferedImage SRChartImage = drawComparisonSRChart(authorSRStats, compareToMembers, author);
-        BufferedImage KLChartImage = drawComparisonKLChart(authorKLStats, compareToMembers, author);
+        HashMap<Member, Color> colorMap = generateRandomColorForMembers(compareToMembers);
+
+        BufferedImage medChartImage = drawComparisonMedChart(authorMedStats, compareToMembers, author, colorMap);
+        BufferedImage SRChartImage = drawComparisonSRChart(authorSRStats, compareToMembers, author, colorMap);
+        BufferedImage KLChartImage = drawComparisonKLChart(authorKLStats, compareToMembers, author, colorMap);
 
         if (medChartImage != null && SRChartImage != null && KLChartImage != null) {
 
@@ -498,6 +490,26 @@ public class ChartServiceImpl implements IChartService {
         } else {
             messagesService.sendBotMessage(channel, "Vous n'avez aucune statistique enregistrée ! Pour savoir comment enregistrer vos données, tapez ?stat");
         }
+    }
+
+    private HashMap<Member, Color> generateRandomColorForMembers(List<Member> compareToMembers) {
+        HashMap<Member, Color> colorMap = new HashMap<>();
+
+        for (Member compareToMember : compareToMembers) {
+            Random rand = new Random();
+
+            float r = rand.nextFloat();
+            float g = rand.nextFloat();
+            float b = rand.nextFloat();
+
+            Color color = new Color(r, g, b);
+            color.darker();
+            color.darker();
+            color.darker();
+
+            colorMap.put(compareToMember, color);
+        }
+        return colorMap;
     }
 
     private BufferedImage combineChartsImages(BufferedImage medChartImage, BufferedImage SRChartImage, BufferedImage KLChartImage) {

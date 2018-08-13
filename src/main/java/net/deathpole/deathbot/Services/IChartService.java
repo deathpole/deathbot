@@ -1,5 +1,6 @@
 package net.deathpole.deathbot.Services;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,11 +22,11 @@ public interface IChartService {
 
     BufferedImage drawSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats);
 
-    BufferedImage drawComparisonMedChart(HashMap<LocalDateTime, BigDecimal> playerMedStats, List<Member> compareToMembers, User author);
+    BufferedImage drawComparisonMedChart(HashMap<LocalDateTime, BigDecimal> playerMedStats, List<Member> compareToMembers, User author, HashMap<Member, Color> colorMap);
 
-    BufferedImage drawComparisonSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats, List<Member> compareToMembers, User author);
+    BufferedImage drawComparisonSRChart(HashMap<LocalDateTime, BigDecimal> playerSRStats, List<Member> compareToMembers, User author, HashMap<Member, Color> colorMap);
 
-    BufferedImage drawComparisonKLChart(HashMap<LocalDateTime, Integer> playerKLStats, List<Member> compareToMembers, User author);
+    BufferedImage drawComparisonKLChart(HashMap<LocalDateTime, Integer> playerKLStats, List<Member> compareToMembers, User author, HashMap<Member, Color> colorMap);
 
     BufferedImage drawMedChart(HashMap<LocalDateTime, BigDecimal> playerMedStats);
 
