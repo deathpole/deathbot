@@ -19,53 +19,23 @@ public class HelperServiceImpl implements IHelperService {
     public String formatBigNumbersToEFFormat(BigDecimal value) {
         String result = null;
 
-        BigDecimal medalsBase = BigDecimal.valueOf(1000000);
         BigDecimal factor = BigDecimal.valueOf(1000);
 
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator(',');
         symbols.setDecimalSeparator('.');
 
-        if (value.compareTo(medalsBase) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##a", symbols);
-            result = decimalFormat.format(value.divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##b", symbols);
-            result = decimalFormat.format(value.divide(factor).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##c", symbols);
-            result = decimalFormat.format(value.divide(factor.multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##d", symbols);
-            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##e", symbols);
-            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##f", symbols);
-            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##g", symbols);
-            result = decimalFormat.format(
-                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, 1, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##h", symbols);
-            result = decimalFormat.format(value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor,
-                    1, BigDecimal.ROUND_HALF_DOWN));
-        } else if (value.compareTo(
-                medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##i", symbols);
-            result = decimalFormat.format(
-                    value.divide(factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(factor, 1,
-                            BigDecimal.ROUND_HALF_DOWN));
-        }else if (value.compareTo(
-                medalsBase.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)) < 0) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##j", symbols);
-            result = decimalFormat.format(
-                    value.divide(
-                            factor.multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor).multiply(factor)).divide(
-                                    factor, 1, BigDecimal.ROUND_HALF_DOWN));
+        String letter = "a";
+        value = value.divide(factor, 2, BigDecimal.ROUND_HALF_DOWN);
+
+        while (value.compareTo(factor) >= 0) {
+            value = value.divide(factor, 2, BigDecimal.ROUND_HALF_DOWN);
+            int charValue = letter.charAt(0);
+            letter = String.valueOf((char) (charValue + 1));
         }
+
+        DecimalFormat decimalFormat = new DecimalFormat("#.##" + letter, symbols);
+        result = decimalFormat.format(value);
 
         return result;
     }
@@ -73,7 +43,7 @@ public class HelperServiceImpl implements IHelperService {
     @Override
     public BigDecimal convertEFLettersToNumber(String amountWithLetter) {
 
-        String letter = amountWithLetter.substring(amountWithLetter.length() - 1, amountWithLetter.length());
+        String letter = amountWithLetter.substring(amountWithLetter.length() - 1);
         String amountWithoutLetter = amountWithLetter;
 
         if (Character.isLetter(amountWithLetter.charAt(amountWithLetter.length() - 1))) {
@@ -83,6 +53,10 @@ public class HelperServiceImpl implements IHelperService {
 
         if (Character.isLetter(letter.charAt(0))) {
             switch (letter) {
+            case "m":
+                amount = amount.multiply(new BigDecimal(1000L));
+            case "l":
+                amount = amount.multiply(new BigDecimal(1000L));
                 case "k":
                     amount = amount.multiply(new BigDecimal(1000L));
                 case "j":
