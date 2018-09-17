@@ -668,13 +668,13 @@ public class CommandesServiceImpl implements ICommandesService {
                 break;
             case STAT:
                 if (isStatsCmds || isAdmin || isModo) {
-                calculateStatsForPlayer(channel, author, args, guild, member, isAdmin || isModo);
+                calculateStatsForPlayer(channel, author, args, guild, member, isAdmin || isModo, isAdmin);
                 } else if (isCmds) {
                     List<TextChannel> statCmdsChannels = guild.getTextChannelsByName("stats-cmds", true);
                     if (!statCmdsChannels.isEmpty()) {
                         messagesService.sendBotMessage(channel, "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + statCmdsChannels.get(0).getAsMention());
                     } else {
-                    calculateStatsForPlayer(channel, author, args, guild, member, isAdmin || isModo);
+                    calculateStatsForPlayer(channel, author, args, guild, member, isAdmin || isModo, isAdmin);
                     }
                 }
                 break;
@@ -684,7 +684,7 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
-    private void calculateStatsForPlayer(MessageChannel channel, User author, String[] arg, Guild guild, Member member, boolean isSuperUser) {
+    private void calculateStatsForPlayer(MessageChannel channel, User author, String[] arg, Guild guild, Member member, boolean isSuperUser, boolean isAdmin) {
 
 
         List<PlayerStatDTO> playerStatsResult = globalDao.getStatsForPlayer((int) author.getIdLong(), true, 1);
@@ -761,13 +761,15 @@ public class CommandesServiceImpl implements ICommandesService {
 
                 manageRankCmd(author, channel, guild.getController(), "Chevalier " + params[0], guild.getMember(author), false);
 
-                if (member.getNickname().contains("\uD83C\uDFC6")) {
-                    String originalNickname = member.getNickname().split("\uD83C\uDFC6")[0];
-                    String newNickname = originalNickname.trim() + " \uD83C\uDFC6 " + params[0];
-                    guild.getController().setNickname(member, newNickname).complete();
-                } else {
-                    String newNickname = member.getNickname().trim() + " \uD83C\uDFC6 " + params[0];
-                    guild.getController().setNickname(member, newNickname).complete();
+                if (!isAdmin) {
+                    if (member.getNickname().contains("\uD83C\uDFC6")) {
+                        String originalNickname = member.getNickname().split("\uD83C\uDFC6")[0];
+                        String newNickname = originalNickname.trim() + " \uD83C\uDFC6 " + params[0];
+                        guild.getController().setNickname(member, newNickname).complete();
+                    } else {
+                        String newNickname = member.getNickname().trim() + " \uD83C\uDFC6 " + params[0];
+                        guild.getController().setNickname(member, newNickname).complete();
+                    }
                 }
 
                 messagesService.sendBotMessage(channel, srSb.toString());

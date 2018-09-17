@@ -50,7 +50,6 @@ public class MessagesServiceImpl implements IMessagesService {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(Color.RED);
 
-        embedBuilder.setTimestamp(LocalDateTime.now());
         embedBuilder.setDescription(message);
         // embedBuilder.setFooter("Deathbot créé par @deathpole#9686",
         // "https://pbs.twimg.com/profile_images/632567125308272640/i1dfsYr2_400x400.jpg");
