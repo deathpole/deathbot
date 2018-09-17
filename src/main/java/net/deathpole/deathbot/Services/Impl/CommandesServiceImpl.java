@@ -762,12 +762,19 @@ public class CommandesServiceImpl implements ICommandesService {
                 manageRankCmd(author, channel, guild.getController(), "Chevalier " + params[0], guild.getMember(author), false);
 
                 if (!isAdmin) {
-                    if (member.getNickname().contains("\uD83C\uDFC6")) {
+                    if (member.getNickname() != null && member.getNickname().contains("\uD83C\uDFC6")) {
                         String originalNickname = member.getNickname().split("\uD83C\uDFC6")[0];
                         String newNickname = originalNickname.trim() + " \uD83C\uDFC6 " + params[0];
                         guild.getController().setNickname(member, newNickname).complete();
                     } else {
-                        String newNickname = member.getNickname().trim() + " \uD83C\uDFC6 " + params[0];
+                        String oldNickName;
+                        if (member.getNickname() == null) {
+                            oldNickName = member.getEffectiveName();
+                        } else {
+                            oldNickName = member.getNickname().trim();
+                        }
+
+                        String newNickname = oldNickName + " \uD83C\uDFC6 " + params[0];
                         guild.getController().setNickname(member, newNickname).complete();
                     }
                 }
