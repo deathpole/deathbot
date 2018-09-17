@@ -745,18 +745,39 @@ public class CommandesServiceImpl implements ICommandesService {
                 newStats.setSrRatio(Float.parseFloat("0"));
             }
 
-            if (actualStats != null) {
-                compareStats(actualStats, newStats, channel, guild, author);
+            Object[] srResults = calculateSrStat(newStats, channel, srRatio, isRatioProvided, isPreviousRatioPresent);
+
+            BigDecimal srPercentage = (BigDecimal) srResults[0];
+            StringBuilder srSb = (StringBuilder) srResults[1];
+
+            if (srPercentage.compareTo(new BigDecimal(40)) < 0) {
+
+                if (actualStats != null) {
+                    compareStats(actualStats, newStats, channel, guild, author);
+                } else {
+                    messagesService.sendBotMessage(channel,
+                            "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
+                }
+
+                manageRankCmd(author, channel, guild.getController(), "Chevalier " + params[0], guild.getMember(author), false);
+
+                if (member.getNickname().contains("\uD83C\uDFC6")) {
+                    String originalNickname = member.getNickname().split("\uD83C\uDFC6")[0];
+                    String newNickname = originalNickname.trim() + " \uD83C\uDFC6 " + params[0];
+                    guild.getController().setNickname(member, newNickname).complete();
+                } else {
+                    String newNickname = member.getNickname().trim() + " \uD83C\uDFC6 " + params[0];
+                    guild.getController().setNickname(member, newNickname).complete();
+                }
+
+                messagesService.sendBotMessage(channel, srSb.toString());
+
+                globalDao.savePlayerStats(newStats);
             } else {
-                messagesService.sendBotMessage(channel,
-                        "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
+
+                StringBuilder sb = new StringBuilder("Votre SR est énoooorme (it's over 9000 !), êtes vous sûr des informations rentrées ?");
+                messagesService.sendBotMessage(channel, sb.toString());
             }
-
-            manageRankCmd(author, channel, guild.getController(), "Chevalier " + params[0], guild.getMember(author), false);
-
-            calculateSrStat(newStats, channel, srRatio, isRatioProvided, isPreviousRatioPresent);
-
-            globalDao.savePlayerStats(newStats);
         }
     }
 
@@ -906,7 +927,7 @@ public class CommandesServiceImpl implements ICommandesService {
         return sb.toString();
     }
 
-    private void calculateSrStat(PlayerStatDTO newStats, MessageChannel channel, String srRatio, boolean isRatioProvided, boolean isPreviousRatioPresent) {
+    private Object[] calculateSrStat(PlayerStatDTO newStats, MessageChannel channel, String srRatio, boolean isRatioProvided, boolean isPreviousRatioPresent) {
 
         StringBuilder sb = new StringBuilder();
 
@@ -930,7 +951,11 @@ public class CommandesServiceImpl implements ICommandesService {
         BigDecimal dbSrPercentage = srPercentage.multiply(new BigDecimal(2L));
         sb.append(dbSrPercentage).append("% (").append(helperService.formatBigNumbersToEFFormat(dbFullSR)).append(")");
 
-        messagesService.sendBotMessage(channel, sb.toString());
+        Object[] returns = new Object[2];
+
+        returns[0] = srPercentage;
+        returns[1] = sb;
+        return returns;
     }
 
     private void compareStats(PlayerStatDTO actualStats, PlayerStatDTO newStats, MessageChannel channel, Guild guild, User author) {
