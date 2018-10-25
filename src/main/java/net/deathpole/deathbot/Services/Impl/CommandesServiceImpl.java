@@ -1080,7 +1080,6 @@ public class CommandesServiceImpl implements ICommandesService {
                             compareToMembers.add(member1);
                         }
                     }
-                    compareToMembers.add(guild.getMemberById(otherPlayerStat.getPlayerId()));
                 }
 
             } else {
