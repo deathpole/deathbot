@@ -168,6 +168,64 @@ public class ChartServiceImpl implements IChartService {
         return null;
     }
 
+    public BufferedImage drawComparisonMedChart2(HashMap<LocalDateTime, BigDecimal> playerMedStats, List<Member> compareToMembers, User author, HashMap<Member, Color> colorMap) {
+        // Create Chart
+        List<Number> medals = new ArrayList<>();
+
+        List<Date> dates = new ArrayList<>();
+
+        if (playerMedStats != null && !playerMedStats.isEmpty()) {
+            List<LocalDateTime> orderedDates = new ArrayList<>(playerMedStats.keySet());
+            Collections.sort(orderedDates);
+
+            XYChart chart = new XYChart(1000, 800);
+            chart.setTitle("Comparaison des médailles");
+            chart.setXAxisTitle("Dates");
+            chart.setYAxisTitle("Nombre total de médailles");
+            chart.getStyler().setDatePattern("dd/MM");
+
+            HashMap<Double, Object> yMarksMap = new HashMap<>();
+
+            fillSerieMedalsByDateDataAndLabels(playerMedStats, medals, dates, orderedDates, yMarksMap, true);
+            XYSeries series = chart.addSeries("Médailles de " + author.getName(), dates, medals);
+            generateCommonChartProperties(chart, series);
+            series.setMarker(SeriesMarkers.CIRCLE);
+            series.setLineColor(Color.BLUE);
+            series.setMarkerColor(Color.BLUE);
+            chart.setYAxisLabelOverrideMap(yMarksMap);
+
+            HashMap<Member, List<Date>> datesForComparedMembers = new HashMap<>();
+            HashMap<Member, List<Number>> medalsForComparedMembers = new HashMap<>();
+
+            for (Member memberToCompare : compareToMembers) {
+
+                HashMap<LocalDateTime, BigDecimal> memberMedStats = getMedStats2ForPlayer(memberToCompare.getUser().getIdLong());
+                if (memberMedStats != null && !memberMedStats.isEmpty()) {
+
+                    List<Date> datesCompare = new ArrayList<>();
+                    List<Number> medalsCompare = new ArrayList<>();
+                    List<LocalDateTime> orderedDatesComparison = new ArrayList<>(memberMedStats.keySet());
+                    Collections.sort(orderedDatesComparison);
+
+                    fillSerieMedalsByDateDataAndLabels(memberMedStats, medalsCompare, datesCompare, orderedDatesComparison, null, true);
+                    datesForComparedMembers.put(memberToCompare, datesCompare);
+                    medalsForComparedMembers.put(memberToCompare, medalsCompare);
+                }
+            }
+
+            for (Member memberToCompare : medalsForComparedMembers.keySet()) {
+                XYSeries comparisonSeries = chart.addSeries("Médailles de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
+                        medalsForComparedMembers.get(memberToCompare));
+                setRandomColor(comparisonSeries, colorMap.get(memberToCompare));
+                comparisonSeries.setMarker(SeriesMarkers.NONE);
+                makeSeriesDashed(comparisonSeries);
+            }
+
+            return BitmapEncoder.getBufferedImage(chart);
+        }
+        return null;
+    }
+
     private void makeSeriesDashed(XYSeries comparisonSeries) {
         final float dash1[] = {10.0f};
         final BasicStroke dashed = new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10.0f, dash1, 0.0f);
@@ -204,6 +262,62 @@ public class ChartServiceImpl implements IChartService {
             for (Member memberToCompare : compareToMembers) {
 
                 HashMap<Integer, BigDecimal> memberSRStats = getSRStatsForPlayerForComparison(memberToCompare.getUser().getIdLong());
+                if (memberSRStats != null && !memberSRStats.isEmpty()) {
+                    List<Number> srsCompare = new ArrayList<>();
+                    List<Integer> klsCompare = new ArrayList<>();
+                    List<Integer> orderedKLsComparison = new ArrayList<>(memberSRStats.keySet());
+                    Collections.sort(orderedKLsComparison);
+
+                    fillSerieSRsDataAndLabelsByDate(srsCompare, klsCompare, dc, null, memberSRStats, orderedKLsComparison);
+                    klsForComparedMembers.put(memberToCompare, klsCompare);
+                    SRsForComparedMembers.put(memberToCompare, srsCompare);
+                }
+            }
+
+            for (Member memberToCompare : SRsForComparedMembers.keySet()) {
+                XYSeries comparisonSeries = chart.addSeries("SR de " + memberToCompare.getUser().getName(), klsForComparedMembers.get(memberToCompare),
+                        SRsForComparedMembers.get(memberToCompare));
+                generateCommonChartProperties(chart, comparisonSeries);
+                setRandomColor(comparisonSeries, colorMap.get(memberToCompare));
+                makeSeriesDashed(comparisonSeries);
+                comparisonSeries.setMarker(SeriesMarkers.NONE);
+            }
+
+            return BitmapEncoder.getBufferedImage(chart);
+        }
+        return null;
+    }
+
+    private BufferedImage drawComparisonSRChart2(HashMap<Integer, BigDecimal> playerSRStats, List<Member> compareToMembers, User author, HashMap<Member, Color> colorMap) {
+        // Create Chart
+        List<Number> srs = new ArrayList<>();
+        List<Integer> kls = new ArrayList<>();
+        DecimalFormat dc = new DecimalFormat("#");
+
+        if (playerSRStats != null && !playerSRStats.isEmpty()) {
+            List<Integer> orderedKLs = new ArrayList<>(playerSRStats.keySet());
+            Collections.sort(orderedKLs);
+
+            XYChart chart = new XYChart(1000, 800);
+            chart.setTitle("Comparaison du SR");
+            chart.setXAxisTitle("KL");
+            chart.setYAxisTitle("SR(% du total de médailles)");
+            chart.getStyler().setDatePattern("dd/MM");
+            chart.getStyler().setYAxisDecimalPattern("#0.00'%'");
+
+            fillSerieSRsDataAndLabelsByDate(srs, kls, dc, null, playerSRStats, orderedKLs);
+            XYSeries series = chart.addSeries("SR de " + author.getName(), kls, srs);
+            generateCommonChartProperties(chart, series);
+            series.setMarker(SeriesMarkers.CIRCLE);
+            series.setLineColor(Color.BLUE);
+            series.setMarkerColor(Color.BLUE);
+
+            HashMap<Member, List<Integer>> klsForComparedMembers = new HashMap<>();
+            HashMap<Member, List<Number>> SRsForComparedMembers = new HashMap<>();
+
+            for (Member memberToCompare : compareToMembers) {
+
+                HashMap<Integer, BigDecimal> memberSRStats = getSRStats2ForPlayerForComparison(memberToCompare.getUser().getIdLong());
                 if (memberSRStats != null && !memberSRStats.isEmpty()) {
                     List<Number> srsCompare = new ArrayList<>();
                     List<Integer> klsCompare = new ArrayList<>();
@@ -273,6 +387,59 @@ public class ChartServiceImpl implements IChartService {
 
             for (Member memberToCompare : compareToMembers) {
                 HashMap<LocalDateTime, Integer> memberKLStats = getKLStatsForPlayer(memberToCompare.getUser().getIdLong());
+                if (memberKLStats != null && !memberKLStats.isEmpty()) {
+                    List<Number> klsCompare = new ArrayList<>();
+                    List<Date> datesCompare = new ArrayList<>();
+                    List<LocalDateTime> orderedDatesComparison = new ArrayList<>(memberKLStats.keySet());
+                    Collections.sort(orderedDatesComparison);
+
+                    fillSerieKLsDataAndLabelsByDate(memberKLStats, klsCompare, datesCompare, orderedDatesComparison, null);
+                    datesForComparedMembers.put(memberToCompare, datesCompare);
+                    KLsForComparedMembers.put(memberToCompare, klsCompare);
+                }
+            }
+
+            for (Member memberToCompare : KLsForComparedMembers.keySet()) {
+                XYSeries comparisonSeries = chart.addSeries("KL de " + memberToCompare.getUser().getName(), datesForComparedMembers.get(memberToCompare),
+                        KLsForComparedMembers.get(memberToCompare));
+                generateCommonChartProperties(chart, comparisonSeries);
+                setRandomColor(comparisonSeries, colorMap.get(memberToCompare));
+                comparisonSeries.setMarker(SeriesMarkers.NONE);
+                makeSeriesDashed(comparisonSeries);
+            }
+
+            return BitmapEncoder.getBufferedImage(chart);
+        }
+        return null;
+    }
+
+    public BufferedImage drawComparisonKLChart2(HashMap<LocalDateTime, Integer> playerKLStats, List<Member> compareToMembers, User author, HashMap<Member, Color> colorMap) {
+        // Create Chart
+        List<Number> kls = new ArrayList<>();
+        List<Date> dates = new ArrayList<>();
+
+        if (playerKLStats != null && !playerKLStats.isEmpty()) {
+            List<LocalDateTime> orderedDates = new ArrayList<>(playerKLStats.keySet());
+            Collections.sort(orderedDates);
+
+            XYChart chart = new XYChart(1000, 800);
+            chart.setTitle("Comparaison du KL");
+            chart.setXAxisTitle("Dates");
+            chart.setYAxisTitle("KL");
+            chart.getStyler().setDatePattern("dd/MM");
+
+            fillSerieKLsDataAndLabelsByDate(playerKLStats, kls, dates, orderedDates, null);
+            XYSeries series = chart.addSeries("KL de " + author.getName(), dates, kls);
+            generateCommonChartProperties(chart, series);
+            series.setMarker(SeriesMarkers.CIRCLE);
+            series.setLineColor(Color.BLUE);
+            series.setMarkerColor(Color.BLUE);
+
+            HashMap<Member, List<Date>> datesForComparedMembers = new HashMap<>();
+            HashMap<Member, List<Number>> KLsForComparedMembers = new HashMap<>();
+
+            for (Member memberToCompare : compareToMembers) {
+                HashMap<LocalDateTime, Integer> memberKLStats = getKLStats2ForPlayer(memberToCompare.getUser().getIdLong());
                 if (memberKLStats != null && !memberKLStats.isEmpty()) {
                     List<Number> klsCompare = new ArrayList<>();
                     List<Date> datesCompare = new ArrayList<>();
@@ -621,9 +788,9 @@ public class ChartServiceImpl implements IChartService {
 
         HashMap<Member, Color> colorMap = generateRandomColorForMembers(compareToMembers);
 
-        BufferedImage medChartImage = drawComparisonMedChart(authorMedStats, compareToMembers, author, colorMap);
-        BufferedImage SRChartImage = drawComparisonSRChart(authorSRStats, compareToMembers, author, colorMap);
-        BufferedImage KLChartImage = drawComparisonKLChart(authorKLStats, compareToMembers, author, colorMap);
+        BufferedImage medChartImage = drawComparisonMedChart2(authorMedStats, compareToMembers, author, colorMap);
+        BufferedImage SRChartImage = drawComparisonSRChart2(authorSRStats, compareToMembers, author, colorMap);
+        BufferedImage KLChartImage = drawComparisonKLChart2(authorKLStats, compareToMembers, author, colorMap);
 
         if (medChartImage != null && SRChartImage != null && KLChartImage != null) {
 

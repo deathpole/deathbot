@@ -81,7 +81,7 @@ public interface IGlobalDao {
 
     void cancelLastPlayerStats(int playerId);
 
-    void cancelLastPlayerStats2(int playerId);
+    void cancelLastPlayerStats2(long playerId);
 
     int cancelStatById(Integer statId);
 

@@ -1054,15 +1054,15 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
-    public void cancelLastPlayerStats2(int playerId) {
+    public void cancelLastPlayerStats2(long playerId) {
         Connection conn = getConnectionToDB();
 
         try {
             String sqlDelete = "DELETE FROM PLAYER_STATS2 WHERE PLAYER_ID = ? AND UPDATE_DATE = ("
                     + "SELECT UPDATE_DATE FROM PLAYER_STATS2 WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE DESC LIMIT 1)";
             PreparedStatement statement = conn.prepareStatement(sqlDelete);
-            statement.setInt(1, playerId);
-            statement.setInt(2, playerId);
+            statement.setLong(1, playerId);
+            statement.setLong(2, playerId);
             statement.executeUpdate();
             System.out.println("DeathbotExecution : PlayerStats deleted for playerid : " + playerId);
 

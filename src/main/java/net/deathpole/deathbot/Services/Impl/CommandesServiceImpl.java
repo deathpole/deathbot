@@ -1033,7 +1033,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case "cancel":
-            globalDao.cancelLastPlayerStats2((int) author.getIdLong());
+            globalDao.cancelLastPlayerStats2(author.getIdLong());
             messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");
             break;
         case "history":
@@ -1081,7 +1081,6 @@ public class CommandesServiceImpl implements ICommandesService {
                         }
                     }
                 }
-
             } else {
                 messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
             }
