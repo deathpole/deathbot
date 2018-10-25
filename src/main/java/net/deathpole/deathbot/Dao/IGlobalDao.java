@@ -69,13 +69,27 @@ public interface IGlobalDao {
 
     void deleteRankLink(Guild guild, Role role);
 
+    List<PlayerStatDTO> getStats2ForPlayer(long playerId, boolean lastStatOnly, Integer limit);
+
     PlayerStatDTO getStatById(Integer id);
+
+    PlayerStatDTO getStat2ById(Integer id);
 
     void savePlayerStats(PlayerStatDTO playerStatDTO);
 
+    void savePlayerStats2(PlayerStatDTO playerStatDTO);
+
     void cancelLastPlayerStats(int playerId);
+
+    void cancelLastPlayerStats2(int playerId);
 
     int cancelStatById(Integer statId);
 
+    int cancelStat2ById(Integer statId);
+
     List<PlayerStatDTO> getAllStats();
+
+    List<PlayerStatDTO> getAllStats2();
+
+    List<PlayerStatDTO> getAllStats2ForSameKL(int kl);
 }

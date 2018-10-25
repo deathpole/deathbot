@@ -194,8 +194,16 @@ public class CommandesServiceImpl implements ICommandesService {
         GuildController guildController = new GuildController(e.getGuild());
         ChannelType channelType = e.getChannelType();
         if (!ChannelType.PRIVATE.equals(channelType)) {
-            Role adminRole = guildController.getGuild().getRolesByName("Admin", true).get(0);
-            Role modoRole = guildController.getGuild().getRolesByName("Moderateur", true).get(0);
+            List<Role> adminRoles = guildController.getGuild().getRolesByName("Admin", true);
+            Role adminRole = null;
+            if (adminRoles != null && !adminRoles.isEmpty()) {
+                adminRole = adminRoles.get(0);
+            }
+            List<Role> moderateurRoles = guildController.getGuild().getRolesByName("Moderateur", true);
+            Role modoRole = null;
+            if (moderateurRoles != null && !moderateurRoles.isEmpty()) {
+                modoRole = moderateurRoles.get(0);
+            }
             User author = e.getAuthor();
 
             String prefixCmd = getPrefixCmdForGuild(guildController.getGuild());
@@ -229,7 +237,8 @@ public class CommandesServiceImpl implements ICommandesService {
                                     assert action != null;
                                     if (isBotActivated(guildController.getGuild()) || EnumAction.ACTIVATE.name().equals(action.toUpperCase())) {
                                         List<String> dynoActionsForGuild = getDynoActionsForGuild(guildController);
-                                        if (!(dynoActions.contains(action.toUpperCase()) || dynoActionsForGuild.contains(action.toUpperCase().toLowerCase()))) {
+                                        if (!(dynoActions.contains(action.toUpperCase())
+                                                || (dynoActionsForGuild != null && dynoActionsForGuild.contains(action.toUpperCase().toLowerCase())))) {
 
                                             HashMap<String, CustomReactionDTO> customReactionsForGuild = getCustomReactionsForGuild(guildController);
                                             List<String> dbActions = new ArrayList<>();
@@ -240,8 +249,10 @@ public class CommandesServiceImpl implements ICommandesService {
 
                                             List<String> customReactions = new ArrayList<>();
 
-                                            for (String customReaction : customReactionsForGuild.keySet()) {
-                                                customReactions.add(customReaction);
+                                            if (customReactionsForGuild != null) {
+                                                for (String customReaction : customReactionsForGuild.keySet()) {
+                                                    customReactions.add(customReaction);
+                                                }
                                             }
 
                                             if (lookForSimilarCommandInList(prefixTrimed, channel, action, dynoActions)
@@ -279,10 +290,12 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private boolean lookForSimilarCommandInList(String prefixCmd, MessageChannel channel, String action, List<String> listToSearch) {
-        for (String dynoAction : listToSearch) {
-            if ((dynoAction + "s").equalsIgnoreCase(action)) {
-                messagesService.sendBotMessage(channel, "Cette commande n'existe pas. Pensiez-vous à " + prefixCmd + "" + dynoAction.toLowerCase() + "  ?");
-                return true;
+        if (listToSearch != null && !listToSearch.isEmpty()) {
+            for (String dynoAction : listToSearch) {
+                if ((dynoAction + "s").equalsIgnoreCase(action)) {
+                    messagesService.sendBotMessage(channel, "Cette commande n'existe pas. Pensiez-vous à " + prefixCmd + "" + dynoAction.toLowerCase() + "  ?");
+                    return true;
+                }
             }
         }
         return false;
@@ -389,8 +402,8 @@ public class CommandesServiceImpl implements ICommandesService {
                                        String[] args, String action, String originalMessage, Message message, MessageChannel modChannel) {
 
         EnumAction actionEnum = EnumAction.fromValue(action);
-        boolean isAdmin = member.getRoles().contains(adminRole);
-        boolean isModo = member.getRoles().contains(modoRole);
+        boolean isAdmin = adminRole != null ? member.getRoles().contains(adminRole) : member.isOwner();
+        boolean isModo = modoRole != null ? member.getRoles().contains(modoRole) : member.isOwner();
         boolean isCmds = "cmds".equals(channel.getName());
         boolean isStatsCmds = "stats-cmds".equals(channel.getName());
         Guild guild = guildController.getGuild();
@@ -678,6 +691,18 @@ public class CommandesServiceImpl implements ICommandesService {
                     }
                 }
                 break;
+        case STAT2:
+            if (isStatsCmds || isAdmin || isModo) {
+                calculateStats2ForPlayer(channel, author, args, guild, member, isAdmin || isModo, isAdmin);
+            } else if (isCmds) {
+                List<TextChannel> statCmdsChannels = guild.getTextChannelsByName("stats-cmds", true);
+                if (!statCmdsChannels.isEmpty()) {
+                    messagesService.sendBotMessage(channel, "Cette commande est interdite dans ce salon ! Merci d'aller dans le salon " + statCmdsChannels.get(0).getAsMention());
+                } else {
+                    calculateStats2ForPlayer(channel, author, args, guild, member, isAdmin || isModo, isAdmin);
+                }
+            }
+            break;
             default:
                 System.out.println("DeathbotExecution : Commande non prise en charge");
                 break;
@@ -685,8 +710,6 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void calculateStatsForPlayer(MessageChannel channel, User author, String[] arg, Guild guild, Member member, boolean isSuperUser, boolean isAdmin) {
-
-
         List<PlayerStatDTO> playerStatsResult = globalDao.getStatsForPlayer((int) author.getIdLong(), true, 1);
 
         PlayerStatDTO actualStats = null;
@@ -712,7 +735,7 @@ public class CommandesServiceImpl implements ICommandesService {
                     String idStr = params[1];
                     Integer id = Integer.valueOf(idStr);
                     PlayerStatDTO statById = globalDao.getStatById(id);
-                    if (statById.getPlayerId() == (int) author.getIdLong() || isSuperUser) {
+                    if (statById.getPlayerId() == author.getIdLong() || isSuperUser) {
                         deleteStatById(channel, id, statById);
                     } else {
                         messagesService.sendBotMessage(channel,
@@ -722,7 +745,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
         } else {
             PlayerStatDTO newStats = new PlayerStatDTO();
-            newStats.setPlayerId((int) author.getIdLong());
+            newStats.setPlayerId(author.getIdLong());
             newStats.setKl(Integer.valueOf(params[0]));
             newStats.setMedals(helperService.convertEFLettersToNumber(params[1]));
             newStats.setSr(helperService.convertEFLettersToNumber(params[2]));
@@ -790,8 +813,122 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
+    private void calculateStats2ForPlayer(MessageChannel channel, User author, String[] arg, Guild guild, Member member, boolean isSuperUser, boolean isAdmin) {
+        List<PlayerStatDTO> playerStatsResult = globalDao.getStats2ForPlayer(author.getIdLong(), true, 1);
+
+        PlayerStatDTO actualStats = null;
+        if (!playerStatsResult.isEmpty()) {
+            actualStats = playerStatsResult.get(0);
+        }
+
+        if (arg.length < 1 || (arg.length == 1 && "help".equals(arg[0]))) {
+            String message = buildStatCommandHelp();
+            messagesService.sendBotMessage(channel, message);
+            return;
+        }
+
+        String[] params = arg[0].split(ACTION_ARGS_SEPARATOR);
+
+        if (params.length <= 2) {
+            if (params.length == 1) {
+                String keyWord = params[0];
+                manageStat2SingleCommands(channel, author, guild, member, keyWord);
+            } else if (params.length == 2) {
+                String keyWord = params[0];
+                if ("cancel".equals(keyWord)) {
+                    String idStr = params[1];
+                    Integer id = Integer.valueOf(idStr);
+                    PlayerStatDTO statById = globalDao.getStat2ById(id);
+                    if (statById.getPlayerId() == author.getIdLong() || isSuperUser) {
+                        deleteStat2ById(channel, id, statById);
+                    } else {
+                        messagesService.sendBotMessage(channel,
+                                "Cette statistiques n'est pas à vous, vous ne pouvez donc pas la supprimer ! Pour savoir quelles sont vos statistiques, tapez ?stat history");
+                    }
+                }
+            }
+        } else {
+            PlayerStatDTO newStats = new PlayerStatDTO();
+            newStats.setPlayerId(author.getIdLong());
+            newStats.setKl(Integer.valueOf(params[0]));
+            newStats.setMedals(helperService.convertEFLettersToNumber(params[1]));
+            newStats.setSr(helperService.convertEFLettersToNumber(params[2]));
+            newStats.setUpdateDate(LocalDateTime.now());
+            newStats.setPlayerInstantName(guild.getMember(author).getEffectiveName());
+
+            boolean isRatioProvided = false;
+            boolean isPreviousRatioPresent = false;
+
+            String srRatio = "0.9";
+            if (params.length == 4) {
+                isRatioProvided = true;
+                srRatio = params[3];
+                newStats.setSrRatio(Float.parseFloat(srRatio));
+            } else if (actualStats != null && actualStats.getSrRatio() != 0) {
+                isPreviousRatioPresent = true;
+                srRatio = String.format(java.util.Locale.US, "%.2f", actualStats.getSrRatio());
+                newStats.setSrRatio(Float.parseFloat(srRatio));
+            } else {
+                newStats.setSrRatio(Float.parseFloat("0"));
+            }
+
+            Object[] srResults = calculateSrStat(newStats, channel, srRatio, isRatioProvided, isPreviousRatioPresent);
+
+            BigDecimal srPercentage = (BigDecimal) srResults[0];
+            StringBuilder srSb = (StringBuilder) srResults[1];
+
+            if (srPercentage.compareTo(new BigDecimal(200)) < 0) {
+
+                if (actualStats != null) {
+                    compareStats(actualStats, newStats, channel, guild, author);
+                } else {
+                    messagesService.sendBotMessage(channel,
+                            "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
+                }
+
+                // manageRankCmd(author, channel, guild.getController(), "Chevalier " + params[0],
+                // guild.getMember(author), false);
+
+                // if (!isAdmin) {
+                // if (member.getNickname() != null && member.getNickname().contains("\uD83C\uDFC6")) {
+                // String originalNickname = member.getNickname().split("\uD83C\uDFC6")[0];
+                // String newNickname = originalNickname.trim() + " \uD83C\uDFC6 " + params[0];
+                // guild.getController().setNickname(member, newNickname).complete();
+                // } else {
+                // String oldNickName;
+                // if (member.getNickname() == null) {
+                // oldNickName = member.getEffectiveName();
+                // } else {
+                // oldNickName = member.getNickname().trim();
+                // }
+                //
+                // String newNickname = oldNickName + " \uD83C\uDFC6 " + params[0];
+                // guild.getController().setNickname(member, newNickname).complete();
+                // }
+                // }
+
+                messagesService.sendBotMessage(channel, srSb.toString());
+
+                globalDao.savePlayerStats2(newStats);
+            } else {
+
+                StringBuilder sb = new StringBuilder("Votre SR est énoooorme (it's over 9000 !), êtes vous sûr des informations rentrées ?");
+                messagesService.sendBotMessage(channel, sb.toString());
+            }
+        }
+    }
+
     private void deleteStatById(MessageChannel channel, Integer id, PlayerStatDTO statById) {
         int deleted = globalDao.cancelStatById(statById.getId());
+        if (deleted != 0) {
+            messagesService.sendBotMessage(channel, "La statistique ayant pour id : " + id + " a bien été supprimée !");
+        } else {
+            messagesService.sendBotMessage(channel, "La statistique avec l'id " + id + " n'a pas pu être supprimée. Veuillez contacter un administrateur.");
+        }
+    }
+
+    private void deleteStat2ById(MessageChannel channel, Integer id, PlayerStatDTO statById) {
+        int deleted = globalDao.cancelStat2ById(statById.getId());
         if (deleted != 0) {
             messagesService.sendBotMessage(channel, "La statistique ayant pour id : " + id + " a bien été supprimée !");
         } else {
@@ -875,8 +1012,108 @@ public class CommandesServiceImpl implements ICommandesService {
         }
     }
 
+    private void manageStat2SingleCommands(MessageChannel channel, User author, Guild guild, Member member, String keyWord) {
+        BufferedImage image;
+        switch (keyWord) {
+        case "graph":
+            List<PlayerStatDTO> playersSRStats = chartService.getSRStats2ForAllPlayersByKL();
+            if (playersSRStats != null && !playersSRStats.isEmpty()) {
+                image = chartService.drawAllPlayersSRChart(playersSRStats, this);
+                messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+            }
+            break;
+        case "cancel":
+            globalDao.cancelLastPlayerStats2((int) author.getIdLong());
+            messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");
+            break;
+        case "history":
+            sendStats2HistoryForPlayer(channel, author);
+            break;
+        case "kl":
+            HashMap<LocalDateTime, Integer> playerKLStats = chartService.getKLStats2ForPlayer(author.getIdLong());
+            if (playerKLStats != null && !playerKLStats.isEmpty()) {
+                image = chartService.drawKLChart(playerKLStats);
+                messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+            }
+            break;
+        case "sr":
+            HashMap<LocalDateTime, BigDecimal> playerSRStats = chartService.getSRStats2ForPlayer(author.getIdLong());
+            if (playerSRStats != null && !playerSRStats.isEmpty()) {
+                image = chartService.drawSRChart(playerSRStats);
+                messagesService.sendBufferedImage(channel, image, author.getAsMention(), "KL.png");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+            }
+            break;
+        case "med":
+        case "medals":
+            HashMap<LocalDateTime, BigDecimal> playerMedStats = chartService.getMedStats2ForPlayer(author.getIdLong());
+            if (playerMedStats != null && !playerMedStats.isEmpty()) {
+                image = chartService.drawMedChart(playerMedStats);
+                messagesService.sendBufferedImage(channel, image, author.getAsMention(), "Med.png");
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+            }
+            break;
+        case "compare":
+            // messagesService.sendBotMessage(channel, "Commande non disponible pour le moment");
+            List<PlayerStatDTO> playerStat = globalDao.getStats2ForPlayer(author.getIdLong(), true, 1);
+            List<Member> compareToMembers = new ArrayList<>();
+
+            if (playerStat != null && !playerStat.isEmpty()) {
+                List<PlayerStatDTO> otherPlayerStats = globalDao.getAllStats2ForSameKL(playerStat.get(0).getKl());
+                for (PlayerStatDTO otherPlayerStat : otherPlayerStats) {
+                    for (Member member1 : guild.getMembers()) {
+                        if (member1.getUser().getIdLong() == otherPlayerStat.getPlayerId()) {
+                            compareToMembers.add(member1);
+                        }
+                    }
+                    compareToMembers.add(guild.getMemberById(otherPlayerStat.getPlayerId()));
+                }
+
+            } else {
+                messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+            }
+
+            compareToMembers.remove(member);
+            if (!compareToMembers.isEmpty()) {
+                chartService.drawMultipleComparisons2(channel, author, compareToMembers);
+            } else {
+                messagesService.sendBotMessage(channel, "Aucun joueur trouvé correspondant à votre niveau, désolé =(");
+            }
+            break;
+        default:
+            String message = buildStatCommandHelp();
+            messagesService.sendBotMessage(channel, message);
+            break;
+        }
+    }
+
     private void sendStatsHistoryForPlayer(MessageChannel channel, User author) {
         List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) author.getIdLong(), false, 19);
+        if (!playerStats.isEmpty()) {
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            StringBuilder sb = new StringBuilder("__Vous avez enregistré les statistiques suivantes : __").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
+            for (PlayerStatDTO playerStat : playerStats) {
+                sb.append(TAB).append("-Id: ").append(playerStat.getId()).append(ROLES_SEPARATOR);
+                sb.append("KL : ").append(playerStat.getKl()).append(ROLES_SEPARATOR);
+                sb.append("Médailles : ").append(helperService.formatBigNumbersToEFFormat(playerStat.getMedals())).append(ROLES_SEPARATOR).append(SPACE);
+                sb.append("SR : ").append(helperService.formatBigNumbersToEFFormat(playerStat.getSr())).append(ROLES_SEPARATOR).append(SPACE);
+                sb.append("Ratio : ").append(processRealSRRatio(playerStat.getSrRatio())).append(ROLES_SEPARATOR).append(SPACE);
+                sb.append("Date de maj : ").append(dtf.format(playerStat.getUpdateDate())).append(RETOUR_LIGNE).append(SPACE);
+            }
+            messagesService.sendNormalBotMessage(channel, sb.toString());
+        } else {
+            messagesService.sendBotMessage(channel, "Aucune donnée trouvée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+        }
+    }
+
+    private void sendStats2HistoryForPlayer(MessageChannel channel, User author) {
+        List<PlayerStatDTO> playerStats = globalDao.getStats2ForPlayer(author.getIdLong(), false, 19);
         if (!playerStats.isEmpty()) {
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
             StringBuilder sb = new StringBuilder("__Vous avez enregistré les statistiques suivantes : __").append(RETOUR_LIGNE).append(RETOUR_LIGNE);
@@ -1933,8 +2170,8 @@ public class CommandesServiceImpl implements ICommandesService {
         CustomReactionDTO customReaction = mapCustomReactions.get(guild).get(action);
         String[] params = (arg == null || arg.isEmpty()) ? new String[0] : arg.trim().split(PARAMETERS_SEPARATOR + "+");
 
-        boolean isAdmin = member.getRoles().contains(adminRole);
-        boolean isModo = member.getRoles().contains(modoRole);
+        boolean isAdmin = adminRole != null ? member.getRoles().contains(adminRole) : member.isOwner();
+        boolean isModo = modoRole != null ? member.getRoles().contains(modoRole) : member.isOwner();
         boolean isCmds = "cmds".equals(channel.getName());
 
         if (isCmds || isAdmin || isModo) {
@@ -2314,7 +2551,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 Set<String> roleNames = ranksByIdsByGuild.get(guildName);
                 Set<Role> roles = new HashSet<>();
                 for (String roleName : roleNames) {
-                    Role role = guildController.getGuild().getRolesByName(roleName, true).get(0);
+                    Role role = guild.getRolesByName(roleName, true).get(0);
                     roles.add(role);
                 }
 
@@ -2779,7 +3016,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private List<Role> findAssignableRole(List<Role> userRoles, GuildController guildController) {
 
-        Set<Role> selfAssignableRanks = new HashSet<>(getSelfAssignableRanksForGuild(guildController));
+        Set<Role> selfAssignableRanks = getSelfAssignableRanksForGuild(guildController);
 
         return userRoles.stream().filter(userRole -> selfAssignableRanks != null && selfAssignableRanks.contains(userRole)).collect(Collectors.toList());
     }

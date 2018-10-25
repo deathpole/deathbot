@@ -168,3 +168,26 @@ create table IF NOT EXISTS PLAYER_STATS
 
 CREATE UNIQUE INDEX IF NOT EXISTS "PLAYER_STATS_id_uindex" ON PLAYER_STATS (ID);
 
+CREATE SEQUENCE IF NOT EXISTS PLAYER_STATS2_seq
+  INCREMENT 1
+  MINVALUE 1
+  MAXVALUE 9223372036854775807
+  START 1
+  CACHE 1;
+
+create table IF NOT EXISTS PLAYER_STATS2
+(
+  id          serial    not null
+    primary key,
+  player_id   numeric   not null,
+  kl          integer,
+  medals      numeric   not null,
+  sr          numeric   not null,
+  update_date timestamp not null,
+  player_instant_name varchar(256),
+  sr_ratio float not null default 0
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "PLAYER_STATS2_id_uindex" ON PLAYER_STATS (ID);
+
+ALTER TABLE public.player_stats ALTER COLUMN player_id TYPE numeric USING player_id::numeric;

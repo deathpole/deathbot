@@ -10,7 +10,7 @@ public class PlayerStatDTO {
 
     private Integer id;
 
-    private Integer playerId;
+    private Long playerId;
 
     private Integer kl;
 
@@ -29,7 +29,7 @@ public class PlayerStatDTO {
     public PlayerStatDTO() {
     }
 
-    public PlayerStatDTO(Integer id, Integer playerId, Integer kl, BigDecimal medals, BigDecimal sr, LocalDateTime updateDate, String playerInstantName, float srRatio,
+    public PlayerStatDTO(Integer id, Long playerId, Integer kl, BigDecimal medals, BigDecimal sr, LocalDateTime updateDate, String playerInstantName, float srRatio,
             BigDecimal srPercentage) {
         this.id = id;
         this.playerId = playerId;
@@ -50,27 +50,11 @@ public class PlayerStatDTO {
         this.id = id;
     }
 
-    public String getPlayerInstantName() {
-        return playerInstantName;
-    }
-
-    public void setPlayerInstantName(String playerInstantName) {
-        this.playerInstantName = playerInstantName;
-    }
-
-    public float getSrRatio() {
-        return srRatio;
-    }
-
-    public void setSrRatio(float srRatio) {
-        this.srRatio = srRatio;
-    }
-
-    public Integer getPlayerId() {
+    public Long getPlayerId() {
         return playerId;
     }
 
-    public void setPlayerId(Integer playerId) {
+    public void setPlayerId(Long playerId) {
         this.playerId = playerId;
     }
 
@@ -80,14 +64,6 @@ public class PlayerStatDTO {
 
     public void setKl(Integer kl) {
         this.kl = kl;
-    }
-
-    public LocalDateTime getUpdateDate() {
-        return updateDate;
-    }
-
-    public void setUpdateDate(LocalDateTime updateDate) {
-        this.updateDate = updateDate;
     }
 
     public BigDecimal getMedals() {
@@ -104,6 +80,30 @@ public class PlayerStatDTO {
 
     public void setSr(BigDecimal sr) {
         this.sr = sr;
+    }
+
+    public LocalDateTime getUpdateDate() {
+        return updateDate;
+    }
+
+    public void setUpdateDate(LocalDateTime updateDate) {
+        this.updateDate = updateDate;
+    }
+
+    public String getPlayerInstantName() {
+        return playerInstantName;
+    }
+
+    public void setPlayerInstantName(String playerInstantName) {
+        this.playerInstantName = playerInstantName;
+    }
+
+    public float getSrRatio() {
+        return srRatio;
+    }
+
+    public void setSrRatio(float srRatio) {
+        this.srRatio = srRatio;
     }
 
     public BigDecimal getSrPercentage() {

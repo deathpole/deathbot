@@ -898,6 +898,38 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
+    public List<PlayerStatDTO> getStats2ForPlayer(long playerId, boolean lastStatOnly, Integer limit) {
+        Connection conn = getConnectionToDB();
+        List<PlayerStatDTO> results = new ArrayList<>();
+
+        try {
+            String sql = "SELECT * FROM PLAYER_STATS2 WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE";
+            if (lastStatOnly) {
+                sql += " DESC LIMIT 1";
+            } else {
+                if (limit != null) {
+                    sql += " DESC LIMIT " + limit;
+                } else {
+                    sql += " ASC";
+                }
+            }
+            PreparedStatement statement = conn.prepareStatement(sql);
+            statement.setLong(1, playerId);
+            ResultSet rs = statement.executeQuery();
+            results = extractPlayersStatsDTOFromResultSet(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return results;
+    }
+
+    @Override
     public PlayerStatDTO getStatById(Integer id) {
         Connection conn = getConnectionToDB();
         List<PlayerStatDTO> results = new ArrayList<>();
@@ -921,13 +953,63 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
+    public PlayerStatDTO getStat2ById(Integer id) {
+        Connection conn = getConnectionToDB();
+        List<PlayerStatDTO> results = new ArrayList<>();
+
+        try {
+            String sql = "SELECT * FROM PLAYER_STATS2 WHERE ID = ?";
+            PreparedStatement statement = conn.prepareStatement(sql);
+            statement.setInt(1, id);
+            ResultSet rs = statement.executeQuery();
+            results = extractPlayersStatsDTOFromResultSet(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    @Override
     public void savePlayerStats(PlayerStatDTO playerStatDTO) {
         Connection conn = getConnectionToDB();
 
         try {
             String sqlInsert = "INSERT INTO PLAYER_STATS(PLAYER_ID, KL, MEDALS, SR, UPDATE_DATE, PLAYER_INSTANT_NAME, SR_RATIO) VALUES (?,?,?,?,?,?,?)";
             PreparedStatement stmnt = conn.prepareStatement(sqlInsert);
-            stmnt.setInt(1, playerStatDTO.getPlayerId());
+            stmnt.setLong(1, playerStatDTO.getPlayerId());
+            stmnt.setInt(2, playerStatDTO.getKl());
+            stmnt.setBigDecimal(3, playerStatDTO.getMedals());
+            stmnt.setBigDecimal(4, playerStatDTO.getSr());
+            stmnt.setTimestamp(5, Timestamp.valueOf(playerStatDTO.getUpdateDate()));
+            stmnt.setString(6, playerStatDTO.getPlayerInstantName());
+            stmnt.setFloat(7, playerStatDTO.getSrRatio());
+
+            stmnt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public void savePlayerStats2(PlayerStatDTO playerStatDTO) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlInsert = "INSERT INTO PLAYER_STATS2(PLAYER_ID, KL, MEDALS, SR, UPDATE_DATE, PLAYER_INSTANT_NAME, SR_RATIO) VALUES (?,?,?,?,?,?,?)";
+            PreparedStatement stmnt = conn.prepareStatement(sqlInsert);
+            stmnt.setLong(1, playerStatDTO.getPlayerId());
             stmnt.setInt(2, playerStatDTO.getKl());
             stmnt.setBigDecimal(3, playerStatDTO.getMedals());
             stmnt.setBigDecimal(4, playerStatDTO.getSr());
@@ -972,11 +1054,56 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
+    public void cancelLastPlayerStats2(int playerId) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlDelete = "DELETE FROM PLAYER_STATS2 WHERE PLAYER_ID = ? AND UPDATE_DATE = ("
+                    + "SELECT UPDATE_DATE FROM PLAYER_STATS2 WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE DESC LIMIT 1)";
+            PreparedStatement statement = conn.prepareStatement(sqlDelete);
+            statement.setInt(1, playerId);
+            statement.setInt(2, playerId);
+            statement.executeUpdate();
+            System.out.println("DeathbotExecution : PlayerStats deleted for playerid : " + playerId);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
     public int cancelStatById(Integer statId) {
         Connection conn = getConnectionToDB();
 
         try {
             String sqlDelete = "DELETE FROM PLAYER_STATS WHERE ID = ?";
+            PreparedStatement statement = conn.prepareStatement(sqlDelete);
+            statement.setInt(1, statId);
+            return statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    public int cancelStat2ById(Integer statId) {
+        Connection conn = getConnectionToDB();
+
+        try {
+            String sqlDelete = "DELETE FROM PLAYER_STATS2 WHERE ID = ?";
             PreparedStatement statement = conn.prepareStatement(sqlDelete);
             statement.setInt(1, statId);
             return statement.executeUpdate();
@@ -1016,13 +1143,64 @@ public class GlobalDao implements IGlobalDao {
         return results;
     }
 
+    @Override
+    public List<PlayerStatDTO> getAllStats2() {
+        Connection conn = getConnectionToDB();
+        List<PlayerStatDTO> results = new ArrayList<>();
+
+        try {
+            String sql = "SELECT * FROM PLAYER_STATS2 ORDER BY KL ASC";
+
+            PreparedStatement statement = conn.prepareStatement(sql);
+            ResultSet rs = statement.executeQuery();
+
+            results = extractPlayersStatsDTOFromResultSet(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return results;
+    }
+
+    @Override
+    public List<PlayerStatDTO> getAllStats2ForSameKL(int kl) {
+        Connection conn = getConnectionToDB();
+        List<PlayerStatDTO> results = new ArrayList<>();
+
+        try {
+
+            String sql = "SELECT MAX(ID) as ID, PLAYER_ID, MAX(KL) as KL, MAX(MEDALS) as MEDALS, MAX(SR) AS SR, MAX(UPDATE_DATE) AS UPDATE_DATE, MAX(PLAYER_INSTANT_NAME) AS PLAYER_INSTANT_NAME, MAX(SR_RATIO) AS SR_RATIO FROM PLAYER_STATS2 WHERE KL BETWEEN ? AND ? AND PLAYER_INSTANT_NAME IS NOT NULL GROUP BY PLAYER_ID ORDER BY KL ASC";
+
+            PreparedStatement statement = conn.prepareStatement(sql);
+            statement.setInt(1, kl - 5);
+            statement.setInt(2, kl + 5);
+            ResultSet rs = statement.executeQuery();
+
+            results = extractPlayersStatsDTOFromResultSet(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return results;
+    }
+
     private List<PlayerStatDTO> extractPlayersStatsDTOFromResultSet(ResultSet rs) throws SQLException {
         List<PlayerStatDTO> results = new ArrayList<>();
 
         while (rs.next()) {
             PlayerStatDTO playerStatDTO = new PlayerStatDTO();
             playerStatDTO.setId(rs.getInt("ID"));
-            playerStatDTO.setPlayerId(rs.getInt("PLAYER_ID"));
+            playerStatDTO.setPlayerId(rs.getLong("PLAYER_ID"));
             playerStatDTO.setKl(rs.getInt("KL"));
             playerStatDTO.setMedals(rs.getBigDecimal("MEDALS"));
             playerStatDTO.setSr(rs.getBigDecimal("SR"));

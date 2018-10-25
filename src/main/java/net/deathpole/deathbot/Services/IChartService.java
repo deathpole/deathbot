@@ -25,13 +25,23 @@ public interface IChartService {
 
     HashMap<LocalDateTime, BigDecimal> getSRStatsForPlayer(long idLong);
 
+    HashMap<LocalDateTime, BigDecimal> getSRStats2ForPlayer(long idLong);
+
     HashMap<LocalDateTime, BigDecimal> getMedStatsForPlayer(long idLong);
+
+    HashMap<LocalDateTime, BigDecimal> getMedStats2ForPlayer(long idLong);
 
     BufferedImage drawKLChart(HashMap<LocalDateTime, Integer> playerKLStats);
 
     HashMap<LocalDateTime, Integer> getKLStatsForPlayer(long idLong);
 
+    HashMap<LocalDateTime, Integer> getKLStats2ForPlayer(long idLong);
+
     List<PlayerStatDTO> getSRStatsForAllPlayersByKL();
 
+    List<PlayerStatDTO> getSRStats2ForAllPlayersByKL();
+
     void drawMultipleComparisons(MessageChannel channel, User author, List<Member> compareToMembers);
+
+    void drawMultipleComparisons2(MessageChannel channel, User author, List<Member> compareToMembers);
 }

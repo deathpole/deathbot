@@ -385,8 +385,57 @@ public class ChartServiceImpl implements IChartService {
         }
     }
 
+    @Override
+    public HashMap<LocalDateTime, BigDecimal> getSRStats2ForPlayer(long idLong) {
+        List<PlayerStatDTO> playerStats = globalDao.getStats2ForPlayer(idLong, false, null);
+        if (!playerStats.isEmpty()) {
+            HashMap<LocalDateTime, BigDecimal> results = new HashMap<>();
+
+            for (PlayerStatDTO playerStat : playerStats) {
+
+                float srRatio = (float) 0.9;
+                if (playerStat.getSrRatio() != 0) {
+                    srRatio = playerStat.getSrRatio();
+                }
+
+                BigDecimal fullSR = playerStat.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
+                BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(playerStat.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
+
+                results.put(playerStat.getUpdateDate(), srPercentage);
+            }
+
+            return results;
+        } else {
+            return null;
+        }
+    }
+
     private HashMap<Integer, BigDecimal> getSRStatsForPlayerForComparison(long idLong) {
         List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false, null);
+        if (!playerStats.isEmpty()) {
+            HashMap<Integer, BigDecimal> results = new HashMap<>();
+
+            for (PlayerStatDTO playerStat : playerStats) {
+
+                float srRatio = (float) 0.9;
+                if (playerStat.getSrRatio() != 0) {
+                    srRatio = playerStat.getSrRatio();
+                }
+
+                BigDecimal fullSR = playerStat.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
+                BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(playerStat.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
+
+                results.put(playerStat.getKl(), srPercentage);
+            }
+
+            return results;
+        } else {
+            return null;
+        }
+    }
+
+    private HashMap<Integer, BigDecimal> getSRStats2ForPlayerForComparison(long idLong) {
+        List<PlayerStatDTO> playerStats = globalDao.getStats2ForPlayer(idLong, false, null);
         if (!playerStats.isEmpty()) {
             HashMap<Integer, BigDecimal> results = new HashMap<>();
 
@@ -412,6 +461,22 @@ public class ChartServiceImpl implements IChartService {
     @Override
     public HashMap<LocalDateTime, BigDecimal> getMedStatsForPlayer(long idLong) {
         List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) idLong, false, null);
+        if (!playerStats.isEmpty()) {
+            HashMap<LocalDateTime, BigDecimal> results = new HashMap<>();
+
+            for (PlayerStatDTO playerStat : playerStats) {
+                results.put(playerStat.getUpdateDate(), playerStat.getMedals());
+            }
+
+            return results;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public HashMap<LocalDateTime, BigDecimal> getMedStats2ForPlayer(long idLong) {
+        List<PlayerStatDTO> playerStats = globalDao.getStats2ForPlayer(idLong, false, null);
         if (!playerStats.isEmpty()) {
             HashMap<LocalDateTime, BigDecimal> results = new HashMap<>();
 
@@ -468,8 +533,44 @@ public class ChartServiceImpl implements IChartService {
     }
 
     @Override
+    public HashMap<LocalDateTime, Integer> getKLStats2ForPlayer(long idLong) {
+        List<PlayerStatDTO> playerStats = globalDao.getStats2ForPlayer(idLong, false, null);
+
+        if (!playerStats.isEmpty()) {
+            HashMap<LocalDateTime, Integer> results = new HashMap<>();
+
+            for (PlayerStatDTO playerStat : playerStats) {
+                results.put(playerStat.getUpdateDate(), playerStat.getKl());
+            }
+            return results;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
     public List<PlayerStatDTO> getSRStatsForAllPlayersByKL() {
         List<PlayerStatDTO> playerStats = globalDao.getAllStats();
+
+        for (PlayerStatDTO playerStat : playerStats) {
+
+            float srRatio = (float) 0.9;
+            if (playerStat.getSrRatio() != 0) {
+                srRatio = playerStat.getSrRatio();
+            }
+
+            BigDecimal fullSR = playerStat.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
+            BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(playerStat.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
+
+            playerStat.setSrPercentage(srPercentage);
+        }
+
+        return playerStats;
+    }
+
+    @Override
+    public List<PlayerStatDTO> getSRStats2ForAllPlayersByKL() {
+        List<PlayerStatDTO> playerStats = globalDao.getAllStats2();
 
         for (PlayerStatDTO playerStat : playerStats) {
 
@@ -492,6 +593,31 @@ public class ChartServiceImpl implements IChartService {
         HashMap<LocalDateTime, BigDecimal> authorMedStats = getMedStatsForPlayer(author.getIdLong());
         HashMap<Integer, BigDecimal> authorSRStats = getSRStatsForPlayerForComparison(author.getIdLong());
         HashMap<LocalDateTime, Integer> authorKLStats = getKLStatsForPlayer(author.getIdLong());
+
+        HashMap<Member, Color> colorMap = generateRandomColorForMembers(compareToMembers);
+
+        BufferedImage medChartImage = drawComparisonMedChart(authorMedStats, compareToMembers, author, colorMap);
+        BufferedImage SRChartImage = drawComparisonSRChart(authorSRStats, compareToMembers, author, colorMap);
+        BufferedImage KLChartImage = drawComparisonKLChart(authorKLStats, compareToMembers, author, colorMap);
+
+        if (medChartImage != null && SRChartImage != null && KLChartImage != null) {
+
+            // BufferedImage combined = combineChartsImages(medChartImage, SRChartImage, KLChartImage);
+            // messagesService.sendBufferedImage(channel, combined, author.getAsMention(), "Comparison.png");
+
+            messagesService.sendBufferedImage(channel, medChartImage, author.getAsMention(), "Med.png");
+            messagesService.sendBufferedImage(channel, KLChartImage, "", "KL.png");
+            messagesService.sendBufferedImage(channel, SRChartImage, "", "SR.png");
+        } else {
+            messagesService.sendBotMessage(channel, "Vous n'avez aucune statistique enregistrée ! Pour savoir comment enregistrer vos données, tapez ?stat");
+        }
+    }
+
+    @Override
+    public void drawMultipleComparisons2(MessageChannel channel, User author, List<Member> compareToMembers) {
+        HashMap<LocalDateTime, BigDecimal> authorMedStats = getMedStats2ForPlayer(author.getIdLong());
+        HashMap<Integer, BigDecimal> authorSRStats = getSRStats2ForPlayerForComparison(author.getIdLong());
+        HashMap<LocalDateTime, Integer> authorKLStats = getKLStats2ForPlayer(author.getIdLong());
 
         HashMap<Member, Color> colorMap = generateRandomColorForMembers(compareToMembers);
 

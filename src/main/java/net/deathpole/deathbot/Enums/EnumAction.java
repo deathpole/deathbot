@@ -59,9 +59,11 @@ public enum EnumAction {
     SINGLE,
     SUDO,
     STAT,
+    STAT2,
     STATCANCEL,
-    WITH,
-    TIME;
+    STAT2CANCEL,
+    TIME,
+    WITH;
 
 
     public static EnumAction fromValue(String v){
