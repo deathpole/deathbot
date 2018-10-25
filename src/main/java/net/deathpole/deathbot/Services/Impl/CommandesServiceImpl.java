@@ -741,6 +741,10 @@ public class CommandesServiceImpl implements ICommandesService {
                         messagesService.sendBotMessage(channel,
                                 "Cette statistiques n'est pas à vous, vous ne pouvez donc pas la supprimer ! Pour savoir quelles sont vos statistiques, tapez ?stat history");
                     }
+                } else {
+                    String message = buildStatCommandHelp();
+                    messagesService.sendBotMessage(channel, message);
+                    return;
                 }
             }
         } else {
@@ -845,6 +849,10 @@ public class CommandesServiceImpl implements ICommandesService {
                         messagesService.sendBotMessage(channel,
                                 "Cette statistiques n'est pas à vous, vous ne pouvez donc pas la supprimer ! Pour savoir quelles sont vos statistiques, tapez ?stat history");
                     }
+                } else {
+                    String message = buildStatCommandHelp();
+                    messagesService.sendBotMessage(channel, message);
+                    return;
                 }
             }
         } else {
