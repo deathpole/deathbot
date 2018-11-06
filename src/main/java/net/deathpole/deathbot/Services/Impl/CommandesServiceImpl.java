@@ -710,7 +710,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void calculateStatsForPlayer(MessageChannel channel, User author, String[] arg, Guild guild, Member member, boolean isSuperUser, boolean isAdmin) {
-        List<PlayerStatDTO> playerStatsResult = globalDao.getStatsForPlayer((int) author.getIdLong(), true, 1);
+        List<PlayerStatDTO> playerStatsResult = globalDao.getStatsForPlayer(author.getIdLong(), true, 1);
 
         PlayerStatDTO actualStats = null;
         if (!playerStatsResult.isEmpty()) {
@@ -957,7 +957,7 @@ public class CommandesServiceImpl implements ICommandesService {
             }
             break;
         case "cancel":
-            globalDao.cancelLastPlayerStats((int) author.getIdLong());
+            globalDao.cancelLastPlayerStats(author.getIdLong());
             messagesService.sendBotMessage(channel, "Votre dernière statistique a été supprimée !");
             break;
         case "history":
@@ -1100,7 +1100,7 @@ public class CommandesServiceImpl implements ICommandesService {
     }
 
     private void sendStatsHistoryForPlayer(MessageChannel channel, User author) {
-        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer((int) author.getIdLong(), false, 19);
+        List<PlayerStatDTO> playerStats = globalDao.getStatsForPlayer(author.getIdLong(), false, 19);
         if (!playerStats.isEmpty()) {
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
             StringBuilder sb = new StringBuilder("__Vous avez enregistré les statistiques suivantes : __").append(RETOUR_LIGNE).append(RETOUR_LIGNE);

@@ -866,12 +866,12 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
-    public List<PlayerStatDTO> getStatsForPlayer(int playerId, boolean lastStatOnly, Integer limit) {
+    public List<PlayerStatDTO> getStatsForPlayer(long playerId, boolean lastStatOnly, Integer limit) {
         Connection conn = getConnectionToDB();
         List<PlayerStatDTO> results = new ArrayList<>();
 
         try {
-            String sql = "SELECT * FROM PLAYER_STATS WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE";
+            String sql = "SELECT * FROM PLAYER_STATS WHERE PLAYER_ID = ? OR PLAYER_ID = ? ORDER BY UPDATE_DATE";
             if (lastStatOnly) {
                 sql += " DESC LIMIT 1";
             } else {
@@ -882,7 +882,8 @@ public class GlobalDao implements IGlobalDao {
                 }
             }
             PreparedStatement statement = conn.prepareStatement(sql);
-            statement.setInt(1, playerId);
+            statement.setLong(1, playerId);
+            statement.setInt(2, (int) playerId);
             ResultSet rs = statement.executeQuery();
             results = extractPlayersStatsDTOFromResultSet(rs);
         } catch (SQLException e) {
@@ -903,7 +904,7 @@ public class GlobalDao implements IGlobalDao {
         List<PlayerStatDTO> results = new ArrayList<>();
 
         try {
-            String sql = "SELECT * FROM PLAYER_STATS2 WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE";
+            String sql = "SELECT * FROM PLAYER_STATS2 WHERE PLAYER_ID = ? OR PLAYER_ID = ? ORDER BY UPDATE_DATE";
             if (lastStatOnly) {
                 sql += " DESC LIMIT 1";
             } else {
@@ -915,6 +916,7 @@ public class GlobalDao implements IGlobalDao {
             }
             PreparedStatement statement = conn.prepareStatement(sql);
             statement.setLong(1, playerId);
+            statement.setInt(2, (int) playerId);
             ResultSet rs = statement.executeQuery();
             results = extractPlayersStatsDTOFromResultSet(rs);
         } catch (SQLException e) {
@@ -1030,15 +1032,17 @@ public class GlobalDao implements IGlobalDao {
     }
 
     @Override
-    public void cancelLastPlayerStats(int playerId) {
+    public void cancelLastPlayerStats(long playerId) {
         Connection conn = getConnectionToDB();
 
         try {
-            String sqlDelete = "DELETE FROM PLAYER_STATS WHERE PLAYER_ID = ? AND UPDATE_DATE = ("
-                    + "SELECT UPDATE_DATE FROM PLAYER_STATS WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE DESC LIMIT 1)";
+            String sqlDelete = "DELETE FROM PLAYER_STATS WHERE (PLAYER_ID = ? OR PLAYER_ID = ?)AND UPDATE_DATE = ("
+                    + "SELECT UPDATE_DATE FROM PLAYER_STATS WHERE PLAYER_ID = ? OR PLAYER_ID = ? ORDER BY UPDATE_DATE DESC LIMIT 1)";
             PreparedStatement statement = conn.prepareStatement(sqlDelete);
-            statement.setInt(1, playerId);
-            statement.setInt(2, playerId);
+            statement.setLong(1, playerId);
+            statement.setInt(2, (int) playerId);
+            statement.setLong(3, playerId);
+            statement.setInt(4, (int) playerId);
             statement.executeUpdate();
             System.out.println("DeathbotExecution : PlayerStats deleted for playerid : " + playerId);
 
@@ -1058,11 +1062,13 @@ public class GlobalDao implements IGlobalDao {
         Connection conn = getConnectionToDB();
 
         try {
-            String sqlDelete = "DELETE FROM PLAYER_STATS2 WHERE PLAYER_ID = ? AND UPDATE_DATE = ("
-                    + "SELECT UPDATE_DATE FROM PLAYER_STATS2 WHERE PLAYER_ID = ? ORDER BY UPDATE_DATE DESC LIMIT 1)";
+            String sqlDelete = "DELETE FROM PLAYER_STATS2 WHERE (PLAYER_ID = ? OR PLAYER_ID = ?)AND UPDATE_DATE = ("
+                    + "SELECT UPDATE_DATE FROM PLAYER_STATS2 WHERE PLAYER_ID = ? OR PLAYER_ID = ? ORDER BY UPDATE_DATE DESC LIMIT 1)";
             PreparedStatement statement = conn.prepareStatement(sqlDelete);
             statement.setLong(1, playerId);
-            statement.setLong(2, playerId);
+            statement.setInt(2, (int) playerId);
+            statement.setLong(3, playerId);
+            statement.setInt(4, (int) playerId);
             statement.executeUpdate();
             System.out.println("DeathbotExecution : PlayerStats deleted for playerid : " + playerId);
 
