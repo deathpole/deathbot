@@ -53,6 +53,14 @@ public class HelperServiceImpl implements IHelperService {
 
         if (Character.isLetter(letter.charAt(0))) {
             switch (letter) {
+            case "q":
+                amount = amount.multiply(new BigDecimal(1000L));
+            case "p":
+                amount = amount.multiply(new BigDecimal(1000L));
+            case "o":
+                amount = amount.multiply(new BigDecimal(1000L));
+            case "n":
+                amount = amount.multiply(new BigDecimal(1000L));
             case "m":
                 amount = amount.multiply(new BigDecimal(1000L));
             case "l":
