@@ -2557,8 +2557,12 @@ public class CommandesServiceImpl implements ICommandesService {
                 Set<String> roleNames = ranksByIdsByGuild.get(guildName);
                 Set<Role> roles = new HashSet<>();
                 for (String roleName : roleNames) {
-                    Role role = guild.getRolesByName(roleName, true).get(0);
-                    roles.add(role);
+
+                    List<Role> rolesByName = guild.getRolesByName(roleName, true);
+                    if (rolesByName != null && !rolesByName.isEmpty()) {
+                        Role role = rolesByName.get(0);
+                        roles.add(role);
+                    }
                 }
 
                 resultMap.put(guild, roles);
