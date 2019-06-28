@@ -1,12 +1,12 @@
 package net.deathpole.deathbot.Services.Impl;
 
+import net.deathpole.deathbot.Services.IHelperService;
+import net.deathpole.deathbot.Services.IMessagesService;
+
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
-
-import net.deathpole.deathbot.Services.IHelperService;
-import net.deathpole.deathbot.Services.IMessagesService;
 
 /**
  * Created by nicolas on 28/09/17.
@@ -53,18 +53,36 @@ public class HelperServiceImpl implements IHelperService {
 
         if (Character.isLetter(letter.charAt(0))) {
             switch (letter) {
-            case "q":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "p":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "o":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "n":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "m":
-                amount = amount.multiply(new BigDecimal(1000L));
-            case "l":
-                amount = amount.multiply(new BigDecimal(1000L));
+                case "z":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "y":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "x":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "w":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "v":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "u":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "t":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "s":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "r":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "q":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "p":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "o":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "n":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "m":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "l":
+                    amount = amount.multiply(new BigDecimal(1000L));
                 case "k":
                     amount = amount.multiply(new BigDecimal(1000L));
                 case "j":
