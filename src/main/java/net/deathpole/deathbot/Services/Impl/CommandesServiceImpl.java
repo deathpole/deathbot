@@ -1,60 +1,37 @@
 package net.deathpole.deathbot.Services.Impl;
 
-import static net.dv8tion.jda.core.MessageBuilder.Formatting.BLOCK;
-import static net.dv8tion.jda.core.MessageBuilder.Formatting.BOLD;
-import static net.dv8tion.jda.core.MessageBuilder.Formatting.ITALICS;
-import static net.dv8tion.jda.core.MessageBuilder.Formatting.UNDERLINE;
-
-import java.awt.image.BufferedImage;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-
 import net.deathpole.deathbot.Bot;
 import net.deathpole.deathbot.CustomReactionDTO;
-import net.deathpole.deathbot.PlayerStatDTO;
-import net.deathpole.deathbot.ReminderDTO;
 import net.deathpole.deathbot.Dao.IGlobalDao;
 import net.deathpole.deathbot.Dao.Impl.GlobalDao;
 import net.deathpole.deathbot.Enums.EnumAction;
 import net.deathpole.deathbot.Enums.EnumCadavreExquisParams;
 import net.deathpole.deathbot.Enums.EnumDynoAction;
+import net.deathpole.deathbot.PlayerStatDTO;
+import net.deathpole.deathbot.ReminderDTO;
 import net.deathpole.deathbot.Services.IChartService;
 import net.deathpole.deathbot.Services.ICommandesService;
 import net.deathpole.deathbot.Services.IHelperService;
 import net.deathpole.deathbot.Services.IMessagesService;
 import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.ChannelType;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.User;
-import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.managers.GuildController;
+import org.apache.commons.lang3.StringUtils;
+
+import java.awt.image.BufferedImage;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static net.dv8tion.jda.core.MessageBuilder.Formatting.*;
 
 /**
  *
@@ -1932,7 +1909,9 @@ public class CommandesServiceImpl implements ICommandesService {
 
         Integer medalBonus = Integer.valueOf(splittedArgs[1]);
 
-        BigDecimal medalGain = globalDao.getMedalGainForStage(stage);
+        Integer stageForMedalGain = new BigDecimal(stage).divide(new BigDecimal(100l), 0, RoundingMode.HALF_DOWN).multiply(new BigDecimal(100l)).intValue();
+
+        BigDecimal medalGain = globalDao.getMedalGainForStage(stageForMedalGain);
         BigDecimal stageGain = medalGain.multiply(BigDecimal.valueOf(medalBonus).divide(new BigDecimal(100), BigDecimal.ROUND_HALF_DOWN));
         String formattedGain = helperService.formatBigNumbersToEFFormat(stageGain);
 
