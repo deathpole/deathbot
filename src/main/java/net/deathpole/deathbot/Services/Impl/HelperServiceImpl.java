@@ -1,12 +1,12 @@
 package net.deathpole.deathbot.Services.Impl;
 
-import net.deathpole.deathbot.Services.IHelperService;
-import net.deathpole.deathbot.Services.IMessagesService;
-
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
+
+import net.deathpole.deathbot.Services.IHelperService;
+import net.deathpole.deathbot.Services.IMessagesService;
 
 /**
  * Created by nicolas on 28/09/17.
@@ -25,13 +25,23 @@ public class HelperServiceImpl implements IHelperService {
         symbols.setGroupingSeparator(',');
         symbols.setDecimalSeparator('.');
 
-        String letter = "a";
         value = value.divide(factor, 2, BigDecimal.ROUND_HALF_DOWN);
 
+        String letter = "";
+
         while (value.compareTo(factor) >= 0) {
-            value = value.divide(factor, 2, BigDecimal.ROUND_HALF_DOWN);
-            int charValue = letter.charAt(0);
-            letter = String.valueOf((char) (charValue + 1));
+            String tempLetter = "a";
+            while (value.compareTo(factor) >= 0) {
+                value = value.divide(factor, 2, BigDecimal.ROUND_HALF_DOWN);
+                int charValue = letter.charAt(0);
+                if (charValue > 122) {
+                    tempLetter = "a";
+                    break;
+                } else {
+                    tempLetter = String.valueOf((char) (charValue + 1));
+                }
+            }
+            letter += tempLetter;
         }
 
         DecimalFormat decimalFormat = new DecimalFormat("#.##" + letter, symbols);
@@ -43,16 +53,24 @@ public class HelperServiceImpl implements IHelperService {
     @Override
     public BigDecimal convertEFLettersToNumber(String amountWithLetter) {
 
-        String letter = amountWithLetter.substring(amountWithLetter.length() - 1);
+        int numberOfLetters = extractNumberOfLetters(amountWithLetter);
+
+        String letters = amountWithLetter.substring(amountWithLetter.length() - numberOfLetters);
         String amountWithoutLetter = amountWithLetter;
 
-        if (Character.isLetter(amountWithLetter.charAt(amountWithLetter.length() - 1))) {
-            amountWithoutLetter = amountWithLetter.substring(0, amountWithLetter.length() - 1);
+        if (Character.isLetter(amountWithLetter.charAt(amountWithLetter.length() - numberOfLetters))) {
+            amountWithoutLetter = amountWithLetter.substring(0, amountWithLetter.length() - numberOfLetters);
         }
         BigDecimal amount = new BigDecimal(amountWithoutLetter);
 
-        if (Character.isLetter(letter.charAt(0))) {
-            switch (letter) {
+        if (extractNumberOfLetters(letters) > 0) {
+            switch (letters) {
+                case "ac":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ab":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "aa":
+                    amount = amount.multiply(new BigDecimal(1000L));
                 case "z":
                     amount = amount.multiply(new BigDecimal(1000L));
                 case "y":
@@ -111,6 +129,18 @@ public class HelperServiceImpl implements IHelperService {
             }
         }
         return amount;
+    }
+
+    private int extractNumberOfLetters(String amountWithLetter) {
+        int charCount = 0;
+        for (int i = 0; i < amountWithLetter.length(); i++) {
+            char temp = amountWithLetter.charAt(i);
+            if (Character.isLetter(temp)) {
+                charCount++;
+            }
+        }
+
+        return charCount;
     }
 
     @Override
