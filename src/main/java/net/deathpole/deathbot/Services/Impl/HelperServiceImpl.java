@@ -34,10 +34,13 @@ public class HelperServiceImpl implements IHelperService {
         vo.setLetters(letters);
         vo.setValue(value);
 
+        boolean firstRun = true;
+
         while (vo.getValue().compareTo(factor) >= 0) {
-            ValueLetterVO letterFromValue = getLetterFromValue(vo.getValue(), factor);
+            ValueLetterVO letterFromValue = getLetterFromValue(vo.getValue(), factor, firstRun);
             letters += letterFromValue.getLetters();
             vo.setValue(letterFromValue.getValue());
+            firstRun = false;
         }
 
         DecimalFormat decimalFormat = new DecimalFormat("#.##" + letters, symbols);
@@ -46,7 +49,7 @@ public class HelperServiceImpl implements IHelperService {
         return result;
     }
 
-    private ValueLetterVO getLetterFromValue(BigDecimal value, BigDecimal factor) {
+    private ValueLetterVO getLetterFromValue(BigDecimal value, BigDecimal factor, boolean firstRun) {
         ValueLetterVO result = new ValueLetterVO();
         String tempLetter = "a";
 
@@ -64,7 +67,11 @@ public class HelperServiceImpl implements IHelperService {
             }
         }
 
-        result.setLetters(tempLetter);
+        if (!firstRun) {
+            result.setLetters(String.valueOf((char) (tempLetter.charAt(0) - 1)));
+        } else {
+            result.setLetters(tempLetter);
+        }
 
         return result;
     }
