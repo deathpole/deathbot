@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 import net.deathpole.deathbot.Services.IHelperService;
 import net.deathpole.deathbot.Services.IMessagesService;
+import net.deathpole.deathbot.ValueLetterVO;
 
 /**
  * Created by nicolas on 28/09/17.
@@ -27,25 +28,43 @@ public class HelperServiceImpl implements IHelperService {
 
         value = value.divide(factor, 2, BigDecimal.ROUND_HALF_DOWN);
 
-        String letter = "";
+        String letters = "";
 
-        while (value.compareTo(factor) >= 0) {
-            String tempLetter = "a";
-            while (value.compareTo(factor) >= 0) {
-                value = value.divide(factor, 2, BigDecimal.ROUND_HALF_DOWN);
-                int charValue = letter.charAt(0);
-                if (charValue > 122) {
-                    tempLetter = "a";
-                    break;
-                } else {
-                    tempLetter = String.valueOf((char) (charValue + 1));
-                }
-            }
-            letter += tempLetter;
+        ValueLetterVO vo = new ValueLetterVO();
+        vo.setLetters(letters);
+        vo.setValue(value);
+
+        while (vo.getValue().compareTo(factor) >= 0) {
+            ValueLetterVO letterFromValue = getLetterFromValue(vo.getValue(), factor);
+            letters += letterFromValue.getLetters();
+            vo.setValue(letterFromValue.getValue());
         }
 
-        DecimalFormat decimalFormat = new DecimalFormat("#.##" + letter, symbols);
-        result = decimalFormat.format(value);
+        DecimalFormat decimalFormat = new DecimalFormat("#.##" + letters, symbols);
+        result = decimalFormat.format(vo.getValue());
+
+        return result;
+    }
+
+    private ValueLetterVO getLetterFromValue(BigDecimal value, BigDecimal factor) {
+        ValueLetterVO result = new ValueLetterVO();
+        String tempLetter = "a";
+
+        while (value.compareTo(factor) >= 0) {
+            value = value.divide(factor, 2, BigDecimal.ROUND_HALF_DOWN);
+            result.setValue(value);
+            int charValue = tempLetter.charAt(0);
+            if (charValue > 121) {
+                tempLetter = "a";
+                result.setValue(value.multiply(factor));
+                result.setLetters(tempLetter);
+                return result;
+            } else {
+                tempLetter = String.valueOf((char) (charValue + 1));
+            }
+        }
+
+        result.setLetters(tempLetter);
 
         return result;
     }
