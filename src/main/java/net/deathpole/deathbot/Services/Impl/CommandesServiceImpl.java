@@ -758,8 +758,8 @@ public class CommandesServiceImpl implements ICommandesService {
             newStats.setUpdateDate(LocalDateTime.now());
             System.out.println("Guilde : " + guild.getName());
             System.out.println("Author : " + author);
-            System.out.println("Member : " + guild.getMember(author));
-            String effectiveName = guild.getMember(author) != null ? guild.getMember(author).getEffectiveName() : author.getName();
+            System.out.println("Member : " + guild.getMemberById(author.getIdLong()));
+            String effectiveName = guild.getMemberById(author.getIdLong()) != null ? guild.getMemberById(author.getIdLong()).getEffectiveName() : author.getName();
             newStats.setPlayerInstantName(effectiveName);
 
             boolean isRatioProvided = false;
@@ -791,7 +791,7 @@ public class CommandesServiceImpl implements ICommandesService {
                     messagesService.sendBotMessage(channel, "Bonjour " + effectiveName + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
                 }
 
-                manageRankCmd(author, channel, guild, "Chevalier " + params[0], guild.getMember(author), false);
+                manageRankCmd(author, channel, guild, "Chevalier " + params[0], guild.getMemberById(author.getIdLong()), false);
 
                 if (!isAdmin) {
                     if (member.getNickname() != null && member.getNickname().contains("\uD83C\uDFC6")) {
@@ -867,7 +867,9 @@ public class CommandesServiceImpl implements ICommandesService {
             newStats.setMedals(helperService.convertEFLettersToNumber(params[1]));
             newStats.setSr(helperService.convertEFLettersToNumber(params[2]));
             newStats.setUpdateDate(LocalDateTime.now());
-            newStats.setPlayerInstantName(guild.getMember(author).getEffectiveName());
+
+            String effectiveName = guild.getMemberById(author.getIdLong()) != null ? guild.getMemberById(author.getIdLong()).getEffectiveName() : author.getName();
+            newStats.setPlayerInstantName(effectiveName);
 
             boolean isRatioProvided = false;
             boolean isPreviousRatioPresent = false;
@@ -895,31 +897,8 @@ public class CommandesServiceImpl implements ICommandesService {
                 if (actualStats != null) {
                     compareStats(actualStats, newStats, channel, guild, author);
                 } else {
-                    messagesService.sendBotMessage(channel,
-                            "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
+                    messagesService.sendBotMessage(channel, "Bonjour " + effectiveName + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
                 }
-
-                // manageRankCmd(author, channel, guild.getController(), "Chevalier " + params[0],
-                // guild.getMember(author), false);
-
-                // if (!isAdmin) {
-                // if (member.getNickname() != null && member.getNickname().contains("\uD83C\uDFC6")) {
-                // String originalNickname = member.getNickname().split("\uD83C\uDFC6")[0];
-                // String newNickname = originalNickname.trim() + " \uD83C\uDFC6 " + params[0];
-                // guild.getController().setNickname(member, newNickname).complete();
-                // } else {
-                // String oldNickName;
-                // if (member.getNickname() == null) {
-                // oldNickName = member.getEffectiveName();
-                // } else {
-                // oldNickName = member.getNickname().trim();
-                // }
-                //
-                // String newNickname = oldNickName + " \uD83C\uDFC6 " + params[0];
-                // guild.getController().setNickname(member, newNickname).complete();
-                // }
-                // }
-
                 messagesService.sendBotMessage(channel, srSb.toString());
 
                 globalDao.savePlayerStats2(newStats);
@@ -1217,15 +1196,16 @@ public class CommandesServiceImpl implements ICommandesService {
 
     private void compareStats(PlayerStatDTO actualStats, PlayerStatDTO newStats, MessageChannel channel, Guild guild, User author) {
         int kl = newStats.getKl() - actualStats.getKl();
-        BigDecimal medals = BigDecimal.ZERO.compareTo(newStats.getMedals().subtract(actualStats.getMedals())) != 0
-                ? (newStats.getMedals().subtract(actualStats.getMedals())).multiply(new BigDecimal(100L)).divide(actualStats.getMedals(), 2, RoundingMode.HALF_DOWN)
-                : BigDecimal.ZERO;
-        BigDecimal sr = BigDecimal.ZERO.compareTo(newStats.getSr().subtract(actualStats.getSr())) != 0
-                ? (newStats.getSr().subtract(actualStats.getSr())).multiply(new BigDecimal(100L)).divide(actualStats.getSr(), 2, RoundingMode.HALF_DOWN)
-                : BigDecimal.ZERO;
+        BigDecimal medals = BigDecimal.ZERO.compareTo(newStats.getMedals().subtract(actualStats.getMedals())) != 0 ?
+                (newStats.getMedals().subtract(actualStats.getMedals())).multiply(new BigDecimal(100L)).divide(actualStats.getMedals(), 2, RoundingMode.HALF_DOWN) :
+                BigDecimal.ZERO;
+        BigDecimal sr = BigDecimal.ZERO.compareTo(newStats.getSr().subtract(actualStats.getSr())) != 0 ?
+                (newStats.getSr().subtract(actualStats.getSr())).multiply(new BigDecimal(100L)).divide(actualStats.getSr(), 2, RoundingMode.HALF_DOWN) :
+                BigDecimal.ZERO;
         Duration duration = Duration.between(actualStats.getUpdateDate(), newStats.getUpdateDate()).abs();
 
-        StringBuilder sb = new StringBuilder("Bonjour " + guild.getMember(author).getEffectiveName() + ", en ");
+        String effectiveName = guild.getMemberById(author.getIdLong()) != null ? guild.getMemberById(author.getIdLong()).getEffectiveName() : author.getName();
+        StringBuilder sb = new StringBuilder("Bonjour " + effectiveName + ", en ");
         sb.append(formatDuration(duration)).append(" vous avez gagné : ").append(RETOUR_LIGNE);
         sb.append(kl).append(" KL").append(RETOUR_LIGNE);
         sb.append(medals).append("% de médailles").append(RETOUR_LIGNE);
