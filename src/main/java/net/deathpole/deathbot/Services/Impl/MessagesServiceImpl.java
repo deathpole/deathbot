@@ -12,15 +12,15 @@ import java.util.List;
 import javax.imageio.ImageIO;
 
 import net.deathpole.deathbot.Services.IMessagesService;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.IMentionable;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.IMentionable;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 /**
  * Created by nicolas on 28/09/17.
@@ -128,7 +128,7 @@ public class MessagesServiceImpl implements IMessagesService {
             BufferedImage img = ImageIO.read(url);
             File file = new File(fileName);
             ImageIO.write(img, "png", file);
-            channel.sendFile(file, messageStr).queue();
+            channel.sendFile(file, messageStr.getContentDisplay()).queue();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -150,7 +150,7 @@ public class MessagesServiceImpl implements IMessagesService {
         try {
             File outPuteFile = new File(fileName);
             ImageIO.write(image, "png", outPuteFile);
-            channel.sendFile(outPuteFile, messageStr).queue();
+            channel.sendFile(outPuteFile, messageStr.getContentDisplay()).queue();
         } catch (IOException e) {
             e.printStackTrace();
         }

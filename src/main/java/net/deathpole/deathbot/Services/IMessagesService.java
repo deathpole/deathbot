@@ -2,9 +2,9 @@ package net.deathpole.deathbot.Services;
 
 import java.awt.image.BufferedImage;
 
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.IMentionable;
-import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.IMentionable;
+import net.dv8tion.jda.api.entities.MessageChannel;
 
 /**
  * Created by nicolas on 28/09/17.

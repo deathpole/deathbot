@@ -13,7 +13,7 @@ import net.deathpole.deathbot.Services.IHelperService;
 import net.deathpole.deathbot.Services.IMessagesService;
 import net.deathpole.deathbot.Services.Impl.HelperServiceImpl;
 import net.deathpole.deathbot.Services.Impl.MessagesServiceImpl;
-import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.api.entities.Guild;
 
 public class ReminderThread extends Thread {
 

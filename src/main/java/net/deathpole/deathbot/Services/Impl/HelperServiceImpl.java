@@ -17,6 +17,33 @@ public class HelperServiceImpl implements IHelperService {
     private IMessagesService messagesService = new MessagesServiceImpl();
 
     @Override
+    public String convertMillisToDaysHoursMinSec(long millis) {
+
+        long secondsInMilli = 1000;
+        long minutesInMilli = secondsInMilli * 60;
+        long hoursInMilli = minutesInMilli * 60;
+        long daysInMilli = hoursInMilli * 24;
+
+        long elapsedDays = millis / daysInMilli;
+        millis = millis % daysInMilli;
+
+        long elapsedHours = millis / hoursInMilli;
+        millis = millis % hoursInMilli;
+
+        long elapsedMinutes = millis / minutesInMilli;
+        millis = millis % minutesInMilli;
+
+        long elapsedSeconds = millis / secondsInMilli;
+
+        StringBuilder answer = new StringBuilder();
+        answer.append(elapsedDays).append(" jours ").append(elapsedHours).append(" heures ").append(elapsedMinutes).append(" minutes et ").append(elapsedSeconds).append(
+                " secondes.");
+
+        return answer.toString();
+
+    }
+
+    @Override
     public String formatBigNumbersToEFFormat(BigDecimal value) {
         String result = null;
 

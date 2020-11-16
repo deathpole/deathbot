@@ -63,7 +63,7 @@
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>3.3.1_285</version>
+            <version>4.2.0_168</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>

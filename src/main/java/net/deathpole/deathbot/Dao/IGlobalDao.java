@@ -9,8 +9,8 @@ import java.util.Set;
 import net.deathpole.deathbot.CustomReactionDTO;
 import net.deathpole.deathbot.PlayerStatDTO;
 import net.deathpole.deathbot.ReminderDTO;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Role;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
 
 /**
  * Created by nicolas on 24/10/17.

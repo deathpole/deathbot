@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
  */
 public interface IHelperService {
 
+    String convertMillisToDaysHoursMinSec(long millis);
+
     public String formatBigNumbersToEFFormat(BigDecimal value);
 
     BigDecimal convertEFLettersToNumber(String amountWithLetter);

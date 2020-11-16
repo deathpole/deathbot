@@ -4,16 +4,9 @@ package net.deathpole.deathbot.Enums;
  * Created by nicolas on 26/09/17.
  */
 public enum EnumAction {
-    ACR,
-    ACTIVATE,
-    ADD_NOTSINGLE_RANK,
-    ANSR,
-    // ADD_ONJOIN_RANK,
-    ADD_RANK,
-    ADD_RANK_TO_RANK,
-    // AREM,
-    AR,
-    // ADD_REMINDER,
+    STATUS, ACR, ACTIVATE, ADD_NOTSINGLE_RANK, ANSR, // ADD_ONJOIN_RANK,
+    ADD_RANK, ADD_RANK_TO_RANK, // AREM,
+    AR, // ADD_REMINDER,
     ADD_GLOBAL_RANK,
     // AOJR,
     AGR,

@@ -8,9 +8,9 @@ import java.util.List;
 
 import net.deathpole.deathbot.PlayerStatDTO;
 import net.deathpole.deathbot.Services.Impl.CommandesServiceImpl;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  * Created by nicolas on 28/09/17.

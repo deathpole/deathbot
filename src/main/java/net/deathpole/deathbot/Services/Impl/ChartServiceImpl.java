@@ -22,14 +22,14 @@ import org.knowm.xchart.XYSeries;
 import org.knowm.xchart.style.Styler;
 import org.knowm.xchart.style.markers.SeriesMarkers;
 
-import net.deathpole.deathbot.PlayerStatDTO;
 import net.deathpole.deathbot.Dao.IGlobalDao;
+import net.deathpole.deathbot.PlayerStatDTO;
 import net.deathpole.deathbot.Services.IChartService;
 import net.deathpole.deathbot.Services.IHelperService;
 import net.deathpole.deathbot.Services.IMessagesService;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  *
