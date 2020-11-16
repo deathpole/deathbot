@@ -279,6 +279,7 @@ public class CommandesServiceImpl implements ICommandesService {
                                     }
                                 } catch (IllegalArgumentException ex) {
                                     messagesService.sendBotMessage(channel, "Commande inconnue.");
+                                    System.out.println("Exception : " + ex);
                                 }
                             }
                         }
@@ -2880,6 +2881,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 if (!userRoles.contains(roleToAdd) || !removePreviousRank) {
                     member = addRankToUser(guild, member, userAssignableRoles, roleToAdd, messageBuilder, isSingle, removePreviousRank, userRoles, channel, author);
                 } else {
+                    member = guild.retrieveMember(member.getUser()).complete();
                     member = removeRankToUser(guild, member, roleToAdd, messageBuilder);
                     messagesService.sendBotMessageWithMention(channel, messageBuilder.toString(), author);
                 }
@@ -2910,6 +2912,7 @@ public class CommandesServiceImpl implements ICommandesService {
                             + RETOUR_LIGNE
                             + "La prochaine fois, pensez à arrondir à la dizaine inférieure ;) ");
                 }
+                member = guild.retrieveMember(member.getUser()).complete();
                 addOrRemoveRankToUser(author, channel, guild, rankToAdd, member, userRoles, userAssignableRoles, removePreviousRank);
             } else {
                 messagesService.sendBotMessage(channel, "Le rôle **" + rankToAdd + "** n'existe pas.");
@@ -2922,7 +2925,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
         removeLinkedRankToMember(guild, member, roleToAdd);
 
-        member = guild.getMember(member.getUser());
+        member = guild.retrieveMember(member.getUser()).complete();
         messageBuilder.append("Vous n'êtes plus **").append(roleToAdd.getName()).append("** !");
         return member;
     }
@@ -2956,7 +2959,7 @@ public class CommandesServiceImpl implements ICommandesService {
             for (Role roleToRemove : userAssignableRoles) {
                 removeLinkedRankToMember(guild, member, roleToRemove);
             }
-            member = guild.getMember(member.getUser());
+            member = guild.retrieveMember(member.getUser()).complete();
         }
 
         if (removePreviousRank || !userRoles.contains(roleToAdd)) {
@@ -2972,7 +2975,7 @@ public class CommandesServiceImpl implements ICommandesService {
 
         addLinkedRankToMember(guild, member, roleToAdd);
 
-        member = guild.getMember(member.getUser());
+        member = guild.retrieveMember(member.getUser()).complete();
 
         return member;
     }
