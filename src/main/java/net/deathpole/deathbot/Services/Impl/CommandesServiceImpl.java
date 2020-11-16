@@ -759,8 +759,8 @@ public class CommandesServiceImpl implements ICommandesService {
             System.out.println("Guilde : " + guild.getName());
             System.out.println("Author : " + author);
             System.out.println("Member : " + guild.getMember(author));
-            String effectiveName = guild.getMember(author) != null ? guild.getMember(author).getEffectiveName() : author.getName();
-            newStats.setPlayerInstantName(effectiveName);
+            System.out.println("Effective Name : " + guild.getMember(author).getEffectiveName());
+            newStats.setPlayerInstantName(guild.getMember(author).getEffectiveName());
 
             boolean isRatioProvided = false;
             boolean isPreviousRatioPresent = false;
@@ -788,7 +788,8 @@ public class CommandesServiceImpl implements ICommandesService {
                 if (actualStats != null) {
                     compareStats(actualStats, newStats, channel, guild, author);
                 } else {
-                    messagesService.sendBotMessage(channel, "Bonjour " + effectiveName + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
+                    messagesService.sendBotMessage(channel,
+                            "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
                 }
 
                 manageRankCmd(author, channel, guild, "Chevalier " + params[0], guild.getMember(author), false);
