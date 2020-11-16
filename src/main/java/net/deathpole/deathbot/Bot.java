@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
 public class Bot extends ListenerAdapter {
 
@@ -24,7 +25,7 @@ public class Bot extends ListenerAdapter {
     public static void main(String[] args) {
         try {
             String token = System.getenv().get("TOKEN");
-            JDA jda = JDABuilder.create(token, GatewayIntent.GUILD_MESSAGES).addEventListeners(new Bot()).build();
+            JDA jda = JDABuilder.create(token, GatewayIntent.GUILD_MESSAGES).setMemberCachePolicy(MemberCachePolicy.ONLINE).addEventListeners(new Bot()).build();
             jda.setAutoReconnect(true);
         } catch (LoginException | IllegalArgumentException e) {
             e.printStackTrace();
