@@ -756,10 +756,6 @@ public class CommandesServiceImpl implements ICommandesService {
             newStats.setMedals(helperService.convertEFLettersToNumber(params[1]));
             newStats.setSr(helperService.convertEFLettersToNumber(params[2]));
             newStats.setUpdateDate(LocalDateTime.now());
-            System.out.println("Guilde : " + guild.getName());
-            System.out.println("Author : " + author);
-            System.out.println("Member : " + guild.retrieveMember(author).complete());
-            System.out.println("Effective Name : " + guild.retrieveMember(author).complete().getEffectiveName());
             newStats.setPlayerInstantName(guild.retrieveMember(author).complete().getEffectiveName());
 
             boolean isRatioProvided = false;

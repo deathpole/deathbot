@@ -118,6 +118,52 @@ public class HelperServiceImpl implements IHelperService {
 
         if (extractNumberOfLetters(letters) > 0) {
             switch (letters) {
+                case "az":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ay":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ax":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "aw":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "av":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "au":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "at":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "as":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ar":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "aq":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ap":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ao":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "an":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "am":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "al":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ak":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "aj":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ai":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ah":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ag":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "af":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ae":
+                    amount = amount.multiply(new BigDecimal(1000L));
+                case "ad":
+                    amount = amount.multiply(new BigDecimal(1000L));
                 case "ac":
                     amount = amount.multiply(new BigDecimal(1000L));
                 case "ab":
