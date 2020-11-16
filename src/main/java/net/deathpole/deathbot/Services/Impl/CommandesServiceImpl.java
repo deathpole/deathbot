@@ -1200,6 +1200,12 @@ public class CommandesServiceImpl implements ICommandesService {
         }
 
         sb.append("**__Sprit Rest__**").append(RETOUR_LIGNE);
+
+        System.out.println("KL : " + newStats.getKl());
+        System.out.println("SR : " + newStats.getSr());
+        System.out.println("Medals : " + newStats.getMedals());
+        System.out.println("SR Ration : " + newStats.getSrRatio());
+
         BigDecimal fullSR = newStats.getSr().multiply(new BigDecimal(60L)).multiply(new BigDecimal(4L)).multiply(new BigDecimal(srRatio));
         BigDecimal srPercentage = fullSR.multiply(new BigDecimal(100L)).divide(newStats.getMedals(), 2, BigDecimal.ROUND_HALF_DOWN);
         sb.append(srPercentage).append("% (").append(helperService.formatBigNumbersToEFFormat(fullSR)).append(")").append(RETOUR_LIGNE);
