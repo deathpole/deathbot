@@ -758,9 +758,9 @@ public class CommandesServiceImpl implements ICommandesService {
             newStats.setUpdateDate(LocalDateTime.now());
             System.out.println("Guilde : " + guild.getName());
             System.out.println("Author : " + author);
-            System.out.println("Member : " + guild.getMember(author));
-            System.out.println("Effective Name : " + guild.getMember(author).getEffectiveName());
-            newStats.setPlayerInstantName(guild.getMember(author).getEffectiveName());
+            System.out.println("Member : " + guild.retrieveMember(author).complete());
+            System.out.println("Effective Name : " + guild.retrieveMember(author).complete().getEffectiveName());
+            newStats.setPlayerInstantName(guild.retrieveMember(author).complete().getEffectiveName());
 
             boolean isRatioProvided = false;
             boolean isPreviousRatioPresent = false;
@@ -789,10 +789,10 @@ public class CommandesServiceImpl implements ICommandesService {
                     compareStats(actualStats, newStats, channel, guild, author);
                 } else {
                     messagesService.sendBotMessage(channel,
-                            "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
+                            "Bonjour " + guild.retrieveMember(author).complete().getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
                 }
 
-                manageRankCmd(author, channel, guild, "Chevalier " + params[0], guild.getMember(author), false);
+                manageRankCmd(author, channel, guild, "Chevalier " + params[0], guild.retrieveMember(author).complete(), false);
 
                 if (!isAdmin) {
                     if (member.getNickname() != null && member.getNickname().contains("\uD83C\uDFC6")) {
@@ -868,7 +868,7 @@ public class CommandesServiceImpl implements ICommandesService {
             newStats.setMedals(helperService.convertEFLettersToNumber(params[1]));
             newStats.setSr(helperService.convertEFLettersToNumber(params[2]));
             newStats.setUpdateDate(LocalDateTime.now());
-            newStats.setPlayerInstantName(guild.getMember(author).getEffectiveName());
+            newStats.setPlayerInstantName(guild.retrieveMember(author).complete().getEffectiveName());
 
             boolean isRatioProvided = false;
             boolean isPreviousRatioPresent = false;
@@ -897,11 +897,11 @@ public class CommandesServiceImpl implements ICommandesService {
                     compareStats(actualStats, newStats, channel, guild, author);
                 } else {
                     messagesService.sendBotMessage(channel,
-                            "Bonjour " + guild.getMember(author).getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
+                            "Bonjour " + guild.retrieveMember(author).complete().getEffectiveName() + ", j'ai enregistré vos informations. A la prochaine !" + RETOUR_LIGNE);
                 }
 
                 // manageRankCmd(author, channel, guild.getController(), "Chevalier " + params[0],
-                // guild.getMember(author), false);
+                // guild.retrieveMember(author).complete(), false);
 
                 // if (!isAdmin) {
                 // if (member.getNickname() != null && member.getNickname().contains("\uD83C\uDFC6")) {
@@ -1226,7 +1226,7 @@ public class CommandesServiceImpl implements ICommandesService {
                 BigDecimal.ZERO;
         Duration duration = Duration.between(actualStats.getUpdateDate(), newStats.getUpdateDate()).abs();
 
-        StringBuilder sb = new StringBuilder("Bonjour " + guild.getMember(author).getEffectiveName() + ", en ");
+        StringBuilder sb = new StringBuilder("Bonjour " + guild.retrieveMember(author).complete().getEffectiveName() + ", en ");
         sb.append(formatDuration(duration)).append(" vous avez gagné : ").append(RETOUR_LIGNE);
         sb.append(kl).append(" KL").append(RETOUR_LIGNE);
         sb.append(medals).append("% de médailles").append(RETOUR_LIGNE);
